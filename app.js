@@ -909,7 +909,12 @@
           boxRub: storedAmount(item, group, "boxRub"),
           packerRub: storedAmount(item, group, "packerRub"),
           materialsRub: storedAmount(item, group, "materialsRub"),
-          status: group.status || ""
+          status: group.status || "",
+          listPriceRub: item.listPriceRub == null || item.listPriceRub === "" ? null : item.listPriceRub,
+          salePriceRub: item.salePriceRub == null || item.salePriceRub === "" ? null : item.salePriceRub,
+          commissionRate: item.commissionRate == null || item.commissionRate === "" ? null : item.commissionRate,
+          commissionRateNote: item.commissionRateNote || "",
+          otherSellingCostsRub: item.otherSellingCostsRub == null || item.otherSellingCostsRub === "" ? null : item.otherSellingCostsRub
         };
         row.purchaseRub = purchaseFrom(row);
         row.freightRub = freightFrom(row);
@@ -955,7 +960,84 @@
     return "<li" + (strong ? " class='sum'" : "") + ">" + esc(sign + label) + ": " + esc(rub(value)) + "</li>";
   }
 
+  function roundMoney(value) {
+    return Math.round(value * 100) / 100;
+  }
+
+  function percentText(value) {
+    if (value == null || !isFinite(value)) return MISSING;
+    var shown = Math.round(value * 1000) / 10;
+    return String(shown).replace(".", ",") + "%";
+  }
+
+  var UNFILLED_SELLING = ["логистика Л’Этуаль", "маркировка", "сертификация", "склад", "фулфилмент"];
+
+  // Цена продажи — то, что платит покупатель. Комиссия = эта цена × ставка.
+  // Пустой прочий расход не вычитается и нулём не становится.
+  function saleEconomics(row) {
+    var sale = knownAmount(row.salePriceRub);
+    var list = knownAmount(row.listPriceRub);
+    var rate = knownAmount(row.commissionRate);
+    var cost = knownAmount(row.accountedRub);
+    var other = knownAmount(row.otherSellingCostsRub);
+    var taxRate = knownAmount(DATA.unitEconomics && DATA.unitEconomics.taxRate);
+    var commission = sale != null && rate != null ? roundMoney(sale * rate) : null;
+    var tax = sale != null && taxRate != null ? roundMoney(sale * taxRate) : null;
+    var profit = null;
+    if (sale != null && cost != null && commission != null && tax != null) {
+      profit = sale - cost - commission - tax;
+      if (other != null) profit -= other;
+      profit = roundMoney(profit);
+    }
+    var margin = profit != null && sale ? profit / sale : null;
+    var discount = list != null && sale != null ? roundMoney(list - sale) : null;
+    return {
+      sale: sale,
+      list: list,
+      rate: rate,
+      taxRate: taxRate,
+      commission: commission,
+      tax: tax,
+      other: other,
+      profit: profit,
+      margin: margin,
+      discount: discount
+    };
+  }
+
+  function marginStatus(margin) {
+    if (margin == null) return MISSING;
+    if (margin < 0.25) return "ниже 25%";
+    if (margin <= 0.30) return "25–30%";
+    return "выше 30%";
+  }
+
+  function marginClass(margin) {
+    if (margin == null) return "";
+    if (margin < 0.25) return " band-red";
+    if (margin <= 0.30) return " band-yellow";
+    return " band-green";
+  }
+
   function unitDetail(row) {
+    var econ = saleEconomics(row);
+    var priceLines;
+    if (econ.list != null && econ.sale != null && econ.discount === 0) {
+      priceLines = costLine("", "Цена на витрине", econ.list, false)
+        + "<li>Скидки нет. Фактическая цена продажи совпадает с витриной: " + esc(rub(econ.sale)) + ".</li>";
+    } else {
+      priceLines = costLine("", "Цена на витрине", econ.list, false)
+        + costLine("− ", "Скидка", econ.discount, false)
+        + costLine("= ", "Фактическая цена продажи", econ.sale, true);
+    }
+    var commissionLabel = econ.rate == null
+      ? "Комиссия Л’Этуаль"
+      : "Комиссия Л’Этуаль, " + percentText(econ.rate) + " от цены продажи";
+    var gaps = UNFILLED_SELLING.slice();
+    if (row.materialsRub == null || row.materialsRub === "") gaps.push("другие расходные материалы");
+    var priceNote = econ.list == null
+      ? "В выгрузке личного кабинета от 29 октября 2026 цены этого артикула нет."
+      : "Витрина и цена после скидки: личный кабинет Л’Этуаль, 29 октября 2026.";
     return "<details class='unit-detail'><summary>Подробности</summary><ul>"
       + costLine("", "Закупочная стоимость", row.purchaseRub, false)
       + costLine("+ ", "Международная доставка", row.freightRub, false)
@@ -966,28 +1048,48 @@
       + costLine("+ ", "Работа упаковщика", row.packerRub, false)
       + costLine("+ ", "Другие расходные материалы", row.materialsRub, false)
       + costLine("= ", "Себестоимость с учтёнными расходами", row.accountedRub, true)
-      + "</ul><p class='meta'>Расчётный вес: " + esc(weightText(row)) + ". "
+      + "</ul><ul class='sale-chain'>"
+      + priceLines
+      + costLine("− ", commissionLabel, econ.commission, false)
+      + costLine("− ", "Налог 7%", econ.tax, false)
+      + costLine("− ", "Прочие подтверждённые расходы продажи", econ.other, false)
+      + costLine("− ", "Себестоимость товара", row.accountedRub, false)
+      + costLine("= ", "Прибыль по учтённым расходам", econ.profit, true)
+      + "</ul><p class='meta'>Маржинальность: " + esc(percentText(econ.margin)) + ". "
+      + "Статус: " + esc(marginStatus(econ.margin)) + ".</p>"
+      + "<p class='meta'>Прибыль по учтённым расходам. Не заполнено: " + esc(gaps.join("; ")) + ".</p>"
+      + "<p class='meta'>" + esc(priceNote) + " " + esc(row.commissionRateNote || "") + "</p>"
+      + "<p class='meta'>Количество продаж по этой цене не подтверждено, поэтому прибыль по проданному количеству не считается.</p>"
+      + "<p class='meta'>Расчётный вес: " + esc(weightText(row)) + ". "
       + "Тариф международной доставки: " + esc(tariffText(row)) + ". "
       + "Статус веса: " + esc(row.weightStatus || MISSING) + ". "
-      + "Статус расчёта: " + esc(row.status || MISSING) + ".</p></details>";
+      + "Статус расчёта: " + esc(row.status || MISSING) + ". "
+      + "Категория Л’Этуаль: " + esc(row.category || MISSING) + ".</p></details>";
   }
 
   function unitTableRow(row) {
+    var econ = saleEconomics(row);
+    var band = marginClass(econ.margin);
+    var taxPercent = econ.sale == null || econ.taxRate == null ? null : econ.taxRate;
     return "<tr class='sku' data-brand='" + esc(row.brand) + "' data-type='" + esc(row.productType) + "' data-volume='" + esc(row.volume) + "' data-article='" + esc(row.article) + "' data-name='" + esc(row.name) + "'>"
       + "<td>" + esc(row.brand) + "</td>"
       + "<td>" + esc(row.article) + "</td>"
       + "<td class='name'>" + esc(row.name) + unitDetail(row) + "</td>"
       + "<td>" + esc(row.productType) + "</td>"
       + "<td>" + esc(row.volume) + "</td>"
-      + "<td>" + esc(row.category) + "</td>"
       + "<td class='num'>" + esc(rub(row.purchaseRub)) + "</td>"
       + "<td class='num'>" + esc(rub(row.freightRub)) + "</td>"
-      + "<td class='num'>" + esc(rub(row.baseRub)) + "</td>"
-      + "<td class='num'>" + esc(rub(row.labelRub)) + "</td>"
-      + "<td class='num'>" + esc(rub(row.boxRub)) + "</td>"
-      + "<td class='num'>" + esc(rub(row.packerRub)) + "</td>"
       + "<td class='num full-cost'>" + esc(rub(row.accountedRub)) + "</td>"
-      + "<td>" + esc(row.status || MISSING) + "</td></tr>";
+      + "<td class='num'>" + esc(rub(econ.list)) + "</td>"
+      + "<td class='num'>" + esc(rub(econ.sale)) + "</td>"
+      + "<td class='num'>" + esc(percentText(econ.rate)) + "</td>"
+      + "<td class='num'>" + esc(rub(econ.commission)) + "</td>"
+      + "<td class='num'>" + esc(percentText(taxPercent)) + "</td>"
+      + "<td class='num'>" + esc(rub(econ.tax)) + "</td>"
+      + "<td class='num'>" + esc(rub(econ.other)) + "</td>"
+      + "<td class='num profit-col" + band + "'>" + esc(rub(econ.profit)) + "</td>"
+      + "<td class='num margin-col" + band + "'>" + esc(percentText(econ.margin)) + "</td>"
+      + "<td class='margin-status" + band + "'>" + esc(marginStatus(econ.margin)) + "</td></tr>";
   }
 
   function renderUnitPage(state) {
@@ -996,10 +1098,12 @@
     const types = uniqueValues(rows, "productType");
     const volumes = uniqueValues(rows, "volume");
     let html = "<section id='unit'><h2>Юнит-экономика</h2>"
-      + "<p>Этот раздел содержит себестоимость товаров и в дальнейшем будет использоваться для расчёта прибыльности по каналам продаж.</p>"
-      + "<div class='panel'><p>База до Москвы = закупка + международная доставка. Закупка = цена в юанях × курс. Доставка = вес × тариф.</p>"
-      + "<p>Себестоимость с учтёнными расходами = база до Москвы + этикетка на товар + этикетка на коробку + коробочка + работа упаковщика.</p>"
-      + "<p>Другие расходные материалы ещё не заполнены и в эту сумму не входят. Комиссии площадок, налог, маркировка, сертификация, склад, фулфилмент и другие расходы будут добавляться отдельными статьями.</p></div>";
+      + "<p>Себестоимость товара и экономика продажи через Л’Этуаль. Цены в кабинет отсюда не отправляются.</p>"
+      + "<div class='panel'><p>База до Москвы = закупка + международная доставка. Закупка = цена в юанях × курс. Доставка = вес × тариф. Себестоимость с учтёнными расходами = база + этикетка на товар + этикетка на коробку + коробочка + работа упаковщика. Пустые материалы в эту сумму не входят.</p>"
+      + "<p>Цена продажи — та, которую платит покупатель после скидки. Если скидки нет, она равна витринной. Скидка второй раз из прибыли не вычитается. Витрина и цена после скидки взяты из выгрузки личного кабинета 29 октября 2026.</p>"
+      + "<p>Комиссия, ₽ = цена продажи × ставка. Ставка берётся из отчётов исполнителя 2026: своя ставка артикула, а если своей строки нет и у бренда в этих отчётах одна ставка — ставка бренда. Несколько ставок в одну не склеиваются. Налог = 7% от цены продажи.</p>"
+      + "<p>Прибыль по учтённым расходам = цена продажи − себестоимость − комиссия − налог − другие подтверждённые расходы продажи. Логистика Л’Этуаль, маркировка, сертификация, склад и фулфилмент не подтверждены: в ячейке стоит «Нет данных», ноль вместо них не стоит. Пока этих статей нет, цифра не называется окончательной прибылью.</p>"
+      + "<p>В отчёте исполнителя ставка умножается на витринную цену, а скидка покупателя вычитается из комиссии. Здесь комиссия считается от цены после скидки. Маржинальность = прибыль по учтённым расходам / цена продажи. Ниже 25% — красный, 25–30% — жёлтый, выше 30% — зелёный.</p></div>";
     if (!rows.length) {
       return html + "<div class='panel'><p>Для этого бренда расчёт ещё не заполнен. Ноль не подставлен.</p></div></section>";
     }
@@ -1012,10 +1116,15 @@
       + "<p class='muted' id='unit-count'></p>"
       + "<p class='scroll-hint'>Таблицу можно сдвинуть вбок.</p>"
       + "<div class='table-wrap'><table id='unit-table'><thead><tr>"
-      + "<th>Бренд</th><th>Артикул</th><th>Наименование</th><th>Тип товара</th><th>Объём</th><th>Категория Л’Этуаль</th>"
-      + "<th class='num'>Закупка</th><th class='num'>Международная доставка</th><th class='num'>База до Москвы</th>"
-      + "<th class='num'>Этикетка</th><th class='num'>Коробочка</th><th class='num'>Работа упаковщика</th>"
-      + "<th class='num full-cost'>Себестоимость с учтёнными расходами</th><th>Статус расчёта</th>"
+      + "<th>Бренд</th><th>Артикул</th><th>Наименование</th><th>Тип товара</th><th>Объём</th>"
+      + "<th class='num'>Закупка</th><th class='num'>Международная доставка</th>"
+      + "<th class='num full-cost'>Себестоимость с учтёнными расходами</th>"
+      + "<th class='num'>Витринная цена Л’Этуаль</th><th class='num'>Цена продажи после скидки</th>"
+      + "<th class='num'>Комиссия, %</th><th class='num'>Комиссия, ₽</th>"
+      + "<th class='num'>Налог, %</th><th class='num'>Налог, ₽</th>"
+      + "<th class='num'>Другие подтверждённые расходы продажи</th>"
+      + "<th class='num profit-col'>Прибыль по учтённым расходам / шт.</th>"
+      + "<th class='num margin-col'>Маржинальность, %</th><th>Статус</th>"
       + "</tr></thead><tbody>" + rows.map(unitTableRow).join("") + "</tbody></table></div></section>";
     return html;
   }

@@ -8,6 +8,7 @@
   --accent-soft: #F3E8EE;
   --apricot: #EBC2A6;
   --up: #397460;
+  --up-soft: #E7F2EE;
   --down: #B45343;
   --warn: #8C5E4A;
   --warn-soft: #F8EDE6;
@@ -192,7 +193,7 @@ tr.total td { font-weight: 680; background: var(--bg); }
 .ask { margin-top: 20px; }
 .ask p { margin: 0; }
 #profit td.subline { padding-left: 22px; color: var(--muted); }
-#unit-table { min-width: 1280px; }
+#unit-table { min-width: 1860px; }
 #unit-table th { white-space: normal; line-height: 1.3; }
 #unit-table th.num, #unit-table td.num { white-space: nowrap; }
 #unit-table td.name { min-width: 220px; }
@@ -201,6 +202,15 @@ tr.total td { font-weight: 680; background: var(--bg); }
   color: var(--accent);
   background: var(--accent-soft);
 }
+#unit-table .profit-col,
+#unit-table .margin-col {
+  font-weight: 700;
+  background: var(--accent-soft);
+}
+#unit-table .band-red { background: var(--danger-soft); color: var(--danger); }
+#unit-table .band-yellow { background: var(--warn-soft); color: var(--warn); }
+#unit-table .band-green { background: var(--up-soft); color: var(--up); }
+.unit-detail .sale-chain { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 .unit-detail { margin-top: 4px; }
 .unit-detail summary { cursor: pointer; color: var(--accent); }
 .unit-detail ul { margin: 6px 0 0; padding: 0; list-style: none; }
