@@ -829,7 +829,7 @@
       + "<td><input class='u-box' type='number' min='0' step='0.01' placeholder='пусто' value='" + esc(item.boxRub == null ? "" : item.boxRub) + "'></td>"
       + "<td><input class='u-period' type='number' min='0' step='0.01' placeholder='пусто'></td>"
       + "<td><input class='u-qty' type='number' min='0' step='1' placeholder='пусто'></td>"
-      + "<td><input class='u-direct' type='number' min='0' step='0.01' placeholder='пусто'></td>"
+      + "<td><input class='u-direct' type='number' min='0' step='0.01' placeholder='пусто' value='" + esc(item.packerRub == null ? "" : item.packerRub) + "'></td>"
       + "<td class='num u-packer'>—</td>"
       + "<td><input class='u-materials' type='number' min='0' step='0.01' placeholder='пусто'></td>"
       + "<td class='num u-prep'>—</td><td class='num u-with'>—</td>"
@@ -874,6 +874,7 @@
         + ", база до Москвы " + esc(rub(group.baseRub))
         + ". Этикетка " + esc(rub(group.labelRub))
         + ", коробочка " + esc(rub(group.boxRub))
+        + ", упаковщик " + esc(rub(group.packerRub))
         + ". Вес " + weight + " кг, " + esc(group.weightStatus) + ". Статус: " + esc(group.status)
         + ". WB и Ozon: комиссия и логистика неизвестны, в таблице ниже считается Л’Этуаль.</p>";
       const rows = (group.items || []).map(function (item) { return unitRow(item, group.baseRub); }).join("");
