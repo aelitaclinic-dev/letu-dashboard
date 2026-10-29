@@ -354,10 +354,115 @@
     );
   }
 
+  function receiptOf(month) {
+    if (!DATA.receipts) return null;
+    return DATA.receipts.months.filter(function (item) { return item.month === month; })[0] || null;
+  }
+
+  function receiptDelta(row, previous) {
+    if (!previous || row.movementState === "future") return "";
+    const now = receiptOf(row.month);
+    const before = receiptOf(previous.month);
+    if (!now || !before) return "";
+    const comparable = row.financeState === "month" && previous.financeState === "month"
+      && now.status === "matched" && before.status === "matched" && before.receivedKop;
+    if (!comparable) {
+      if (row.financeState === "partial" || previous.financeState === "partial" || now.status === "open" || before.status === "open") {
+        return "<span class='delta'>не сравнивается</span>";
+      }
+      return "";
+    }
+    const text = changeText(now.receivedKop, before.receivedKop);
+    if (text === "0%") return "<span class='delta'>" + esc(text) + "</span>";
+    const rose = text.charAt(0) === "+";
+    return "<span class='delta " + (rose ? "delta-up" : "delta-down") + "'>" + esc(text) + "</span>";
+  }
+
+  function receiptCell(row, previous) {
+    if (row.movementState === "future") return FUTURE;
+    const item = receiptOf(row.month);
+    if (!item || (row.financeState !== "month" && row.financeState !== "partial")) return MISSING;
+    const note = item.outstandingKop ? "ещё " + money(item.outstandingKop) + " не пришло" : "сверено";
+    return money(item.receivedKop) + receiptDelta(row, previous) + "<br><span class='muted'>" + esc(note) + "</span>";
+  }
+
+  function receiptTotal(chosen) {
+    const viewed = receiptView(chosen, "0000-01-01", "9999-12-31");
+    if (!viewed.ready) return MISSING;
+    const gap = viewed.outstanding ? "<br><span class='muted'>ещё " + esc(money(viewed.outstanding)) + " не пришло</span>" : "";
+    return money(viewed.received) + gap;
+  }
+
+  function receiptView(chosen, from, to) {
+    const picked = chosen.filter(function (row) { return row.useFinance; }).map(function (row) {
+      return receiptOf(row.month);
+    }).filter(Boolean);
+    const prior = (DATA.receipts && DATA.receipts.prior || []).filter(function (item) {
+      return item.paid >= from && item.paid <= to;
+    });
+    return {
+      ready: picked.length > 0,
+      received: picked.reduce(function (acc, item) { return acc + item.receivedKop; }, 0),
+      outstanding: picked.reduce(function (acc, item) { return acc + item.outstandingKop; }, 0),
+      priorSum: prior.reduce(function (acc, item) { return acc + item.kop; }, 0),
+    };
+  }
+
+  function cashCard(state, chosen) {
+    if (state.brand) {
+      return card("Фактические поступления", MISSING, "Банковская выписка на бренд не делится. Ноль не подставлен.", "#ask", "Как сверено", "gap");
+    }
+    const viewed = receiptView(chosen, state.from, state.to);
+    if (!viewed.ready || !DATA.receipts) {
+      return card("Фактические поступления", MISSING, "За выбранные даты отчёта исполнителя нет. Ноль не подставлен.", "#ask", "Как сверено", "gap");
+    }
+    let sub = "Это деньги по отчётам внутри выбранных дат: аванс и строка «к оплате», уже пришедшие на счёт. Аванс в соседней карточке «начислено к выплате» уже вычтен, поэтому поступление больше начисления. Плательщик " + DATA.receipts.payer + ". Выписка по 29.10.2026.";
+    if (viewed.priorSum) sub += " Ещё " + money(viewed.priorSum) + " пришло в выбранные даты по отчётам 2025 года и в эту цифру не входит.";
+    if (viewed.outstanding) sub += " Не пришло " + money(viewed.outstanding) + ": " + NO_CASH + " в выписке по 29.10.2026.";
+    return card("Фактические поступления", "<span class=\"hero-value\">" + money(viewed.received) + "</span>", sub, "#ask", "Как сверено", "gap");
+  }
+
+  function receiptSentence(row) {
+    const item = receiptOf(row.month);
+    if (!item) return "Фактические поступления: " + MISSING + ".";
+    let text = "Фактически поступило " + money(item.receivedKop);
+    const dates = [];
+    if (item.advancePaid) dates.push("аванс " + money(item.advanceKop) + " пришёл " + dayText(item.advancePaid));
+    if (item.payoutPaid) dates.push("«к оплате» " + money(item.payoutReceivedKop) + " пришло " + dayText(item.payoutPaid));
+    if (dates.length) text += ": " + dates.join(", ");
+    text += ".";
+    if (item.outstandingKop) text += " Ещё " + money(item.outstandingKop) + " в выписке по 29.10.2026 нет: " + NO_CASH + ".";
+    else text += " Суммы совпали с отчётом.";
+    return text;
+  }
+
+  function receiptPanel() {
+    if (!DATA.receipts) return "";
+    const rows = DATA.receipts.months.map(function (item) {
+      const arrived = [];
+      if (item.advancePaid) arrived.push("аванс " + money(item.advanceKop) + " " + dayText(item.advancePaid));
+      if (item.payoutPaid) arrived.push("к оплате " + money(item.payoutReceivedKop) + " " + dayText(item.payoutPaid));
+      const gap = item.outstandingKop ? money(item.outstandingKop) : "нет";
+      return "<tr><td>" + esc(MONTH_NAME[item.month.slice(5)]) + "</td><td class='num'>" + esc(money(item.receivedKop))
+        + "</td><td>" + esc(arrived.join("; ")) + "</td><td class='num'>" + esc(gap) + "</td></tr>";
+    }).join("");
+    const prior = DATA.receipts.prior.map(function (item) {
+      return "<li>" + esc(dayText(item.paid)) + ": " + esc(money(item.kop)) + " по отчёту от " + esc(dayText(item.reportOn))
+        + ". В месяцы 2026 не прибавлено, сам отчёт в системе не загружен.</li>";
+    }).join("");
+    return "<h2>Сверка с выпиской</h2><div class='panel'><p>Плательщик — " + esc(DATA.receipts.payer)
+      + ". Две выписки с 1 января по 29 октября 2026, всего " + esc(money(DATA.receipts.statementKop))
+      + ". Номера счетов здесь не показаны. Поступило по отчёту — аванс плюс «к оплате». Конечная выплата за сентябрь в выписке ещё не найдена.</p></div>"
+      + "<div class='table-wrap'><table><thead><tr><th>Месяц отчёта</th><th class='num'>Поступило</th><th>Платежи</th><th class='num'>Не пришло</th></tr></thead><tbody>"
+      + rows + "</tbody></table></div><ul>" + prior + "</ul>";
+  }
+
   function accrualCharts(chosen) {
     const labels = [];
     const payouts = [];
     const tips = [];
+    const received = [];
+    const receivedTips = [];
     const cumulative = [];
     const cumulativeTips = [];
     let running = 0;
@@ -367,15 +472,28 @@
       labels.push(label);
       payouts.push(row.payoutKop / 100);
       tips.push(label + ": начислено " + money(row.payoutKop));
+      const item = receiptOf(row.month);
+      if (!item) {
+        received.push(null);
+        receivedTips.push(label + ": поступления в выписке нет");
+      } else {
+        received.push(item.receivedKop / 100);
+        let arrived = label + ": поступило " + money(item.receivedKop);
+        if (item.outstandingKop) arrived += ", ещё не пришло " + money(item.outstandingKop);
+        receivedTips.push(arrived);
+      }
       running += row.payoutKop;
       cumulative.push(running / 100);
       cumulativeTips.push(label + ": накоплено начислений " + money(running));
     });
     return drawBars(
-      "Начисления к выплате по месяцам",
+      "Начисление и поступление по месяцам",
       labels,
-      [{ name: "Начислено к выплате", color: "#69465F", values: payouts, tips: tips }],
-      "Фактические поступления на графике не стоят: подтверждающего документа нет, и ноль вместо него не поставлен. Октябрь со звёздочкой — начисление только до 15 октября."
+      [
+        { name: "Начислено к выплате", color: "#69465F", values: payouts, tips: tips },
+        { name: "Поступило на счёт", color: "#4F6272", values: received, tips: receivedTips },
+      ],
+      "«Начислено к выплате» — строка «к оплате» после вычета аванса. «Поступило на счёт» — аванс и «к оплате», которые уже пришли. Поступление выше начисления на сумму аванса, это не вторая выплата. Сентябрь: в выписке есть аванс, конечная выплата ещё не пришла. Платежи по отчётам 2025 года в столбики не входят. Октябрь со звёздочкой — начисление только до 15 октября."
     ) + drawLine(
       "Накопительный итог начислений с начала выбранного периода",
       labels,
@@ -452,7 +570,7 @@
       if ((row.financeState === "month" || row.financeState === "partial") && row.returnsKop === 0) {
         returns += "<br><span class='muted'>подтверждено</span>";
       }
-      const paid = row.movementState === "future" ? FUTURE : NO_CASH;
+      const paid = receiptCell(row, previous);
       const partialMove = row.movementState === "partial"
         ? "<br><span class='muted'>" + esc(dayText(row.analyticsStart)) + "–" + esc(dayText(row.analyticsEnd)) + "</span>" : "";
       const partialPay = row.financeState === "partial"
@@ -489,12 +607,12 @@
       + "<td class='num'>" + totalMoney(sumKop(chosen, "commissionAfterKop", "useFinance"), readyFin) + "</td>"
       + "<td class='num'>" + totalMoney(totalOther, readyFin) + "</td>"
       + "<td class='num'>" + totalMoney(sumKop(chosen, "payoutKop", "useFinance"), readyFin) + "</td>"
-      + "<td>" + NO_CASH + "</td><td>" + esc(totalStatus) + "</td></tr>";
+      + "<td class='num'>" + receiptTotal(chosen) + "</td><td>" + esc(totalStatus) + "</td></tr>";
     return "<p class='muted scroll-hint'>Таблицу можно двигать пальцем в сторону.</p><div class='table-wrap'><table id='year-table'><thead><tr>"
       + "<th>Месяц</th><th class='num'>Заказано, шт.</th><th class='num'>Заказано</th><th class='num'>Доставлено, шт.</th><th class='num'>Доставлено</th>"
       + "<th class='num'>Возвраты</th><th class='num'>Комиссия</th><th class='num'>Прочие удержания</th><th class='num'>Начислено к выплате</th><th>Поступило</th><th>Полнота и сверка</th>"
       + "</tr></thead><tbody>" + body + total + "</tbody></table></div>"
-      + "<p class='muted'>Комиссия — вознаграждение после скидки. Скидка уже вычтена и второй раз не вычитается. Прочие удержания — авансы и маркетинг из подвала. Логистика в отчёте не указана и нулём в эту колонку не входит. Процент под суммой — изменение к предыдущему полному месяцу. Зелёный — благоприятное изменение, терракотовый — неблагоприятное. Для комиссии и прочих удержаний рост не считается благоприятным. Сама сумма цветом не отмечается: маленькая цифра не значит плохой месяц. План не задан. Нажмите месяц, чтобы открыть товары, бренды и склады.</p>";
+      + "<p class='muted'>Комиссия — вознаграждение после скидки. Скидка уже вычтена и второй раз не вычитается. Прочие удержания — авансы и маркетинг из подвала. Логистика в отчёте не указана и нулём в эту колонку не входит. Колонка «Поступило» — деньги, которые уже пришли по этому отчёту. Процент под суммой — изменение к предыдущему полному месяцу. Зелёный — благоприятное изменение, терракотовый — неблагоприятное. Для комиссии и прочих удержаний рост не считается благоприятным. Сама сумма цветом не отмечается: маленькая цифра не значит плохой месяц. План не задан. Нажмите месяц, чтобы открыть товары, бренды и склады.</p>";
   }
 
   function filterForm(state) {
@@ -536,7 +654,7 @@
       + ". Реализация " + esc(money(row.realizationKop)) + ", возвраты " + esc(money(row.returnsKop))
       + ", вознаграждение после скидки " + esc(money(row.commissionAfterKop))
       + ", авансы " + esc(money(row.advancesKop)) + ", маркетинг " + esc(money(row.marketingKop))
-      + ". Начислено к выплате " + esc(money(row.payoutKop)) + ". Фактические поступления: " + NO_CASH + ".</p>"
+      + ". Начислено к выплате " + esc(money(row.payoutKop)) + ". " + receiptSentence(row) + "</p>"
       + (rates ? "<p>Ставки вознаграждения в строках, без усреднения: " + esc(rates) + ".</p>" : "");
   }
 
@@ -646,7 +764,7 @@
       if (payout != null) {
         payoutValue = esc(money(payout));
         payoutSub = "Источник: строка «к оплате» в подвале. Период отчётов: " + esc(finWindow) + "." + finNote
-          + " Это начисление. Документа о поступлении на счёт нет, поэтому фактические поступления остаются «" + NO_CASH + "». Комиссия из этой суммы повторно не вычитается. Себестоимость и налог не загружены.";
+          + " Это начисление. Аванс из этой строки уже вычтен и приходит отдельным платежом. Комиссия из этой суммы повторно не вычитается. Себестоимость и налог не загружены.";
       }
       if (commission != null) {
         commissionValue = esc(money(commission));
@@ -658,7 +776,7 @@
       card("Доставлено / реализовано в аналитике", pairValue(movement && movement.deliveredKop, movement && movement.deliveredQty), deliveredSub, "#goods", "Товары"),
       card("Возвраты", returnsValue, returnsSub, "#year", "По месяцам"),
       card("Начислено к выплате", payoutValue, payoutSub, "#year", "По месяцам", "warn"),
-      card("Фактические поступления", "— <span class=\"hero-value\">" + NO_CASH + "</span>", "Рядом с цифрой: реестр выплат и банковская выписка не загружены, ноль не подставлен. Это не «начислено к выплате». Начисление по отчёту исполнителя стоит в соседней карточке. Период вопроса: 01.01.2026–28.10.2026.", "#ask", "Какой документ нужен", "gap"),
+      cashCard(state, chosen),
       card("Комиссия и другие удержания", commissionValue, commissionSub, "#year", "По месяцам"),
     ].join("");
     const goods = movement ? movement.products : [];
@@ -668,7 +786,7 @@
       : "";
     return "<p class='muted'>" + esc(DATA.entity) + ". " + esc(DATA.taxNote) + " Сейчас открыт кабинет Л’Этуаль.</p>"
       + filterForm(state)
-      + "<section id='period'><p class='lead' id='paid'>Крупные цифры ниже — заказы и начисления за выбранные даты. Фактический перевод на счёт в них не подставлен.</p>"
+      + "<section id='period'><p class='lead' id='paid'>Крупные цифры ниже — заказы, начисления и деньги, которые уже пришли по отчётам выбранных дат.</p>"
       + "<div class='grid cards'>" + cards + "</div></section>"
       + "<h2>Графики</h2>" + orderChart(chosen, state.brand) + accrualCharts(chosen)
       + "<section id='year'><h2>Месяцы 2026</h2><div class='panel'><p>Январь 2026 на этой таблице есть: у него свой файл заказов и свой отчёт исполнителя. Свод с 1 января по 27 октября в итог не прибавляется и по месяцам не режется.</p></div>"
@@ -681,7 +799,8 @@
       + "<li>Wildberries, кабинет ИП и кабинет ООО — не подключено. Нет данных.</li>"
       + "<li>Ozon, кабинеты ИП и ООО — не подключено. Нет данных.</li>"
       + "<li>Свой интернет-магазин — не подключено. Нет данных.</li></ul></div>"
-      + "<div class='ask' id='ask'><p><b>Какой документ нужен.</b> Реестр выплат Л’Этуаль или банковская выписка с 1 января 2026 года. По ней можно будет назвать сумму, которая пришла на счёт. Пока документа нет, фактические поступления остаются «" + NO_CASH + "».</p></div>";
+      + receiptPanel()
+      + "<div class='ask' id='ask'><p><b>Как сверены поступления.</b> Две выписки с 1 января по 29 октября 2026. Плательщик — " + esc(DATA.receipts.payer) + ". Номера счетов и платёжек на страницу не вынесены. Платёж с номером загруженного отчёта совпал со строкой «к оплате». Платёж промежуточного отчёта совпал со строкой «всего авансов» того же месяца. Отчёты декабря 2025, оплаченные уже в 2026 году, в месяцы 2026 не прибавлены. " + NO_CASH + " остаётся только там, где платежа в выписке нет.</p></div>";
   }
 
   function render() {
