@@ -663,7 +663,7 @@
   function profitMoney(state, value) {
     if (state === "future") return FUTURE;
     if (state === "missing") return MISSING;
-    if (state === "known" || state === "partial") return money(value);
+    if (state === "known" || state === "partial" || state === "preliminary") return money(value);
     return NOT_CALC;
   }
 
@@ -698,6 +698,7 @@
         adsState: "missing", logisticsState: "missing", storageState: "missing", returnsHandlingState: "missing",
         marketplaceState: "missing", afterState: "missing", overheadState: "missing",
         taxState: "not_calculated", profitState: "not_calculated",
+        preliminaryState: "missing", preliminaryKop: null,
       };
     }
     function sum(key) {
@@ -719,6 +720,25 @@
       grossKop: withRevenue.every(function (row) { return row.grossState === "known"; }) ? withRevenue.reduce(function (acc, row) { return acc + row.revenueKop - row.cogsKop; }, 0) : null,
       commissionState: every("commissionState", "known") ? "known" : "missing",
       commissionKop: every("commissionState", "known") ? active.reduce(function (acc, row) { return acc + row.commissionKop; }, 0) : null,
+      preliminaryState: (function () {
+        var complete = withRevenue.filter(function (row) { return row.preliminaryState === "preliminary"; });
+        var partials = withRevenue.filter(function (row) { return row.preliminaryState === "partial"; });
+        if (complete.length) return partials.length ? "partial" : "preliminary";
+        if (partials.length) return "partial";
+        return "missing";
+      })(),
+      preliminaryKop: (function () {
+        var complete = withRevenue.filter(function (row) { return row.preliminaryState === "preliminary"; });
+        var partials = withRevenue.filter(function (row) { return row.preliminaryState === "partial"; });
+        var chosen = complete.length ? complete : partials;
+        if (!chosen.length) return null;
+        return chosen.reduce(function (acc, row) { return acc + row.preliminaryKop; }, 0);
+      })(),
+      preliminaryMonths: (function () {
+        var complete = withRevenue.filter(function (row) { return row.preliminaryState === "preliminary"; });
+        var partials = withRevenue.filter(function (row) { return row.preliminaryState === "partial"; });
+        return (complete.length ? complete : partials).map(function (row) { return row.month; });
+      })(),
       adsState: every("adsState", "known") ? "known" : "missing",
       adsKop: every("adsState", "known") ? active.reduce(function (acc, row) { return acc + row.adsKop; }, 0) : null,
       logisticsState: every("logisticsState", "known") ? "known" : "missing",
@@ -732,6 +752,29 @@
       partial: withRevenue.some(function (row) { return row.partial; }),
       openingLoaded: !!(DATA.profit && DATA.profit.openingLoaded),
     };
+  }
+
+  function preliminaryScope(rows, view) {
+    var months = view.preliminaryMonths || [];
+    var octoberLeftOut = months.length && months.indexOf("2026-10") < 0 && rows.some(function (row) {
+      return row.month === "2026-10" && row.preliminaryState === "partial";
+    });
+    return octoberLeftOut ? ", январь–сентябрь" : "";
+  }
+
+  function commissionReconciliation(rows) {
+    var body = rows.filter(function (row) { return row.revenueState !== "future"; }).map(function (row) {
+      var usedState = row.commissionState === "known" ? "known" : row.commissionState;
+      return "<tr><td>" + esc(MONTH_NAME[row.month.slice(5)]) + "</td><td class='num'>"
+        + esc(profitMoney(row.commissionReportKop == null ? "missing" : "known", row.commissionReportKop))
+        + "</td><td class='num'>" + esc(profitMoney(usedState, row.commissionState === "known" ? row.commissionKop : null))
+        + "</td><td class='num'>" + esc(profitMoney(row.commissionGapKop == null ? "missing" : "known", row.commissionGapKop))
+        + "</td><td>" + esc(row.commissionGaps || "") + "</td></tr>";
+    }).join("");
+    if (!body) return "";
+    return "<h3>Сверка комиссии</h3><p class='muted'>Комиссия по отчёту — вознаграждение минус скидка исполнителя из подвала. В расчёте — та же сумма, если строки с подвалом сошлись. Скидка и НДС второй раз не вычитаются: в колонке вознаграждения отдельного НДС нет, а скидка уже вычтена в этой сумме. Вознаграждение строки равно заявленной цене × ставка × количество.</p>"
+      + "<div class='table-wrap'><table><thead><tr><th>Месяц</th><th class='num'>Комиссия по отчёту</th><th class='num'>В расчёте</th><th class='num'>Расхождение</th><th>Пробелы</th></tr></thead><tbody>"
+      + body + "</tbody></table></div>";
   }
 
   function profitSection(state) {
@@ -767,6 +810,7 @@
       line("Результат после расходов площадки", profitMoney(view.afterState, null)),
       line("Общие расходы", profitMoney(view.overheadState, null)),
       line("Налоги", profitMoney(view.taxState, null)),
+      line("Предварительная прибыль по учтённым суммам" + preliminaryScope(rows, view), profitMoney(view.preliminaryState, view.preliminaryKop)),
       line("Итоговая прибыль", profitMoney(view.profitState, null)),
     ].join("");
     const monthRows = rows.map(function (row) {
@@ -774,13 +818,14 @@
       return "<tr><td>" + esc(MONTH_NAME[row.month.slice(5)]) + "</td><td class='num'>" + esc(profitMoney(row.revenueState, row.revenueKop)) + extra
         + "</td><td class='num'>" + esc(profitMoney(row.cogsState, row.cogsKop))
         + "</td><td class='num'>" + esc(shareText(row.revenueState, row.saleKop, row.confirmedSaleKop))
+        + "</td><td class='num'>" + esc(profitMoney(row.preliminaryState, row.preliminaryKop))
         + "</td><td class='num'>" + esc(profitMoney(row.profitState, null)) + "</td></tr>";
     }).join("");
     return "<section id='profit'><h2>Прибыль</h2><div class='panel'>" + notes.map(function (note) { return "<p>" + esc(note) + "</p>"; }).join("")
       + "</div><div class='table-wrap'><table><thead><tr><th>Показатель</th><th class='num'>Сумма</th></tr></thead><tbody>" + body + "</tbody></table></div>"
-      + "<p class='muted'>Комиссия — вознаграждение после скидки по строкам этого кабинета. Одна ставка на все бренды не ставится, и из «к оплате» комиссия повторно не вычитается. Аванс в расходы не входит. Логистика, хранение и обработка возвратов в отчёте Л’Этуаль не указаны, поэтому расходы площадки целиком не сложены. Налог не посчитан: режим и база этого юрлица не заданы. Пока строка итоговой прибыли не рассчитана, прибылью она не называется.</p>"
-      + "<h3>По месяцам выбранных дат</h3><div class='table-wrap'><table><thead><tr><th>Месяц</th><th class='num'>Выручка с учётом возвратов</th><th class='num'>Себестоимость</th><th class='num'>Доля с себестоимостью</th><th class='num'>Итоговая прибыль</th></tr></thead><tbody>"
-      + monthRows + "</tbody></table></div></section>";
+      + "<p class='muted'>Комиссия — фактически удержанное вознаграждение: сумма строк минус скидка исполнителя. Она сходится с подвалом и второй раз из «к оплате» не вычитается. Прошлые месяцы по текущему тарифу не пересчитываются. Аванс в расходы не входит. Предварительная прибыль — выручка с учётом возвратов минус эта комиссия и маркетинг. Себестоимость, логистика, хранение, обработка возвратов и налог в неё не входят и нулём не подставлены. Итоговой прибылью она не называется. Неполный отчёт в сумму января–сентября не входит.</p>"
+      + "<h3>По месяцам выбранных дат</h3><div class='table-wrap'><table><thead><tr><th>Месяц</th><th class='num'>Выручка с учётом возвратов</th><th class='num'>Себестоимость</th><th class='num'>Доля с себестоимостью</th><th class='num'>Предварительная по учтённым</th><th class='num'>Итоговая прибыль</th></tr></thead><tbody>"
+      + monthRows + "</tbody></table></div>" + commissionReconciliation(rows) + "</section>";
   }
 
   function profitMonthBlock(row, brand) {
@@ -802,6 +847,7 @@
       line("Результат после расходов площадки", NOT_CALC),
       line("Общие расходы", MISSING),
       line("Налоги", NOT_CALC),
+      line("Предварительная прибыль по учтённым суммам", profitMoney(row.preliminaryState, row.preliminaryKop)),
       line("Итоговая прибыль", NOT_CALC),
     ].join("");
     const brandNote = brand ? "<p class='muted'>Фильтр бренда на эту таблицу не действует: подвал отчёта общий на кабинет.</p>" : "";
@@ -931,6 +977,9 @@
           commissionRate: item.commissionRate == null || item.commissionRate === "" ? null : item.commissionRate,
           commissionRateSource: item.commissionRateSource || "",
           commissionRateNote: item.commissionRateNote || "",
+          commissionObservedFrom: item.commissionObservedFrom || "",
+          commissionObservedTo: item.commissionObservedTo || "",
+          commissionRateStatus: item.commissionRateStatus || "",
           otherSellingCostsRub: item.otherSellingCostsRub == null || item.otherSellingCostsRub === "" ? null : item.otherSellingCostsRub
         };
         row.purchaseRub = purchaseFrom(row);
@@ -1048,8 +1097,8 @@
     if (/мл/.test(row.volume) && ml >= 200 && row.weightKg != null && row.weightKg < ml / 2000) {
       checks.push("Сверить объём и вес: для " + row.volume + " указан вес " + weightText(row) + ". Возможна ошибка сопоставления варианта; себестоимость требует проверки.");
     }
-    if (row.commissionRateSource === "brand") {
-      checks.push("Ставка комиссии перенесена с других товаров бренда. Для этого артикула и текущей даты она не подтверждена.");
+    if (row.commissionRateSource === "brand" || row.commissionRateSource === "tariff") {
+      checks.push("Рассчитано по тарифу. Для этого артикула своя строка не найдена.");
     }
     if (econ.list != null && econ.sale != null && econ.sale > econ.list) {
       checks.push("Цена после скидки выше витринной. Проверьте выгрузку цен.");
@@ -1116,11 +1165,25 @@
       + "<div class='unit-metrics'><div><span>Цена продажи</span><strong>" + esc(rub(econ.sale)) + "</strong><small>после скидки, по выгрузке</small></div>"
       + "<div><span>Товар и подготовка</span><strong>" + esc(rub(row.accountedRub)) + "</strong><small>" + (row.freightExcluded ? "закупка без доставки до Москвы, этикетка на товар, упаковщик" : "закупка, доставка, упаковка") + "</small></div>"
       + "<div class='unit-result'><span>Остаток с продажи · оценка</span><strong>" + esc(rub(econ.profit)) + "</strong><small>" + (econ.margin == null ? "нужны исходные данные" : esc(percentText(econ.margin)) + " от цены · до неучтённых расходов") + "</small></div></div>"
-      + "<p class='unit-deductions'>Комиссия: " + esc(percentText(econ.rate)) + " / " + esc(rub(econ.commission)) + " · Налог: " + esc(percentText(econ.taxRate)) + " / " + esc(rub(econ.tax)) + "</p>"
+      + "<p class='unit-deductions'>Комиссия: " + esc(percentText(econ.rate)) + (row.commissionObservedFrom ? " с " + esc(dayText(row.commissionObservedFrom)) : "") + " / " + esc(rub(econ.commission)) + " · Налог: " + esc(percentText(econ.taxRate)) + " / " + esc(rub(econ.tax)) + "</p>"
       + (row.freightExcluded ? "<p class='unit-notice'>Доставка до Москвы не входит в закупку и не считается. Индивидуальная коробочка и этикетка на коробку не применяются.</p>" : "")
       + (audit.missing.length ? "<p class='unit-notice'>Заполнить: " + esc(audit.missing.join(", ")) + ".</p>" : "")
       + (audit.checks.length ? "<p class='unit-notice'>" + esc(audit.checks[0]) + "</p>" : "")
       + unitDetail(row) + "</article>";
+  }
+
+  function tariffHistory() {
+    var rows = (DATA.unitEconomics && DATA.unitEconomics.tariffs) || [];
+    if (!rows.length) return "";
+    var body = rows.map(function (row) {
+      return "<tr><td>" + esc(row.article) + "</td><td class='num'>" + esc(percentText(row.rate)) + "</td><td>"
+        + esc(dayText(row.observedFrom)) + "</td><td>" + esc(dayText(row.observedTo)) + "</td><td>"
+        + esc(row.source) + "</td><td>" + esc(row.status) + (row.current ? " · текущая карточка" : "") + "</td></tr>";
+    }).join("");
+    return "<details class='unit-breakdown'><summary>История наблюдаемых ставок</summary>"
+      + "<p class='note'>Дата — первая и последняя строка отчёта с этой ставкой. Это не дата изменения договора. Ставка без строки с июня 2026 на текущую продажу не ставится.</p>"
+      + "<div class='table-wrap'><table><thead><tr><th>Артикул</th><th class='num'>Ставка</th><th>Наблюдается с</th><th>Последняя строка</th><th>Документ-источник</th><th>Статус</th></tr></thead><tbody>"
+      + body + "</tbody></table></div></details>";
   }
 
   function renderUnitPage(state) {
@@ -1129,7 +1192,8 @@
     var pricesDate = dayText(DATA.unitEconomics && DATA.unitEconomics.priceAsOf) || "дата не указана";
     return "<section id='unit'><div class='unit-heading'><div><h2>Экономика одного товара</h2>"
       + "<p class='lead'>За сколько продаём, сколько тратим и что остаётся с одной штуки.</p></div><span class='unit-date'>Цены: " + esc(pricesDate) + "</span></div>"
-      + "<div class='unit-intro'><strong>Сейчас это предварительная оценка.</strong> Часть расходов и текущие комиссии ещё нужно сверить. Положительный остаток не означает чистую прибыль. Цены в магазине здесь не меняются.</div>"
+      + "<div class='unit-intro'><strong>Сейчас это предварительная оценка.</strong> Часть расходов и текущие комиссии ещё нужно сверить. Положительный остаток не означает чистую прибыль. Цены в магазине здесь не меняются. Историческая ставка на текущую продажу не переносится.</div>"
+      + tariffHistory()
       + "<div class='unit-overview' aria-label='Готовность расчётов'>"
       + "<div><strong id='unit-total'>" + rows.length + "</strong><span>товаров в выборке</span></div>"
       + "<div><strong id='unit-estimates'>—</strong><span>с предварительным результатом</span></div>"
