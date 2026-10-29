@@ -813,8 +813,13 @@
     if (value == null || value === "") return MISSING;
     var number = Number(value);
     if (!isFinite(number)) return MISSING;
-    var text = String(Math.round(number * 100) / 100);
-    return text.replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " ₽";
+    var negative = number < 0;
+    var cents = Math.round(Math.abs(number) * 100);
+    var whole = Math.floor(cents / 100);
+    var frac = cents % 100;
+    var text = String(whole).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    if (frac) text += "," + String(frac).padStart(2, "0");
+    return (negative ? "−" : "") + text + " ₽";
   }
 
   function knownAmount(value) {
@@ -936,7 +941,9 @@
 
   function weightText(row) {
     if (row.weightKg == null) return MISSING;
-    return String(row.weightKg).replace(".", ",") + " кг";
+    var number = Number(row.weightKg);
+    if (!isFinite(number)) return MISSING;
+    return (Math.round(number * 100) / 100).toFixed(2).replace(".", ",") + " кг";
   }
 
   function tariffText(row) {
