@@ -810,8 +810,51 @@
   }
 
   function rub(value) {
-    if (value == null) return MISSING;
-    return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " ₽";
+    if (value == null || value === "") return MISSING;
+    var number = Number(value);
+    if (!isFinite(number)) return MISSING;
+    var text = String(Math.round(number * 100) / 100);
+    return text.replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " ₽";
+  }
+
+  function knownAmount(value) {
+    if (value == null || value === "") return null;
+    var number = Number(value);
+    if (!isFinite(number)) return null;
+    return Math.round(number * 100) / 100;
+  }
+
+  function sameAmount(left, right) {
+    return Math.round(left * 100) === Math.round(right * 100);
+  }
+
+  // Одна статья берётся один раз: своё значение SKU, иначе значение группы.
+  function storedAmount(item, group, key) {
+    if (item && item[key] != null && item[key] !== "") return item[key];
+    if (group && group[key] != null && group[key] !== "") return group[key];
+    return null;
+  }
+
+  // Полная себестоимость = база до Москвы + этикетка + коробочка + работа упаковщика.
+  // Закупка и международная доставка уже внутри базы и второй раз не прибавляются.
+  // Сертификация, маркировка, склад, фулфилмент и доставка до склада площадки
+  // в этот список не входят, пока нет утверждённой стоимости на штуку.
+  var FULL_UNIT_COST_PARTS = ["baseRub", "labelRub", "boxRub", "packerRub"];
+
+  function fullUnitCost(source) {
+    if (!source) return null;
+    var purchase = knownAmount(source.purchaseRub);
+    var freight = knownAmount(source.freightRub);
+    var base = knownAmount(source.baseRub);
+    if (base == null || purchase == null || freight == null) return null;
+    if (!sameAmount(purchase + freight, base)) return null;
+    var total = 0;
+    for (var i = 0; i < FULL_UNIT_COST_PARTS.length; i++) {
+      var amount = knownAmount(source[FULL_UNIT_COST_PARTS[i]]);
+      if (amount == null) return null;
+      total += amount;
+    }
+    return Math.round(total * 100) / 100;
   }
 
   function unitCatalog() {
@@ -820,21 +863,26 @@
     const rows = [];
     block.groups.forEach(function (group) {
       (group.items || []).forEach(function (item) {
-        rows.push({
+        var row = {
           brand: group.brand || "",
           article: item.article || "",
           name: item.name || "",
           productType: group.productType || "",
           volume: group.volume || "",
           category: item.category || "",
-          purchaseRub: group.purchaseRub,
-          freightRub: group.freightRub,
+          purchaseRub: storedAmount(item, group, "purchaseRub"),
+          freightRub: storedAmount(item, group, "freightRub"),
           weightKg: group.weightKg,
           weightStatus: group.weightStatus || "",
           tariffRub: group.tariffRub,
-          baseRub: group.baseRub,
+          baseRub: storedAmount(item, group, "baseRub"),
+          labelRub: storedAmount(item, group, "labelRub"),
+          boxRub: storedAmount(item, group, "boxRub"),
+          packerRub: storedAmount(item, group, "packerRub"),
           status: group.status || ""
-        });
+        };
+        row.fullCostRub = fullUnitCost(row);
+        rows.push(row);
       });
     });
     return rows;
@@ -862,16 +910,28 @@
     return String(row.weightKg).replace(".", ",") + " кг";
   }
 
+  function tariffText(row) {
+    if (row.tariffRub == null || row.tariffRub === "") return MISSING;
+    return rub(row.tariffRub) + "/кг";
+  }
+
+  function costLine(sign, label, value, strong) {
+    return "<li" + (strong ? " class='sum'" : "") + ">" + esc(sign + label) + ": " + esc(rub(value)) + "</li>";
+  }
+
   function unitDetail(row) {
-    return "<details class='unit-detail'><summary>Подробности</summary><p>"
-      + "Закупочная стоимость: " + esc(rub(row.purchaseRub)) + ". "
-      + "Международная доставка: " + esc(rub(row.freightRub)) + ". "
-      + "Расчётный вес: " + esc(weightText(row)) + ". "
+    return "<details class='unit-detail'><summary>Подробности</summary><ul>"
+      + costLine("", "Закупочная стоимость", row.purchaseRub, false)
+      + costLine("+ ", "Международная доставка", row.freightRub, false)
+      + costLine("= ", "База до Москвы", row.baseRub, true)
+      + costLine("+ ", "Этикетка", row.labelRub, false)
+      + costLine("+ ", "Коробочка", row.boxRub, false)
+      + costLine("+ ", "Работа упаковщика", row.packerRub, false)
+      + costLine("= ", "Полная себестоимость товара", row.fullCostRub, true)
+      + "</ul><p class='meta'>Расчётный вес: " + esc(weightText(row)) + ". "
+      + "Тариф международной доставки: " + esc(tariffText(row)) + ". "
       + "Статус веса: " + esc(row.weightStatus || MISSING) + ". "
-      + "Тариф доставки: " + esc(rub(row.tariffRub)) + ". "
-      + "Базовая себестоимость до Москвы: " + esc(rub(row.baseRub)) + ". "
-      + "Статус расчёта: " + esc(row.status || MISSING) + "."
-      + "</p></details>";
+      + "Статус расчёта: " + esc(row.status || MISSING) + ".</p></details>";
   }
 
   function unitTableRow(row) {
@@ -885,6 +945,10 @@
       + "<td class='num'>" + esc(rub(row.purchaseRub)) + "</td>"
       + "<td class='num'>" + esc(rub(row.freightRub)) + "</td>"
       + "<td class='num'>" + esc(rub(row.baseRub)) + "</td>"
+      + "<td class='num'>" + esc(rub(row.labelRub)) + "</td>"
+      + "<td class='num'>" + esc(rub(row.boxRub)) + "</td>"
+      + "<td class='num'>" + esc(rub(row.packerRub)) + "</td>"
+      + "<td class='num full-cost'>" + esc(rub(row.fullCostRub)) + "</td>"
       + "<td>" + esc(row.status || MISSING) + "</td></tr>";
   }
 
@@ -896,6 +960,7 @@
     let html = "<section id='unit'><h2>Юнит-экономика</h2>"
       + "<p>Этот раздел содержит себестоимость товаров и в дальнейшем будет использоваться для расчёта прибыльности по каналам продаж.</p>"
       + "<div class='panel'><p>База до Москвы = закупка + международная доставка.</p>"
+      + "<p>Полная себестоимость товара = база до Москвы + этикетка + коробочка + работа упаковщика.</p>"
       + "<p>Комиссии площадок, налог, маркировка, сертификация, склад, фулфилмент и другие расходы будут добавляться отдельными статьями.</p></div>";
     if (!rows.length) {
       return html + "<div class='panel'><p>Для этого бренда расчёт ещё не заполнен. Ноль не подставлен.</p></div></section>";
@@ -910,7 +975,9 @@
       + "<p class='scroll-hint'>Таблицу можно сдвинуть вбок.</p>"
       + "<div class='table-wrap'><table id='unit-table'><thead><tr>"
       + "<th>Бренд</th><th>Артикул</th><th>Наименование</th><th>Тип товара</th><th>Объём</th><th>Категория Л’Этуаль</th>"
-      + "<th class='num'>Закупочная стоимость</th><th class='num'>Международная доставка</th><th class='num'>Базовая себестоимость до Москвы</th><th>Статус расчёта</th>"
+      + "<th class='num'>Закупка</th><th class='num'>Международная доставка</th><th class='num'>База до Москвы</th>"
+      + "<th class='num'>Этикетка</th><th class='num'>Коробочка</th><th class='num'>Работа упаковщика</th>"
+      + "<th class='num full-cost'>Полная себестоимость</th><th>Статус расчёта</th>"
       + "</tr></thead><tbody>" + rows.map(unitTableRow).join("") + "</tbody></table></div></section>";
     return html;
   }
