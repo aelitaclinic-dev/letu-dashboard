@@ -826,7 +826,7 @@
     return "<tr class='unit-sku' data-rate-note='" + esc(item.letuRateNote || "") + "'><td>" + esc(item.article) + "<br><span class='muted'>" + esc(item.name) + "</span><br><span class='muted'>" + esc(item.category || "") + "</span></td>"
       + "<td><input class='u-base' type='number' min='0' step='0.01' value='" + esc(base) + "'></td>"
       + "<td><input class='u-label' type='number' min='0' step='0.01' placeholder='пусто' value='" + esc(item.labelRub == null ? "" : item.labelRub) + "'></td>"
-      + "<td><input class='u-box' type='number' min='0' step='0.01' placeholder='пусто'></td>"
+      + "<td><input class='u-box' type='number' min='0' step='0.01' placeholder='пусто' value='" + esc(item.boxRub == null ? "" : item.boxRub) + "'></td>"
       + "<td><input class='u-period' type='number' min='0' step='0.01' placeholder='пусто'></td>"
       + "<td><input class='u-qty' type='number' min='0' step='1' placeholder='пусто'></td>"
       + "<td><input class='u-direct' type='number' min='0' step='0.01' placeholder='пусто'></td>"
@@ -873,6 +873,7 @@
         + ", международная доставка " + esc(rub(group.freightRub))
         + ", база до Москвы " + esc(rub(group.baseRub))
         + ". Этикетка " + esc(rub(group.labelRub))
+        + ", коробочка " + esc(rub(group.boxRub))
         + ". Вес " + weight + " кг, " + esc(group.weightStatus) + ". Статус: " + esc(group.status)
         + ". WB и Ozon: комиссия и логистика неизвестны, в таблице ниже считается Л’Этуаль.</p>";
       const rows = (group.items || []).map(function (item) { return unitRow(item, group.baseRub); }).join("");
