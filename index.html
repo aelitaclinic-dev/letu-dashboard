@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MA Distribution — Л’Этуаль, 2026</title>
-<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="app.css?v=20261029">
 </head>
 <body>
 <header class="top">
@@ -17,11 +17,14 @@
   <a href="#stock">Остатки</a>
 </nav>
 <main id="top">
-  <div class="banner" id="freshness">Загрузка подготовленной выгрузки…</div>
+  <details class="fold" id="freshness">
+    <summary><span id="fresh-visible">Данные на 28 октября 2026 · период 01.01.2026–28.10.2026</span></summary>
+    <p id="fresh-more">Подробности об актуальности откроются здесь.</p>
+  </details>
   <div id="screen"></div>
   <footer class="foot">Страница только для чтения. Цены, карточки, остатки и реклама в магазинах отсюда не меняются. На сайте сводные показатели, без заказов, документов и выписки.</footer>
 </main>
-<script src="data.js"></script>
-<script src="app.js"></script>
+<script src="data.js?v=20261029"></script>
+<script src="app.js?v=20261029"></script>
 </body>
 </html>

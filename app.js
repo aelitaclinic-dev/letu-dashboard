@@ -163,11 +163,16 @@
     return "0%";
   }
 
-  function delta(current, previous, stateKey, valueKey) {
+  function delta(current, previous, stateKey, valueKey, favorable) {
+    if (favorable == null) favorable = true;
     if (current[stateKey] === "future" || !previous) return "";
     const bothFull = current[stateKey] === "month" && previous[stateKey] === "month";
     if (bothFull && previous[valueKey] && current[valueKey] != null) {
-      return "<span class='delta'>" + esc(changeText(current[valueKey], previous[valueKey])) + "</span>";
+      const text = changeText(current[valueKey], previous[valueKey]);
+      if (text === "0%") return "<span class='delta'>" + esc(text) + "</span>";
+      const rose = text.charAt(0) === "+";
+      const good = favorable ? rose : !rose;
+      return "<span class='delta " + (good ? "delta-up" : "delta-down") + "'>" + esc(text) + "</span>";
     }
     if (current[stateKey] === "partial" || previous[stateKey] === "partial") {
       return "<span class='delta'>не сравнивается</span>";
@@ -240,13 +245,13 @@
     for (let step = 0; step < 4; step += 1) {
       const value = peak * step / 3;
       const y = padT + plotH * (1 - value / peak);
-      svg += "<line x1='" + padL + "' y1='" + y.toFixed(1) + "' x2='" + (width - padR) + "' y2='" + y.toFixed(1) + "' stroke='#e3dccf'/>";
-      svg += "<text x='" + (padL - 6) + "' y='" + (y + 4).toFixed(1) + "' text-anchor='end' font-size='11' fill='#5e584f'>" + esc(axisLabel(step === 0 ? 0 : value)) + "</text>";
+      svg += "<line x1='" + padL + "' y1='" + y.toFixed(1) + "' x2='" + (width - padR) + "' y2='" + y.toFixed(1) + "' stroke='#E5DDD8'/>";
+      svg += "<text x='" + (padL - 6) + "' y='" + (y + 4).toFixed(1) + "' text-anchor='end' font-size='11' fill='#6B6168'>" + esc(axisLabel(step === 0 ? 0 : value)) + "</text>";
     }
     const baseline = padT + plotH;
     labels.forEach(function (label, index) {
       const cx = padL + (index + 0.5) * group;
-      svg += "<text x='" + cx.toFixed(1) + "' y='" + (height - 12) + "' text-anchor='middle' font-size='11' fill='#5e584f'>" + esc(label) + "</text>";
+      svg += "<text x='" + cx.toFixed(1) + "' y='" + (height - 12) + "' text-anchor='middle' font-size='11' fill='#6B6168'>" + esc(label) + "</text>";
       const totalW = count * barW + (count - 1) * 3;
       const origin = cx - totalW / 2;
       series.forEach(function (item, seriesIndex) {
@@ -286,14 +291,14 @@
     for (let step = 0; step < 4; step += 1) {
       const value = peak * step / 3;
       const y = padT + plotH * (1 - value / peak);
-      svg += "<line x1='" + padL + "' y1='" + y.toFixed(1) + "' x2='" + (width - padR) + "' y2='" + y.toFixed(1) + "' stroke='#e3dccf'/>";
-      svg += "<text x='" + (padL - 6) + "' y='" + (y + 4).toFixed(1) + "' text-anchor='end' font-size='11' fill='#5e584f'>" + esc(axisLabel(step === 0 ? 0 : value)) + "</text>";
+      svg += "<line x1='" + padL + "' y1='" + y.toFixed(1) + "' x2='" + (width - padR) + "' y2='" + y.toFixed(1) + "' stroke='#E5DDD8'/>";
+      svg += "<text x='" + (padL - 6) + "' y='" + (y + 4).toFixed(1) + "' text-anchor='end' font-size='11' fill='#6B6168'>" + esc(axisLabel(step === 0 ? 0 : value)) + "</text>";
     }
     let segment = [];
     const circles = [];
     values.forEach(function (value, index) {
       const cx = padL + (index + 0.5) * group;
-      svg += "<text x='" + cx.toFixed(1) + "' y='" + (height - 12) + "' text-anchor='middle' font-size='11' fill='#5e584f'>" + esc(labels[index]) + "</text>";
+      svg += "<text x='" + cx.toFixed(1) + "' y='" + (height - 12) + "' text-anchor='middle' font-size='11' fill='#6B6168'>" + esc(labels[index]) + "</text>";
       if (value == null) {
         if (segment.length) circles.push(segment);
         segment = [];
@@ -306,13 +311,13 @@
     circles.forEach(function (points) {
       if (points.length > 1) {
         const d = points.map(function (point, index) { return (index ? "L" : "M") + point[0].toFixed(1) + " " + point[1].toFixed(1); }).join(" ");
-        svg += "<path d='" + d + "' fill='none' stroke='#8a4b08' stroke-width='2'/>";
+        svg += "<path d='" + d + "' fill='none' stroke='#5E5878' stroke-width='2'/>";
       }
       points.forEach(function (point) {
-        svg += "<circle cx='" + point[0].toFixed(1) + "' cy='" + point[1].toFixed(1) + "' r='3.5' fill='#8a4b08'><title>" + esc(point[2]) + "</title></circle>";
+        svg += "<circle cx='" + point[0].toFixed(1) + "' cy='" + point[1].toFixed(1) + "' r='3.5' fill='#5E5878'><title>" + esc(point[2]) + "</title></circle>";
       });
     });
-    svg += "</svg><div class='legend'><span><i class='swatch' style='background:#8a4b08'></i>Накоплено начислений</span></div><p class='muted'>" + esc(note) + "</p></div>";
+    svg += "</svg><div class='legend'><span><i class='swatch' style='background:#5E5878'></i>Накоплено начислений</span></div><p class='muted'>" + esc(note) + "</p></div>";
     return svg;
   }
 
@@ -342,8 +347,8 @@
       "Заказы и реализация по месяцам",
       labels,
       [
-        { name: "Заказано", color: "#b8883d", values: ordered, tips: orderedTips },
-        { name: "Доставлено / реализовано в аналитике", color: "#1f4b3a", values: delivered, tips: deliveredTips },
+        { name: "Заказано", color: "#8C5E4A", values: ordered, tips: orderedTips },
+        { name: "Доставлено / реализовано в аналитике", color: "#69465F", values: delivered, tips: deliveredTips },
       ],
       "Звёздочка — неполный месяц. Столбик есть только там, где загружен свой файл. Ноябрь и декабрь на графике не стоят: период ещё не наступил. Свод за 1 января–27 октября в эти столбики не входит."
     );
@@ -369,7 +374,7 @@
     return drawBars(
       "Начисления к выплате по месяцам",
       labels,
-      [{ name: "Начислено к выплате", color: "#1f4b3a", values: payouts, tips: tips }],
+      [{ name: "Начислено к выплате", color: "#69465F", values: payouts, tips: tips }],
       "Фактические поступления на графике не стоят: подтверждающего документа нет, и ноль вместо него не поставлен. Октябрь со звёздочкой — начисление только до 15 октября."
     ) + drawLine(
       "Накопительный итог начислений с начала выбранного периода",
@@ -442,6 +447,7 @@
       const name = MONTH_NAME[row.month.slice(5)];
       const deductions = (row.financeState === "month" || row.financeState === "partial")
         ? (row.advancesKop || 0) + (row.marketingKop || 0) : null;
+      row.deductionsKop = deductions;
       let returns = amountCell(row, "financeState", row.returnsKop);
       if ((row.financeState === "month" || row.financeState === "partial") && row.returnsKop === 0) {
         returns += "<br><span class='muted'>подтверждено</span>";
@@ -457,8 +463,8 @@
         + "<td class='num'>" + countCell(row, "movementState", row.deliveredQty) + "</td>"
         + "<td class='num'>" + amountCell(row, "movementState", row.deliveredKop) + "</td>"
         + "<td class='num'>" + returns + "</td>"
-        + "<td class='num'>" + amountCell(row, "financeState", row.commissionAfterKop) + "</td>"
-        + "<td class='num'>" + amountCell(row, "financeState", deductions) + "</td>"
+        + "<td class='num'>" + amountCell(row, "financeState", row.commissionAfterKop) + delta(row, previous, "financeState", "commissionAfterKop", false) + "</td>"
+        + "<td class='num'>" + amountCell(row, "financeState", deductions) + delta(row, previous, "financeState", "deductionsKop", false) + "</td>"
         + "<td class='num'>" + amountCell(row, "financeState", row.payoutKop) + delta(row, previous, "financeState", "payoutKop") + partialPay + "</td>"
         + "<td>" + esc(paid) + "</td><td>" + esc(statusText(row)) + "</td></tr>";
       previous = row;
@@ -488,7 +494,7 @@
       + "<th>Месяц</th><th class='num'>Заказано, шт.</th><th class='num'>Заказано</th><th class='num'>Доставлено, шт.</th><th class='num'>Доставлено</th>"
       + "<th class='num'>Возвраты</th><th class='num'>Комиссия</th><th class='num'>Прочие удержания</th><th class='num'>Начислено к выплате</th><th>Поступило</th><th>Полнота и сверка</th>"
       + "</tr></thead><tbody>" + body + total + "</tbody></table></div>"
-      + "<p class='muted'>Комиссия — вознаграждение после скидки. Скидка уже вычтена и второй раз не вычитается. Прочие удержания — авансы и маркетинг из подвала. Логистика в отчёте не указана и нулём в эту колонку не входит. Процент под суммой — изменение к предыдущему полному месяцу. Нажмите месяц, чтобы открыть товары, бренды и склады.</p>";
+      + "<p class='muted'>Комиссия — вознаграждение после скидки. Скидка уже вычтена и второй раз не вычитается. Прочие удержания — авансы и маркетинг из подвала. Логистика в отчёте не указана и нулём в эту колонку не входит. Процент под суммой — изменение к предыдущему полному месяцу. Зелёный — благоприятное изменение, терракотовый — неблагоприятное. Для комиссии и прочих удержаний рост не считается благоприятным. Сама сумма цветом не отмечается: маленькая цифра не значит плохой месяц. План не задан. Нажмите месяц, чтобы открыть товары, бренды и склады.</p>";
   }
 
   function filterForm(state) {
@@ -652,7 +658,7 @@
       card("Доставлено / реализовано в аналитике", pairValue(movement && movement.deliveredKop, movement && movement.deliveredQty), deliveredSub, "#goods", "Товары"),
       card("Возвраты", returnsValue, returnsSub, "#year", "По месяцам"),
       card("Начислено к выплате", payoutValue, payoutSub, "#year", "По месяцам", "warn"),
-      card("Фактические поступления", NO_CASH, "Источник: нет. Реестр выплат и банковская выписка не загружены. Ноль не подставлен.", "#ask", "Какой документ нужен", "gap"),
+      card("Фактические поступления", "— <span class=\"hero-value\">" + NO_CASH + "</span>", "Рядом с цифрой: реестр выплат и банковская выписка не загружены, ноль не подставлен. Это не «начислено к выплате». Начисление по отчёту исполнителя стоит в соседней карточке. Период вопроса: 01.01.2026–28.10.2026.", "#ask", "Какой документ нужен", "gap"),
       card("Комиссия и другие удержания", commissionValue, commissionSub, "#year", "По месяцам"),
     ].join("");
     const goods = movement ? movement.products : [];
@@ -662,9 +668,7 @@
       : "";
     return "<p class='muted'>" + esc(DATA.entity) + ". " + esc(DATA.taxNote) + " Сейчас открыт кабинет Л’Этуаль.</p>"
       + filterForm(state)
-      + "<section id='period'><div class='hero' id='paid'><p class='question'>Сколько денег Л’Этуаль фактически перечислил нам с начала 2026 года?</p>"
-      + "<div class='hero-value'>" + NO_CASH + "</div>"
-      + "<p class='sub'>Период вопроса: 01.01.2026–28.10.2026. Ни один загруженный файл не подтверждает поступление на счёт. «Начислено к выплате» — начисление по отчёту исполнителя. Крупные цифры ниже считаются за выбранные даты и к этой ячейке не подставляются.</p></div>"
+      + "<section id='period'><p class='lead' id='paid'>Крупные цифры ниже — заказы и начисления за выбранные даты. Фактический перевод на счёт в них не подставлен.</p>"
       + "<div class='grid cards'>" + cards + "</div></section>"
       + "<h2>Графики</h2>" + orderChart(chosen, state.brand) + accrualCharts(chosen)
       + "<section id='year'><h2>Месяцы 2026</h2><div class='panel'><p>Январь 2026 на этой таблице есть: у него свой файл заказов и свой отчёт исполнителя. Свод с 1 января по 27 октября в итог не прибавляется и по месяцам не режется.</p></div>"
@@ -681,14 +685,17 @@
   }
 
   function render() {
-    const freshness = document.getElementById("freshness");
+    const visible = document.getElementById("fresh-visible");
+    const more = document.getElementById("fresh-more");
     const screen = document.getElementById("screen");
     if (!DATA || !DATA.months) {
-      freshness.textContent = "Выгрузка не найдена. Страница без цифр не показывается.";
+      if (visible) visible.textContent = "Выгрузка не найдена";
+      if (more) more.textContent = "Страница без цифр не показывается.";
       screen.innerHTML = "";
       return;
     }
-    freshness.textContent = DATA.freshness;
+    if (visible) visible.textContent = "Данные на " + DATA.asOfLabel + " · период 01.01.2026–" + dayText(DATA.asOf);
+    if (more) more.textContent = DATA.freshness;
     const state = params();
     const hash = location.hash.replace(/^#/, "");
     screen.innerHTML = hash.indexOf("m/") === 0 ? renderMonth(hash.slice(2), state) : renderHome(state);
