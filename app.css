@@ -192,20 +192,12 @@ tr.total td { font-weight: 680; background: var(--bg); }
 .ask { margin-top: 20px; }
 .ask p { margin: 0; }
 #profit td.subline { padding-left: 22px; color: var(--muted); }
-.unit-brand { margin: 22px 0 6px; color: var(--accent); font-size: 20px; }
-.unit-type { margin: 14px 0 2px; }
-.unit-volume { margin: 0 0 8px; color: var(--muted); }
-#unit input, #unit select {
-  width: 7.4em;
-  max-width: 100%;
-  font: inherit;
-  color: var(--ink);
-  background: #F8E8DC;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 4px 6px;
-}
-#unit .u-missing { min-width: 220px; color: var(--muted); font-size: 12px; }
+#unit-table { min-width: 980px; }
+#unit-table td.name { min-width: 240px; }
+.unit-detail { margin-top: 4px; }
+.unit-detail summary { cursor: pointer; color: var(--accent); }
+.unit-detail p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.unit-filters input[type="search"] { min-width: 16em; }
 .scroll-hint { display: none; margin: 0 0 8px; }
 @media (max-width: 720px) {
   header.top, nav.menu { padding-left: 14px; padding-right: 14px; }
@@ -218,6 +210,7 @@ tr.total td { font-weight: 680; background: var(--bg); }
   form.filters, form.stack { flex-direction: column; align-items: stretch; }
   form.filters > label, form.filters input, form.filters select, form.filters button,
   form.stack > label, form.stack input, form.stack select, form.stack button { width: 100%; }
+  .unit-filters input[type="search"] { min-width: 0; }
   table { font-size: 13px; }
   .scroll-hint { display: block; }
 }
