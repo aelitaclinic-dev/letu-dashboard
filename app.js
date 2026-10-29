@@ -809,6 +809,48 @@
       + brandNote + "<div class='table-wrap'><table><thead><tr><th>Показатель</th><th class='num'>Сумма</th></tr></thead><tbody>" + body + "</tbody></table></div>";
   }
 
+  function rub(value) {
+    if (value == null) return MISSING;
+    return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " ₽";
+  }
+
+  function unitSection(state) {
+    const block = DATA.unitEconomics;
+    if (!block || !block.groups) return "";
+    let groups = block.groups;
+    if (state.brand) groups = groups.filter(function (group) { return group.brand === state.brand; });
+    let html = "<section id='unit'><h2>Юнит-экономика</h2><div class='panel'><p>Группировка: бренд, тип продукта, объём, затем отдельный артикул. "
+      + "Цифра «База до Москвы» — оценка: закупочная стоимость плюс международная доставка. "
+      + "Комиссия Л’Этуаль и маркетплейсов, налог, сертификация, маркировка, склад, фулфилмент, доставка до склада маркетплейса, реклама, эквайринг, возвраты и прочие расходы в эту цифру не входят. "
+      + "Себестоимость проданных товаров и прибыль от этой оценки не считаются.</p></div>";
+    if (!groups.length) {
+      return html + "<div class='panel'><p>Для этого бренда расчёт ещё не заполнен. Ноль не подставлен.</p></div></section>";
+    }
+    let brand = "";
+    groups.forEach(function (group) {
+      if (group.brand !== brand) {
+        brand = group.brand;
+        html += "<h3 class='unit-brand'>" + esc(brand) + "</h3>";
+      }
+      const weight = String(group.weightKg).replace(".", ",");
+      html += "<h4 class='unit-type'>" + esc(group.productType) + "</h4>"
+        + "<p class='unit-volume'>" + esc(group.volume) + ". Закупка " + esc(rub(group.purchaseRub))
+        + ", международная доставка " + esc(rub(group.freightRub))
+        + ", база до Москвы " + esc(rub(group.baseRub))
+        + ". Вес " + weight + " кг, " + esc(group.weightStatus) + ". Статус: " + esc(group.status) + ".</p>";
+      const rows = (group.items || []).map(function (item) {
+        return "<tr><td>" + esc(item.article) + "</td><td>" + esc(item.name) + "</td><td>" + esc(item.category) + "</td>"
+          + "<td class='num'>" + esc(rub(group.purchaseRub)) + "</td>"
+          + "<td class='num'>" + esc(rub(group.freightRub)) + "</td>"
+          + "<td class='num'>" + esc(rub(group.baseRub)) + "</td><td>" + esc(group.status) + "</td></tr>";
+      }).join("");
+      html += "<div class='table-wrap'><table><thead><tr><th>Артикул</th><th>Наименование</th><th>Категория в Л’Этуаль</th>"
+        + "<th class='num'>Закупка</th><th class='num'>Международная доставка</th><th class='num'>База до Москвы</th><th>Статус</th></tr></thead><tbody>"
+        + rows + "</tbody></table></div>";
+    });
+    return html + "</section>";
+  }
+
   function renderMonth(key, state) {
     const row = DATA.months.filter(function (item) { return item.month === key; })[0];
     if (!row) return "<p>Такого месяца нет.</p>";
@@ -853,6 +895,7 @@
     html += productTable(products, "Товары по сумме доставки") + productTable(byQty, "Товары по количеству доставки");
     const profitRow = (DATA.profit && DATA.profit.months || []).filter(function (item) { return item.month === key; })[0];
     html += profitMonthBlock(profitRow, state.brand);
+    html += unitSection(state);
     return html;
   }
 
@@ -946,6 +989,7 @@
       + brandTableNote + yearTable(chosen) + spanCheck(state.from, state.to, movement, state.brand)
       + "<h2>Динамика</h2><div class='panel'>" + dynamics(chosen) + "<p>План не задан. Прогноз не построен: в аналитике нет подневной ленты заказов.</p></div></section>"
       + profitSection(state)
+      + unitSection(state)
       + "<h2 id='goods'>Рейтинг товаров</h2><p class='muted'>Сложены отдельные файлы месяцев внутри выбранных дат. Сводный файл второй раз не прибавлен. Себестоимости нет, поэтому место в списке — по доставке, не по прибыли.</p>"
       + productTable(goods.slice(0, 8), "По сумме доставки") + productTable(byQty, "По количеству доставки")
       + stockBlock()
