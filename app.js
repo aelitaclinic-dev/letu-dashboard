@@ -814,15 +814,50 @@
     return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " ₽";
   }
 
+  function ratePercent(rate) {
+    if (rate == null) return "";
+    const percent = rate * 100;
+    if (Math.abs(percent - Math.round(percent)) < 0.05) return String(Math.round(percent));
+    return String(Math.round(percent * 10) / 10).replace(".", ",");
+  }
+
+  function unitRow(item, base) {
+    const rate = ratePercent(item.letuRate);
+    return "<tr class='unit-sku' data-rate-note='" + esc(item.letuRateNote || "") + "'><td>" + esc(item.article) + "<br><span class='muted'>" + esc(item.name) + "</span><br><span class='muted'>" + esc(item.category || "") + "</span></td>"
+      + "<td><input class='u-base' type='number' min='0' step='0.01' value='" + esc(base) + "'></td>"
+      + "<td><input class='u-label' type='number' min='0' step='0.01' placeholder='пусто'></td>"
+      + "<td><input class='u-box' type='number' min='0' step='0.01' placeholder='пусто'></td>"
+      + "<td><input class='u-period' type='number' min='0' step='0.01' placeholder='пусто'></td>"
+      + "<td><input class='u-qty' type='number' min='0' step='1' placeholder='пусто'></td>"
+      + "<td><input class='u-direct' type='number' min='0' step='0.01' placeholder='пусто'></td>"
+      + "<td class='num u-packer'>—</td>"
+      + "<td><input class='u-materials' type='number' min='0' step='0.01' placeholder='пусто'></td>"
+      + "<td class='num u-prep'>—</td><td class='num u-with'>—</td>"
+      + "<td><input class='u-price' type='number' min='0' step='0.01' placeholder='пусто'></td>"
+      + "<td><select class='u-kind'><option value=''></option><option>Фактическая</option><option>Плановая</option></select></td>"
+      + "<td><input class='u-rate' type='number' min='0' step='0.01' placeholder='пусто' value='" + esc(rate) + "'></td>"
+      + "<td class='num u-commission'>—</td>"
+      + "<td><input class='u-logistics' type='number' min='0' step='0.01' placeholder='пусто'></td>"
+      + "<td class='num u-tax'>—</td><td class='num u-result'>—</td>"
+      + "<td><input class='u-reserve-rub' type='number' min='0' step='0.01' placeholder='пусто'></td>"
+      + "<td><input class='u-reserve-pct' type='number' min='0' step='0.01' placeholder='пусто'></td>"
+      + "<td><select class='u-reserve-base'><option value=''></option><option>Исходная себестоимость</option><option>Стоимость с подготовкой</option><option>Цена продажи Л’Этуаль</option></select></td>"
+      + "<td class='num u-reserve'>—</td><td class='num u-after'>—</td><td class='num u-ros'>—</td>"
+      + "<td class='u-missing'>" + esc(item.letuRateNote || "") + "</td></tr>";
+  }
+
   function unitSection(state) {
     const block = DATA.unitEconomics;
     if (!block || !block.groups) return "";
     let groups = block.groups;
     if (state.brand) groups = groups.filter(function (group) { return group.brand === state.brand; });
+    const taxPercent = block.taxRate == null ? "" : String(Math.round(block.taxRate * 1000) / 10).replace(".", ",");
     let html = "<section id='unit'><h2>Юнит-экономика</h2><div class='panel'><p>Группировка: бренд, тип продукта, объём, затем отдельный артикул. "
-      + "Цифра «База до Москвы» — оценка: закупочная стоимость плюс международная доставка. "
-      + "Комиссия Л’Этуаль и маркетплейсов, налог, сертификация, маркировка, склад, фулфилмент, доставка до склада маркетплейса, реклама, эквайринг, возвраты и прочие расходы в эту цифру не входят. "
-      + "Себестоимость проданных товаров и прибыль от этой оценки не считаются.</p></div>";
+      + "Исходная себестоимость — закупка плюс международная доставка до Москвы. Этикетка, коробочка, работа упаковщика, другие материалы и плановый резерв в неё не входят. "
+      + "Налог " + esc(taxPercent) + "% — допущение для " + esc(block.taxEntity || "") + ". База: " + esc(block.taxBase || "") + ". "
+      + "От выплаты маркетплейса он не считается и на другие юрлица не распространяется. "
+      + "Пустое поле не становится нулём. Результат предварительный. Правка на странице никуда не сохраняется.</p>"
+      + "<p><label>Налог, % <input id='unit-tax-percent' type='number' min='0' step='0.01' value='" + esc(taxPercent) + "'></label></p></div>";
     if (!groups.length) {
       return html + "<div class='panel'><p>Для этого бренда расчёт ещё не заполнен. Ноль не подставлен.</p></div></section>";
     }
@@ -837,16 +872,17 @@
         + "<p class='unit-volume'>" + esc(group.volume) + ". Закупка " + esc(rub(group.purchaseRub))
         + ", международная доставка " + esc(rub(group.freightRub))
         + ", база до Москвы " + esc(rub(group.baseRub))
-        + ". Вес " + weight + " кг, " + esc(group.weightStatus) + ". Статус: " + esc(group.status) + ".</p>";
-      const rows = (group.items || []).map(function (item) {
-        return "<tr><td>" + esc(item.article) + "</td><td>" + esc(item.name) + "</td><td>" + esc(item.category) + "</td>"
-          + "<td class='num'>" + esc(rub(group.purchaseRub)) + "</td>"
-          + "<td class='num'>" + esc(rub(group.freightRub)) + "</td>"
-          + "<td class='num'>" + esc(rub(group.baseRub)) + "</td><td>" + esc(group.status) + "</td></tr>";
-      }).join("");
-      html += "<div class='table-wrap'><table><thead><tr><th>Артикул</th><th>Наименование</th><th>Категория в Л’Этуаль</th>"
-        + "<th class='num'>Закупка</th><th class='num'>Международная доставка</th><th class='num'>База до Москвы</th><th>Статус</th></tr></thead><tbody>"
-        + rows + "</tbody></table></div>";
+        + ". Вес " + weight + " кг, " + esc(group.weightStatus) + ". Статус: " + esc(group.status)
+        + ". WB и Ozon: комиссия и логистика неизвестны, в таблице ниже считается Л’Этуаль.</p>";
+      const rows = (group.items || []).map(function (item) { return unitRow(item, group.baseRub); }).join("");
+      html += "<div class='table-wrap'><table><thead><tr>"
+        + "<th>Артикул</th><th>Исходная себестоимость</th><th>Этикетка</th><th>Коробочка</th>"
+        + "<th>Оплата упаковщика за период</th><th>Упаковано штук</th><th>Упаковщик, если известен за штуку</th><th>Упаковщик, ₽/шт</th>"
+        + "<th>Другие материалы</th><th>Подготовка</th><th>С подготовкой</th><th>Цена</th><th>Вид цены</th>"
+        + "<th>Ставка комиссии, %</th><th>Комиссия</th><th>Логистика площадки</th><th>Налог</th>"
+        + "<th>Результат после расходов</th><th>Резерв, ₽</th><th>Резерв, %</th><th>База резерва</th>"
+        + "<th>Плановый резерв</th><th>Результат после резерва</th><th>Рентабельность</th><th>Чего не хватает</th>"
+        + "</tr></thead><tbody>" + rows + "</tbody></table></div>";
     });
     return html + "</section>";
   }
@@ -1016,6 +1052,7 @@
     const state = params();
     const hash = location.hash.replace(/^#/, "");
     screen.innerHTML = hash.indexOf("m/") === 0 ? renderMonth(hash.slice(2), state) : renderHome(state);
+    if (window.recalcUnit) window.recalcUnit();
     const form = document.getElementById("period-filter");
     if (form) {
       form.addEventListener("submit", function (event) {

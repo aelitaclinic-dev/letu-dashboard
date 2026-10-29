@@ -195,6 +195,17 @@ tr.total td { font-weight: 680; background: var(--bg); }
 .unit-brand { margin: 22px 0 6px; color: var(--accent); font-size: 20px; }
 .unit-type { margin: 14px 0 2px; }
 .unit-volume { margin: 0 0 8px; color: var(--muted); }
+#unit input, #unit select {
+  width: 7.4em;
+  max-width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: #F8E8DC;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+#unit .u-missing { min-width: 220px; color: var(--muted); font-size: 12px; }
 .scroll-hint { display: none; margin: 0 0 8px; }
 @media (max-width: 720px) {
   header.top, nav.menu { padding-left: 14px; padding-right: 14px; }
