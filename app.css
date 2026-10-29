@@ -191,6 +191,7 @@ td .delta, .delta { display: block; color: var(--muted); font-size: 12px; font-w
 tr.total td { font-weight: 680; background: var(--bg); }
 .ask { margin-top: 20px; }
 .ask p { margin: 0; }
+#profit td.subline { padding-left: 22px; color: var(--muted); }
 .scroll-hint { display: none; margin: 0 0 8px; }
 @media (max-width: 720px) {
   header.top, nav.menu { padding-left: 14px; padding-right: 14px; }

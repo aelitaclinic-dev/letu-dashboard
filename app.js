@@ -658,6 +658,157 @@
       + (rates ? "<p>Ставки вознаграждения в строках, без усреднения: " + esc(rates) + ".</p>" : "");
   }
 
+  const NOT_CALC = "Не рассчитана";
+
+  function profitMoney(state, value) {
+    if (state === "future") return FUTURE;
+    if (state === "missing") return MISSING;
+    if (state === "known" || state === "partial") return money(value);
+    return NOT_CALC;
+  }
+
+  function shareText(state, saleKop, confirmedKop) {
+    if (state === "future") return FUTURE;
+    if (!saleKop) return MISSING;
+    const percent = (confirmedKop || 0) / saleKop * 100;
+    if (Math.abs(percent - Math.round(percent)) < 0.05) return String(Math.round(percent)) + "%";
+    return percent.toFixed(1).replace(".", ",") + "%";
+  }
+
+  function profitRows(from, to) {
+    if (!DATA.profit) return [];
+    return DATA.profit.months.filter(function (row) {
+      return row.start <= to && row.end >= from;
+    });
+  }
+
+  function foldProfit(rows) {
+    const active = rows.filter(function (row) { return row.revenueState !== "future"; });
+    const future = rows.filter(function (row) { return row.revenueState === "future"; });
+    const futureView = {
+      revenueState: "future", cogsState: "future", grossState: "future", commissionState: "future",
+      adsState: "future", logisticsState: "future", storageState: "future", returnsHandlingState: "future",
+      marketplaceState: "future", afterState: "future", overheadState: "future", taxState: "future", profitState: "future",
+    };
+    if (!active.length && future.length) return futureView;
+    const withRevenue = active.filter(function (row) { return row.revenueKop != null; });
+    if (!withRevenue.length) {
+      return {
+        revenueState: "missing", cogsState: "missing", grossState: "missing", commissionState: "missing",
+        adsState: "missing", logisticsState: "missing", storageState: "missing", returnsHandlingState: "missing",
+        marketplaceState: "missing", afterState: "missing", overheadState: "missing",
+        taxState: "not_calculated", profitState: "not_calculated",
+      };
+    }
+    function sum(key) {
+      return withRevenue.reduce(function (acc, row) { return acc + (row[key] || 0); }, 0);
+    }
+    function every(key, value) {
+      return active.every(function (row) { return row[key] === value; });
+    }
+    const sale = sum("saleKop");
+    const confirmed = sum("confirmedSaleKop");
+    return {
+      revenueState: withRevenue.some(function (row) { return row.partial; }) ? "partial" : "known",
+      revenueKop: sum("revenueKop"),
+      saleKop: sale,
+      confirmedSaleKop: confirmed,
+      cogsState: withRevenue.every(function (row) { return row.cogsState === "known"; }) ? "known" : "not_calculated",
+      cogsKop: withRevenue.every(function (row) { return row.cogsState === "known"; }) ? withRevenue.reduce(function (acc, row) { return acc + row.cogsKop; }, 0) : null,
+      grossState: withRevenue.every(function (row) { return row.grossState === "known"; }) ? "known" : "not_calculated",
+      grossKop: withRevenue.every(function (row) { return row.grossState === "known"; }) ? withRevenue.reduce(function (acc, row) { return acc + row.revenueKop - row.cogsKop; }, 0) : null,
+      commissionState: every("commissionState", "known") ? "known" : "missing",
+      commissionKop: every("commissionState", "known") ? active.reduce(function (acc, row) { return acc + row.commissionKop; }, 0) : null,
+      adsState: every("adsState", "known") ? "known" : "missing",
+      adsKop: every("adsState", "known") ? active.reduce(function (acc, row) { return acc + row.adsKop; }, 0) : null,
+      logisticsState: every("logisticsState", "known") ? "known" : "missing",
+      storageState: every("storageState", "known") ? "known" : "missing",
+      returnsHandlingState: every("returnsHandlingState", "known") ? "known" : "missing",
+      marketplaceState: "not_calculated",
+      afterState: "not_calculated",
+      overheadState: "missing",
+      taxState: "not_calculated",
+      profitState: "not_calculated",
+      partial: withRevenue.some(function (row) { return row.partial; }),
+      openingLoaded: !!(DATA.profit && DATA.profit.openingLoaded),
+    };
+  }
+
+  function profitSection(state) {
+    const rows = profitRows(state.from, state.to);
+    const view = foldProfit(rows);
+    const notes = [
+      "Выручка здесь — реализация отчёта исполнителя плюс возвраты. Колонка доставки из аналитики второй раз не прибавляется. «К оплате» и деньги на счёте в эту таблицу не входят: это не прибыль.",
+      "Себестоимость списывается с более ранней партии. Остаток на 1 января 2026 — первая партия. Новая закупка попадает в расходы только когда проданы её штуки, а не в месяц оплаты всей партии.",
+    ];
+    if (!DATA.profit || !DATA.profit.openingLoaded) {
+      notes.push("Начального остатка на 1 января 2026 нет, поэтому списание ещё не начато. Поздняя цена закупки на старые штуки не ставится.");
+    }
+    const pilot = rows.filter(function (row) { return row.month === "2026-09" && row.revenueState === "known"; })[0];
+    if (pilot) {
+      notes.push("Проверка на полном месяце — сентябрь 2026. Выручка с учётом возвратов " + money(pilot.revenueKop) + ". Комиссия " + money(pilot.commissionKop) + ", маркетинг " + money(pilot.adsKop) + " — это суммы отчёта. Себестоимость этого месяца не подставлена: подтверждено " + shareText(pilot.revenueState, pilot.saleKop, pilot.confirmedSaleKop) + " продаж.");
+    }
+    if (view.partial) notes.push("В выбранных датах есть неполный отчёт. Его выручка входит в сумму, итоговая прибыль из неполного месяца не собирается.");
+    if (state.brand) notes.push("Фильтр бренда «" + state.brand + "» прибыль не делит: возвраты и подвал общие на кабинет. Ноль по бренду не подставлен.");
+    const line = function (label, value, sub) {
+      return "<tr><td" + (sub ? " class='subline'" : "") + ">" + esc(label) + "</td><td class='num'>" + esc(value) + "</td></tr>";
+    };
+    const body = [
+      line("Выручка с учётом возвратов", profitMoney(view.revenueState, view.revenueKop)),
+      line("Себестоимость проданных товаров", profitMoney(view.cogsState, view.cogsKop)),
+      line("Доля продаж с подтверждённой себестоимостью", shareText(view.revenueState, view.saleKop, view.confirmedSaleKop)),
+      line("Валовая прибыль", profitMoney(view.grossState, view.grossKop)),
+      line("Расходы маркетплейса", profitMoney(view.marketplaceState, null)),
+      line("Комиссия этого кабинета", profitMoney(view.commissionState, view.commissionKop), true),
+      line("Реклама", profitMoney(view.adsState, view.adsKop) + (view.adsState === "known" ? " · подтверждено отчётом" : ""), true),
+      line("Логистика", profitMoney(view.logisticsState, null), true),
+      line("Хранение", profitMoney(view.storageState, null), true),
+      line("Обработка возвратов", profitMoney(view.returnsHandlingState, null), true),
+      line("Результат после расходов площадки", profitMoney(view.afterState, null)),
+      line("Общие расходы", profitMoney(view.overheadState, null)),
+      line("Налоги", profitMoney(view.taxState, null)),
+      line("Итоговая прибыль", profitMoney(view.profitState, null)),
+    ].join("");
+    const monthRows = rows.map(function (row) {
+      const extra = row.partial ? "<br><span class='muted'>неполный отчёт</span>" : "";
+      return "<tr><td>" + esc(MONTH_NAME[row.month.slice(5)]) + "</td><td class='num'>" + esc(profitMoney(row.revenueState, row.revenueKop)) + extra
+        + "</td><td class='num'>" + esc(profitMoney(row.cogsState, row.cogsKop))
+        + "</td><td class='num'>" + esc(shareText(row.revenueState, row.saleKop, row.confirmedSaleKop))
+        + "</td><td class='num'>" + esc(profitMoney(row.profitState, null)) + "</td></tr>";
+    }).join("");
+    return "<section id='profit'><h2>Прибыль</h2><div class='panel'>" + notes.map(function (note) { return "<p>" + esc(note) + "</p>"; }).join("")
+      + "</div><div class='table-wrap'><table><thead><tr><th>Показатель</th><th class='num'>Сумма</th></tr></thead><tbody>" + body + "</tbody></table></div>"
+      + "<p class='muted'>Комиссия — вознаграждение после скидки по строкам этого кабинета. Одна ставка на все бренды не ставится, и из «к оплате» комиссия повторно не вычитается. Аванс в расходы не входит. Логистика, хранение и обработка возвратов в отчёте Л’Этуаль не указаны, поэтому расходы площадки целиком не сложены. Налог не посчитан: режим и база этого юрлица не заданы. Пока строка итоговой прибыли не рассчитана, прибылью она не называется.</p>"
+      + "<h3>По месяцам выбранных дат</h3><div class='table-wrap'><table><thead><tr><th>Месяц</th><th class='num'>Выручка с учётом возвратов</th><th class='num'>Себестоимость</th><th class='num'>Доля с себестоимостью</th><th class='num'>Итоговая прибыль</th></tr></thead><tbody>"
+      + monthRows + "</tbody></table></div></section>";
+  }
+
+  function profitMonthBlock(row, brand) {
+    if (!row || row.revenueState === "future") return "<p>Прибыль за этот месяц не считается: период ещё не наступил.</p>";
+    const line = function (label, value) {
+      return "<tr><td>" + esc(label) + "</td><td class='num'>" + esc(value) + "</td></tr>";
+    };
+    const body = [
+      line("Выручка с учётом возвратов", profitMoney(row.revenueState, row.revenueKop)),
+      line("Себестоимость проданных товаров", profitMoney(row.cogsState, row.cogsKop)),
+      line("Доля продаж с подтверждённой себестоимостью", shareText(row.revenueState, row.saleKop, row.confirmedSaleKop)),
+      line("Валовая прибыль", NOT_CALC),
+      line("Расходы маркетплейса", NOT_CALC),
+      line("Комиссия этого кабинета", profitMoney(row.commissionState, row.commissionKop)),
+      line("Реклама", profitMoney(row.adsState, row.adsKop) + (row.adsState === "known" ? " · подтверждено отчётом" : "")),
+      line("Логистика", MISSING),
+      line("Хранение", MISSING),
+      line("Обработка возвратов", MISSING),
+      line("Результат после расходов площадки", NOT_CALC),
+      line("Общие расходы", MISSING),
+      line("Налоги", NOT_CALC),
+      line("Итоговая прибыль", NOT_CALC),
+    ].join("");
+    const brandNote = brand ? "<p class='muted'>Фильтр бренда на эту таблицу не действует: подвал отчёта общий на кабинет.</p>" : "";
+    return "<h2>Прибыль</h2><p class='muted'>Это не «к оплате» и не поступление на счёт. Себестоимость без партии не подставляется.</p>"
+      + brandNote + "<div class='table-wrap'><table><thead><tr><th>Показатель</th><th class='num'>Сумма</th></tr></thead><tbody>" + body + "</tbody></table></div>";
+  }
+
   function renderMonth(key, state) {
     const row = DATA.months.filter(function (item) { return item.month === key; })[0];
     if (!row) return "<p>Такого месяца нет.</p>";
@@ -700,6 +851,8 @@
     });
     const byQty = products.slice().sort(function (a, b) { return b.deliveredQty - a.deliveredQty || b.deliveredKop - a.deliveredKop; });
     html += productTable(products, "Товары по сумме доставки") + productTable(byQty, "Товары по количеству доставки");
+    const profitRow = (DATA.profit && DATA.profit.months || []).filter(function (item) { return item.month === key; })[0];
+    html += profitMonthBlock(profitRow, state.brand);
     return html;
   }
 
@@ -792,6 +945,7 @@
       + "<section id='year'><h2>Месяцы 2026</h2><div class='panel'><p>Январь 2026 на этой таблице есть: у него свой файл заказов и свой отчёт исполнителя. Свод с 1 января по 27 октября в итог не прибавляется и по месяцам не режется.</p></div>"
       + brandTableNote + yearTable(chosen) + spanCheck(state.from, state.to, movement, state.brand)
       + "<h2>Динамика</h2><div class='panel'>" + dynamics(chosen) + "<p>План не задан. Прогноз не построен: в аналитике нет подневной ленты заказов.</p></div></section>"
+      + profitSection(state)
       + "<h2 id='goods'>Рейтинг товаров</h2><p class='muted'>Сложены отдельные файлы месяцев внутри выбранных дат. Сводный файл второй раз не прибавлен. Себестоимости нет, поэтому место в списке — по доставке, не по прибыли.</p>"
       + productTable(goods.slice(0, 8), "По сумме доставки") + productTable(byQty, "По количеству доставки")
       + stockBlock()
