@@ -837,6 +837,7 @@
   }
 
   function purchaseFrom(source) {
+    if (source.rubPurchase != null && source.rubPurchase !== "") return knownAmount(source.rubPurchase);
     var price = knownAmount(source.cnyPrice);
     var rate = knownAmount(source.rate);
     if (price == null || rate == null) return null;
@@ -844,6 +845,7 @@
   }
 
   function freightFrom(source) {
+    if (source.freightExcluded) return null;
     var weight = knownAmount(source.weightKg);
     var tariff = knownAmount(source.tariffRub);
     if (weight == null || tariff == null) return null;
@@ -852,8 +854,10 @@
 
   function baseFrom(source) {
     var purchase = purchaseFrom(source);
+    if (purchase == null) return null;
+    if (source.freightExcluded) return purchase;
     var freight = freightFrom(source);
-    if (purchase == null || freight == null) return null;
+    if (freight == null) return null;
     return Math.round((purchase + freight) * 100) / 100;
   }
 
@@ -866,7 +870,12 @@
 
   // Себестоимость с учтёнными расходами. База уже включает закупку и доставку.
   // Пустые материалы не прибавляются и нулём не становятся.
-  var ACCOUNTED_COST_PARTS = ["productLabelRub", "boxLabelRub", "boxRub", "packerRub"];
+  var ACCOUNTED_COST_PARTS = [
+    ["productLabelRub", ""],
+    ["boxLabelRub", "boxLabelExcluded"],
+    ["boxRub", "boxExcluded"],
+    ["packerRub", ""]
+  ];
 
   function accountedUnitCost(source) {
     if (!source) return null;
@@ -874,7 +883,10 @@
     if (base == null) return null;
     var total = base;
     for (var i = 0; i < ACCOUNTED_COST_PARTS.length; i++) {
-      var amount = knownAmount(source[ACCOUNTED_COST_PARTS[i]]);
+      var key = ACCOUNTED_COST_PARTS[i][0];
+      var flag = ACCOUNTED_COST_PARTS[i][1];
+      if (flag && source[flag]) continue;
+      var amount = knownAmount(source[key]);
       if (amount == null) return null;
       total += amount;
     }
@@ -909,6 +921,10 @@
           boxRub: storedAmount(item, group, "boxRub"),
           packerRub: storedAmount(item, group, "packerRub"),
           materialsRub: storedAmount(item, group, "materialsRub"),
+          rubPurchase: storedAmount(item, group, "rubPurchase"),
+          freightExcluded: item.freightExcluded === true || group.freightExcluded === true,
+          boxExcluded: item.boxExcluded === true || group.boxExcluded === true,
+          boxLabelExcluded: item.boxLabelExcluded === true || group.boxLabelExcluded === true,
           status: group.status || "",
           listPriceRub: item.listPriceRub == null || item.listPriceRub === "" ? null : item.listPriceRub,
           salePriceRub: item.salePriceRub == null || item.salePriceRub === "" ? null : item.salePriceRub,
@@ -1057,15 +1073,25 @@
     }).join("") + "</dl>";
   }
 
+  function appliedText(excluded, value) {
+    return excluded ? "не применяется" : rub(value);
+  }
+
   function unitDetail(row) {
     var audit = unitAudit(row), econ = audit.econ;
     var commissionSource = row.commissionRateNote || "Источник ставки не указан.";
+    var purchaseNote = row.freightExcluded
+      ? "Закупка задана в рублях. Доставки до Москвы в этой сумме нет, вес и тариф в расчёт не входят."
+      : qty(row.cnyPrice) + " ¥ × " + qty(row.rate) + " ₽/¥; доставка: " + weightText(row) + " × " + tariffText(row) + ".";
+    var freightText = row.freightExcluded ? "не считается" : rub(row.freightRub);
+    var baseLabel = row.freightExcluded ? "Закупка без доставки до Москвы" : "Закупка с доставкой";
+    var accountedLabel = row.freightExcluded ? "Товар и подготовка — учтено, без доставки до Москвы" : "Товар с доставкой и подготовкой — учтено";
     return "<details class='unit-breakdown'><summary>Из чего складывается расчёт</summary>"
       + "<h4>1. Закупка и доставка до Москвы</h4>"
-      + "<p class='note'>" + esc(qty(row.cnyPrice)) + " ¥ × " + esc(qty(row.rate)) + " ₽/¥; доставка: " + esc(weightText(row)) + " × " + esc(tariffText(row)) + ".</p>"
-      + unitFacts([["Закупка", rub(row.purchaseRub)], ["Международная доставка", rub(row.freightRub)], ["Закупка с доставкой", rub(row.baseRub), true]])
+      + "<p class='note'>" + esc(purchaseNote) + "</p>"
+      + unitFacts([["Закупка", rub(row.purchaseRub)], ["Международная доставка", freightText], [baseLabel, rub(row.baseRub), true]])
       + "<h4>2. Подготовка одной штуки</h4>"
-      + unitFacts([["Этикетка на товар", rub(row.productLabelRub)], ["Этикетка на коробку", rub(row.boxLabelRub)], ["Коробочка", rub(row.boxRub)], ["Упаковщик", rub(row.packerRub)], ["Расходные материалы", rub(row.materialsRub)], ["Товар с доставкой и подготовкой — учтено", rub(row.accountedRub), true]])
+      + unitFacts([["Этикетка на товар", rub(row.productLabelRub)], ["Этикетка на коробку", appliedText(row.boxLabelExcluded, row.boxLabelRub)], ["Коробочка", appliedText(row.boxExcluded, row.boxRub)], ["Упаковщик", rub(row.packerRub)], ["Расходные материалы", rub(row.materialsRub)], [accountedLabel, rub(row.accountedRub), true]])
       + "<h4>3. Продажа одной штуки</h4>"
       + unitFacts([["Витринная цена", rub(econ.list)], ["Цена покупателю после скидки", rub(econ.sale), true], ["Комиссия по модели, " + percentText(econ.rate), rub(econ.commission)], ["Налог по настройке, " + percentText(econ.taxRate), rub(econ.tax)], ["Прочие учтённые расходы продажи", rub(econ.other)], ["Остаток после учтённых затрат", rub(econ.profit), true], ["Доля остатка в цене продажи", percentText(econ.margin)]])
       + "<p class='note'>Скидка второй раз не вычитается. Остаток — предварительная оценка на одну продажу по текущей выгрузке цен, а не чистая прибыль и не прибыль за год.</p>"
@@ -1084,13 +1110,14 @@
     var audit = unitAudit(row), econ = audit.econ;
     var signal = econ.profit != null && econ.profit < 0 ? " unit-loss" : "";
     return "<article class='unit-product" + signal + "' data-unit-index='" + index + "' data-unit-key='" + audit.key + "'>"
-      + "<header class='unit-product-head'><span class='unit-brand-label'>" + esc(row.brand) + " · " + esc(row.volume) + "</span>"
+      + "<header class='unit-product-head'><span class='unit-brand-label'>" + esc(row.brand) + " · " + esc(row.volume || "объём в названии не указан") + "</span>"
       + "<span class='unit-badge " + audit.key + "'>" + esc(unitStatus(audit)) + "</span></header>"
       + "<h3>" + esc(row.name) + "</h3><p class='unit-article'>Артикул: <b>" + esc(row.article) + "</b> · " + esc(row.productType) + "</p>"
       + "<div class='unit-metrics'><div><span>Цена продажи</span><strong>" + esc(rub(econ.sale)) + "</strong><small>после скидки, по выгрузке</small></div>"
-      + "<div><span>Товар и подготовка</span><strong>" + esc(rub(row.accountedRub)) + "</strong><small>закупка, доставка, упаковка</small></div>"
+      + "<div><span>Товар и подготовка</span><strong>" + esc(rub(row.accountedRub)) + "</strong><small>" + (row.freightExcluded ? "закупка без доставки до Москвы, этикетка на товар, упаковщик" : "закупка, доставка, упаковка") + "</small></div>"
       + "<div class='unit-result'><span>Остаток с продажи · оценка</span><strong>" + esc(rub(econ.profit)) + "</strong><small>" + (econ.margin == null ? "нужны исходные данные" : esc(percentText(econ.margin)) + " от цены · до неучтённых расходов") + "</small></div></div>"
       + "<p class='unit-deductions'>Комиссия: " + esc(percentText(econ.rate)) + " / " + esc(rub(econ.commission)) + " · Налог: " + esc(percentText(econ.taxRate)) + " / " + esc(rub(econ.tax)) + "</p>"
+      + (row.freightExcluded ? "<p class='unit-notice'>Доставка до Москвы не входит в закупку и не считается. Индивидуальная коробочка и этикетка на коробку не применяются.</p>" : "")
       + (audit.missing.length ? "<p class='unit-notice'>Заполнить: " + esc(audit.missing.join(", ")) + ".</p>" : "")
       + (audit.checks.length ? "<p class='unit-notice'>" + esc(audit.checks[0]) + "</p>" : "")
       + unitDetail(row) + "</article>";
@@ -1120,7 +1147,7 @@
       + "<div class='unit-products' id='unit-products'>" + rows.map(unitCard).join("") + "</div>"
       + "<details class='fold unit-method'><summary>Как читать цифры и откуда они взяты</summary>"
       + "<p>Цена продажи — цена после скидки из выгрузки Л’Этуаль от " + esc(pricesDate) + ". Это не подтверждение цены каждой исторической продажи. Итоги года находятся на вкладке «Прибыль».</p>"
-      + "<p>Товар и подготовка = цена в юанях × курс + вес × тариф доставки + две этикетки + коробочка + упаковщик + известные расходные материалы. Это сумма учтённых затрат; полнота импортных расходов ещё требует сверки.</p>"
+      + "<p>Товар и подготовка = цена в юанях × курс + вес × тариф доставки + две этикетки + коробочка + упаковщик + известные расходные материалы. Это сумма учтённых затрат; полнота импортных расходов ещё требует сверки. Если закупка задана в рублях, юани и доставка до Москвы в сумму не входят: этой доставки в указанной закупке нет. У таких строк нет индивидуальной коробочки и этикетки на коробку. Этикетка на товар и упаковщик остаются.</p>"
       + "<p>Остаток = цена продажи − товар и подготовка − комиссия по модели − налог по настройке − известные прочие расходы продажи. Пустые статьи не считаются подтверждённым нулём; результат неполный.</p>"
       + "<p>Налог " + esc(percentText(DATA.unitEconomics && DATA.unitEconomics.taxRate)) + " от цены продажи — заданное пользователем допущение для ИП, не проверка налогового режима. Ставки комиссии взяты из исторических отчётов; перенос ставки с бренда отмечен на товаре. Порядок учёта скидок в комиссии нужно подтвердить документом.</p>"
       + "<p>Закупочные цены, вес и стоимость подготовки сохранены из исходных данных. Эта страница только показывает расчёт: постоянные изменения исходных затрат нужно внести в файл учёта и повторно опубликовать данные. CSV — выгрузка текущей выборки для проверки, не замена файла партий и остатков.</p></details></section>";
