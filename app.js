@@ -913,6 +913,7 @@
           listPriceRub: item.listPriceRub == null || item.listPriceRub === "" ? null : item.listPriceRub,
           salePriceRub: item.salePriceRub == null || item.salePriceRub === "" ? null : item.salePriceRub,
           commissionRate: item.commissionRate == null || item.commissionRate === "" ? null : item.commissionRate,
+          commissionRateSource: item.commissionRateSource || "",
           commissionRateNote: item.commissionRateNote || "",
           otherSellingCostsRub: item.otherSellingCostsRub == null || item.otherSellingCostsRub === "" ? null : item.otherSellingCostsRub
         };
@@ -1019,148 +1020,179 @@
     return " band-green";
   }
 
-  function unitDetail(row) {
+  function unitAudit(row) {
     var econ = saleEconomics(row);
-    var priceLines;
-    if (econ.list != null && econ.sale != null && econ.discount === 0) {
-      priceLines = costLine("", "Цена на витрине", econ.list, false)
-        + "<li>Скидки нет. Фактическая цена продажи совпадает с витриной: " + esc(rub(econ.sale)) + ".</li>";
-    } else {
-      priceLines = costLine("", "Цена на витрине", econ.list, false)
-        + costLine("− ", "Скидка", econ.discount, false)
-        + costLine("= ", "Фактическая цена продажи", econ.sale, true);
+    var missing = [];
+    if (econ.sale == null) missing.push("цена продажи");
+    if (row.accountedRub == null) missing.push("себестоимость");
+    if (econ.rate == null) missing.push("ставка комиссии");
+    if (econ.taxRate == null) missing.push("настройка налога");
+    var checks = [];
+    var ml = Number(String(row.volume).replace(/[^0-9.]/g, ""));
+    if (/мл/.test(row.volume) && ml >= 200 && row.weightKg != null && row.weightKg < ml / 2000) {
+      checks.push("Сверить объём и вес: для " + row.volume + " указан вес " + weightText(row) + ". Возможна ошибка сопоставления варианта; себестоимость требует проверки.");
     }
-    var commissionLabel = econ.rate == null
-      ? "Комиссия Л’Этуаль"
-      : "Комиссия Л’Этуаль, " + percentText(econ.rate) + " от цены продажи";
+    if (row.commissionRateSource === "brand") {
+      checks.push("Ставка комиссии перенесена с других товаров бренда. Для этого артикула и текущей даты она не подтверждена.");
+    }
+    if (econ.list != null && econ.sale != null && econ.sale > econ.list) {
+      checks.push("Цена после скидки выше витринной. Проверьте выгрузку цен.");
+    }
     var gaps = UNFILLED_SELLING.slice();
-    if (row.materialsRub == null || row.materialsRub === "") gaps.push("другие расходные материалы");
-    var priceNote = econ.list == null
-      ? "В выгрузке личного кабинета от 29 октября 2026 цены этого артикула нет."
-      : "Витрина и цена после скидки: личный кабинет Л’Этуаль, 29 октября 2026.";
-    return "<details class='unit-detail'><summary>Подробности</summary><ul>"
-      + costLine("", "Закупочная стоимость", row.purchaseRub, false)
-      + costLine("+ ", "Международная доставка", row.freightRub, false)
-      + costLine("= ", "База до Москвы", row.baseRub, true)
-      + costLine("+ ", "Этикетка на товар", row.productLabelRub, false)
-      + costLine("+ ", "Этикетка на коробку", row.boxLabelRub, false)
-      + costLine("+ ", "Коробочка", row.boxRub, false)
-      + costLine("+ ", "Работа упаковщика", row.packerRub, false)
-      + costLine("+ ", "Другие расходные материалы", row.materialsRub, false)
-      + costLine("= ", "Себестоимость с учтёнными расходами", row.accountedRub, true)
-      + "</ul><ul class='sale-chain'>"
-      + priceLines
-      + costLine("− ", commissionLabel, econ.commission, false)
-      + costLine("− ", "Налог 7%", econ.tax, false)
-      + costLine("− ", "Прочие подтверждённые расходы продажи", econ.other, false)
-      + costLine("− ", "Себестоимость товара", row.accountedRub, false)
-      + costLine("= ", "Прибыль по учтённым расходам", econ.profit, true)
-      + "</ul><p class='meta'>Маржинальность: " + esc(percentText(econ.margin)) + ". "
-      + "Статус: " + esc(marginStatus(econ.margin)) + ".</p>"
-      + "<p class='meta'>Прибыль по учтённым расходам. Не заполнено: " + esc(gaps.join("; ")) + ".</p>"
-      + "<p class='meta'>" + esc(priceNote) + " " + esc(row.commissionRateNote || "") + "</p>"
-      + "<p class='meta'>Количество продаж по этой цене не подтверждено, поэтому прибыль по проданному количеству не считается.</p>"
-      + "<p class='meta'>Расчётный вес: " + esc(weightText(row)) + ". "
-      + "Тариф международной доставки: " + esc(tariffText(row)) + ". "
-      + "Статус веса: " + esc(row.weightStatus || MISSING) + ". "
-      + "Статус расчёта: " + esc(row.status || MISSING) + ". "
-      + "Категория Л’Этуаль: " + esc(row.category || MISSING) + ".</p></details>";
+    if (row.materialsRub == null || row.materialsRub === "") gaps.push("расходные материалы");
+    if (econ.other == null) gaps.push("прочие расходы продажи");
+    return { econ: econ, missing: missing, checks: checks, gaps: gaps,
+      key: missing.length ? "missing" : checks.length ? "check" : "estimate" };
   }
 
-  function unitTableRow(row) {
-    var econ = saleEconomics(row);
-    var band = marginClass(econ.margin);
-    var taxPercent = econ.sale == null || econ.taxRate == null ? null : econ.taxRate;
-    return "<tr class='sku' data-brand='" + esc(row.brand) + "' data-type='" + esc(row.productType) + "' data-volume='" + esc(row.volume) + "' data-article='" + esc(row.article) + "' data-name='" + esc(row.name) + "'>"
-      + "<td>" + esc(row.brand) + "</td>"
-      + "<td>" + esc(row.article) + "</td>"
-      + "<td class='name'>" + esc(row.name) + unitDetail(row) + "</td>"
-      + "<td>" + esc(row.productType) + "</td>"
-      + "<td>" + esc(row.volume) + "</td>"
-      + "<td class='num'>" + esc(rub(row.purchaseRub)) + "</td>"
-      + "<td class='num'>" + esc(rub(row.freightRub)) + "</td>"
-      + "<td class='num full-cost'>" + esc(rub(row.accountedRub)) + "</td>"
-      + "<td class='num'>" + esc(rub(econ.list)) + "</td>"
-      + "<td class='num'>" + esc(rub(econ.sale)) + "</td>"
-      + "<td class='num'>" + esc(percentText(econ.rate)) + "</td>"
-      + "<td class='num'>" + esc(rub(econ.commission)) + "</td>"
-      + "<td class='num'>" + esc(percentText(taxPercent)) + "</td>"
-      + "<td class='num'>" + esc(rub(econ.tax)) + "</td>"
-      + "<td class='num'>" + esc(rub(econ.other)) + "</td>"
-      + "<td class='num profit-col" + band + "'>" + esc(rub(econ.profit)) + "</td>"
-      + "<td class='num margin-col" + band + "'>" + esc(percentText(econ.margin)) + "</td>"
-      + "<td class='margin-status" + band + "'>" + esc(marginStatus(econ.margin)) + "</td></tr>";
+  function unitStatus(audit) {
+    if (audit.missing.length) return "Не хватает данных";
+    if (audit.checks.length) return "Нужна проверка";
+    return "Предварительный расчёт";
+  }
+
+  function unitFacts(lines) {
+    return "<dl class='unit-facts'>" + lines.map(function (line) {
+      return "<div" + (line[2] ? " class='unit-subtotal'" : "") + "><dt>" + esc(line[0]) + "</dt><dd>" + esc(line[1]) + "</dd></div>";
+    }).join("") + "</dl>";
+  }
+
+  function unitDetail(row) {
+    var audit = unitAudit(row), econ = audit.econ;
+    var commissionSource = row.commissionRateNote || "Источник ставки не указан.";
+    return "<details class='unit-breakdown'><summary>Из чего складывается расчёт</summary>"
+      + "<h4>1. Закупка и доставка до Москвы</h4>"
+      + "<p class='note'>" + esc(qty(row.cnyPrice)) + " ¥ × " + esc(qty(row.rate)) + " ₽/¥; доставка: " + esc(weightText(row)) + " × " + esc(tariffText(row)) + ".</p>"
+      + unitFacts([["Закупка", rub(row.purchaseRub)], ["Международная доставка", rub(row.freightRub)], ["Закупка с доставкой", rub(row.baseRub), true]])
+      + "<h4>2. Подготовка одной штуки</h4>"
+      + unitFacts([["Этикетка на товар", rub(row.productLabelRub)], ["Этикетка на коробку", rub(row.boxLabelRub)], ["Коробочка", rub(row.boxRub)], ["Упаковщик", rub(row.packerRub)], ["Расходные материалы", rub(row.materialsRub)], ["Товар с доставкой и подготовкой — учтено", rub(row.accountedRub), true]])
+      + "<h4>3. Продажа одной штуки</h4>"
+      + unitFacts([["Витринная цена", rub(econ.list)], ["Цена покупателю после скидки", rub(econ.sale), true], ["Комиссия по модели, " + percentText(econ.rate), rub(econ.commission)], ["Налог по настройке, " + percentText(econ.taxRate), rub(econ.tax)], ["Прочие учтённые расходы продажи", rub(econ.other)], ["Остаток после учтённых затрат", rub(econ.profit), true], ["Доля остатка в цене продажи", percentText(econ.margin)]])
+      + "<p class='note'>Скидка второй раз не вычитается. Остаток — предварительная оценка на одну продажу по текущей выгрузке цен, а не чистая прибыль и не прибыль за год.</p>"
+      + "<h4>Что ещё нужно проверить</h4><ul class='unit-check-list'>"
+      + (audit.missing.length ? "<li>Для расчёта не хватает: " + esc(audit.missing.join(", ")) + ".</li>" : "")
+      + audit.checks.map(function (message) { return "<li>" + esc(message) + "</li>"; }).join("")
+      + "<li>Не подтверждены или не выделены отдельно: " + esc(audit.gaps.join(", ")) + ". Нужны сумма либо подтверждение, что статья не применяется или уже включена.</li>"
+      + "<li>Резерв на непредвиденные расходы не задан. В расчёт не включён.</li>"
+      + "<li>Закупочные данные: " + esc(row.status || MISSING) + "; вес: " + esc(row.weightStatus || MISSING) + ".</li>"
+      + "<li>" + esc(commissionSource) + " Историческая ставка не подтверждает текущий тариф.</li>"
+      + "<li>Формула комиссии требует сверки с отчётом: сейчас модель умножает цену после скидки на ставку. В прежнем описании страницы указан другой порядок расчёта комиссии и скидки.</li>"
+      + "</ul></details>";
+  }
+
+  function unitCard(row, index) {
+    var audit = unitAudit(row), econ = audit.econ;
+    var signal = econ.profit != null && econ.profit < 0 ? " unit-loss" : "";
+    return "<article class='unit-product" + signal + "' data-unit-index='" + index + "' data-unit-key='" + audit.key + "'>"
+      + "<header class='unit-product-head'><span class='unit-brand-label'>" + esc(row.brand) + " · " + esc(row.volume) + "</span>"
+      + "<span class='unit-badge " + audit.key + "'>" + esc(unitStatus(audit)) + "</span></header>"
+      + "<h3>" + esc(row.name) + "</h3><p class='unit-article'>Артикул: <b>" + esc(row.article) + "</b> · " + esc(row.productType) + "</p>"
+      + "<div class='unit-metrics'><div><span>Цена продажи</span><strong>" + esc(rub(econ.sale)) + "</strong><small>после скидки, по выгрузке</small></div>"
+      + "<div><span>Товар и подготовка</span><strong>" + esc(rub(row.accountedRub)) + "</strong><small>закупка, доставка, упаковка</small></div>"
+      + "<div class='unit-result'><span>Остаток с продажи · оценка</span><strong>" + esc(rub(econ.profit)) + "</strong><small>" + (econ.margin == null ? "нужны исходные данные" : esc(percentText(econ.margin)) + " от цены · до неучтённых расходов") + "</small></div></div>"
+      + "<p class='unit-deductions'>Комиссия: " + esc(percentText(econ.rate)) + " / " + esc(rub(econ.commission)) + " · Налог: " + esc(percentText(econ.taxRate)) + " / " + esc(rub(econ.tax)) + "</p>"
+      + (audit.missing.length ? "<p class='unit-notice'>Заполнить: " + esc(audit.missing.join(", ")) + ".</p>" : "")
+      + (audit.checks.length ? "<p class='unit-notice'>" + esc(audit.checks[0]) + "</p>" : "")
+      + unitDetail(row) + "</article>";
   }
 
   function renderUnitPage(state) {
-    const rows = unitCatalog();
-    const brands = uniqueValues(rows.concat((DATA.brands || []).map(function (name) { return { brand: name }; })), "brand");
-    const types = uniqueValues(rows, "productType");
-    const volumes = uniqueValues(rows, "volume");
-    let html = "<section id='unit'><h2>Юнит-экономика</h2>"
-      + "<p>Себестоимость товара и экономика продажи через Л’Этуаль. Цены в кабинет отсюда не отправляются.</p>"
-      + "<div class='panel'><p>База до Москвы = закупка + международная доставка. Закупка = цена в юанях × курс. Доставка = вес × тариф. Себестоимость с учтёнными расходами = база + этикетка на товар + этикетка на коробку + коробочка + работа упаковщика. Пустые материалы в эту сумму не входят.</p>"
-      + "<p>Цена продажи — та, которую платит покупатель после скидки. Если скидки нет, она равна витринной. Скидка второй раз из прибыли не вычитается. Витрина и цена после скидки взяты из выгрузки личного кабинета 29 октября 2026.</p>"
-      + "<p>Комиссия, ₽ = цена продажи × ставка. Ставка берётся из отчётов исполнителя 2026: своя ставка артикула, а если своей строки нет и у бренда в этих отчётах одна ставка — ставка бренда. Несколько ставок в одну не склеиваются. Налог = 7% от цены продажи.</p>"
-      + "<p>Прибыль по учтённым расходам = цена продажи − себестоимость − комиссия − налог − другие подтверждённые расходы продажи. Логистика Л’Этуаль, маркировка, сертификация, склад и фулфилмент не подтверждены: в ячейке стоит «Нет данных», ноль вместо них не стоит. Пока этих статей нет, цифра не называется окончательной прибылью.</p>"
-      + "<p>В отчёте исполнителя ставка умножается на витринную цену, а скидка покупателя вычитается из комиссии. Здесь комиссия считается от цены после скидки. Маржинальность = прибыль по учтённым расходам / цена продажи. Ниже 25% — красный, 25–30% — жёлтый, выше 30% — зелёный.</p></div>";
-    if (!rows.length) {
-      return html + "<div class='panel'><p>Для этого бренда расчёт ещё не заполнен. Ноль не подставлен.</p></div></section>";
-    }
-    html += "<form class='filters unit-filters' id='unit-filters'>"
+    var rows = unitCatalog();
+    var brands = uniqueValues(rows.concat((DATA.brands || []).map(function (name) { return { brand: name }; })), "brand");
+    var pricesDate = dayText(DATA.unitEconomics && DATA.unitEconomics.priceAsOf) || "дата не указана";
+    return "<section id='unit'><div class='unit-heading'><div><h2>Экономика одного товара</h2>"
+      + "<p class='lead'>За сколько продаём, сколько тратим и что остаётся с одной штуки.</p></div><span class='unit-date'>Цены: " + esc(pricesDate) + "</span></div>"
+      + "<div class='unit-intro'><strong>Сейчас это предварительная оценка.</strong> Часть расходов и текущие комиссии ещё нужно сверить. Положительный остаток не означает чистую прибыль. Цены в магазине здесь не меняются.</div>"
+      + "<div class='unit-overview' aria-label='Готовность расчётов'>"
+      + "<div><strong id='unit-total'>" + rows.length + "</strong><span>товаров в выборке</span></div>"
+      + "<div><strong id='unit-estimates'>—</strong><span>с предварительным результатом</span></div>"
+      + "<div><strong id='unit-gaps'>—</strong><span>без цены, комиссии или затрат</span></div></div>"
+      + "<form class='filters unit-filters' id='unit-filters'>"
       + "<label>Бренд<select id='unit-brand'><option value=''>Все бренды</option>" + unitOptions(brands, state.brand, state.brand) + "</select></label>"
-      + "<label>Тип товара<select id='unit-type'><option value=''>Все типы</option>" + unitOptions(types, "", "") + "</select></label>"
-      + "<label>Объём<select id='unit-volume'><option value=''>Все объёмы</option>" + unitOptions(volumes, "", "") + "</select></label>"
-      + "<label>Поиск<input id='unit-query' type='search' placeholder='Артикул или название'></label>"
-      + "</form>"
-      + "<p class='muted' id='unit-count'></p>"
-      + "<p class='scroll-hint'>Таблицу можно сдвинуть вбок.</p>"
-      + "<div class='table-wrap'><table id='unit-table'><thead><tr>"
-      + "<th>Бренд</th><th>Артикул</th><th>Наименование</th><th>Тип товара</th><th>Объём</th>"
-      + "<th class='num'>Закупка</th><th class='num'>Международная доставка</th>"
-      + "<th class='num full-cost'>Себестоимость с учтёнными расходами</th>"
-      + "<th class='num'>Витринная цена Л’Этуаль</th><th class='num'>Цена продажи после скидки</th>"
-      + "<th class='num'>Комиссия, %</th><th class='num'>Комиссия, ₽</th>"
-      + "<th class='num'>Налог, %</th><th class='num'>Налог, ₽</th>"
-      + "<th class='num'>Другие подтверждённые расходы продажи</th>"
-      + "<th class='num profit-col'>Прибыль по учтённым расходам / шт.</th>"
-      + "<th class='num margin-col'>Маржинальность, %</th><th>Статус</th>"
-      + "</tr></thead><tbody>" + rows.map(unitTableRow).join("") + "</tbody></table></div></section>";
-    return html;
+      + "<label>Тип товара<select id='unit-type'><option value=''>Все типы</option>" + unitOptions(uniqueValues(rows, "productType"), "", "") + "</select></label>"
+      + "<label>Объём<select id='unit-volume'><option value=''>Все объёмы</option>" + unitOptions(uniqueValues(rows, "volume"), "", "") + "</select></label>"
+      + "<label class='unit-search'>Поиск<input id='unit-query' type='search' placeholder='Артикул, бренд или название'></label>"
+      + "<label>Что показать<select id='unit-status'><option value=''>Все товары</option><option value='missing'>Не хватает данных</option><option value='check'>Нужна проверка</option><option value='calculated'>Есть предварительный результат</option><option value='loss'>Отрицательный остаток</option></select></label>"
+      + "<label>Порядок<select id='unit-sort'><option value='catalog'>По бренду и названию</option><option value='profit-asc'>Остаток: сначала меньше</option><option value='profit-desc'>Остаток: сначала больше</option><option value='price-asc'>Цена: сначала меньше</option></select></label>"
+      + "<button type='button' class='secondary' id='unit-reset'>Сбросить</button></form>"
+      + "<div class='unit-toolbar'><p class='muted' id='unit-count' role='status' aria-live='polite'></p><button type='button' class='secondary' id='unit-export'>Скачать выборку CSV</button></div>"
+      + "<p class='unit-empty panel' id='unit-empty' hidden>По этим условиям товары не найдены. Измените фильтры или нажмите «Сбросить».</p>"
+      + "<div class='unit-products' id='unit-products'>" + rows.map(unitCard).join("") + "</div>"
+      + "<details class='fold unit-method'><summary>Как читать цифры и откуда они взяты</summary>"
+      + "<p>Цена продажи — цена после скидки из выгрузки Л’Этуаль от " + esc(pricesDate) + ". Это не подтверждение цены каждой исторической продажи. Итоги года находятся на вкладке «Прибыль».</p>"
+      + "<p>Товар и подготовка = цена в юанях × курс + вес × тариф доставки + две этикетки + коробочка + упаковщик + известные расходные материалы. Это сумма учтённых затрат; полнота импортных расходов ещё требует сверки.</p>"
+      + "<p>Остаток = цена продажи − товар и подготовка − комиссия по модели − налог по настройке − известные прочие расходы продажи. Пустые статьи не считаются подтверждённым нулём; результат неполный.</p>"
+      + "<p>Налог " + esc(percentText(DATA.unitEconomics && DATA.unitEconomics.taxRate)) + " от цены продажи — заданное пользователем допущение для ИП, не проверка налогового режима. Ставки комиссии взяты из исторических отчётов; перенос ставки с бренда отмечен на товаре. Порядок учёта скидок в комиссии нужно подтвердить документом.</p>"
+      + "<p>Закупочные цены, вес и стоимость подготовки сохранены из исходных данных. Эта страница только показывает расчёт: постоянные изменения исходных затрат нужно внести в файл учёта и повторно опубликовать данные. CSV — выгрузка текущей выборки для проверки, не замена файла партий и остатков.</p></details></section>";
   }
 
   function bindUnitPage() {
-    const root = document.getElementById("unit");
+    var root = document.getElementById("unit");
     if (!root) return;
-    const brand = document.getElementById("unit-brand");
-    const type = document.getElementById("unit-type");
-    const volume = document.getElementById("unit-volume");
-    const query = document.getElementById("unit-query");
-    const note = document.getElementById("unit-count");
-    const rows = root.querySelectorAll("tr.sku");
+    var catalog = unitCatalog();
+    var brand = document.getElementById("unit-brand"), type = document.getElementById("unit-type");
+    var volume = document.getElementById("unit-volume"), query = document.getElementById("unit-query");
+    var status = document.getElementById("unit-status"), sort = document.getElementById("unit-sort");
+    var container = document.getElementById("unit-products");
+    var cards = Array.from(container.querySelectorAll("[data-unit-index]"));
+    var visibleRows = [];
+    function normal(text) { return String(text || "").toLowerCase().replace(/ё/g, "е").trim(); }
     function apply() {
-      const text = query.value.trim().toLowerCase().replace(/ё/g, "е");
-      let shown = 0;
-      rows.forEach(function (row) {
-        const haystack = (row.dataset.article + " " + row.dataset.name).toLowerCase().replace(/ё/g, "е");
-        const visible = (!brand.value || row.dataset.brand === brand.value)
-          && (!type.value || row.dataset.type === type.value)
-          && (!volume.value || row.dataset.volume === volume.value)
-          && (!text || haystack.indexOf(text) !== -1);
-        row.hidden = !visible;
-        if (visible) shown += 1;
+      var text = normal(query.value);
+      visibleRows = [];
+      cards.forEach(function (card) {
+        var row = catalog[Number(card.dataset.unitIndex)], audit = unitAudit(row);
+        var visible = (!brand.value || row.brand === brand.value) && (!type.value || row.productType === type.value)
+          && (!volume.value || row.volume === volume.value)
+          && (!text || normal(row.article + " " + row.brand + " " + row.name).indexOf(text) !== -1)
+          && (!status.value || (status.value === "calculated" ? audit.econ.profit != null
+            : status.value === "loss" ? audit.econ.profit != null && audit.econ.profit < 0 : audit.key === status.value));
+        card.hidden = !visible;
+        if (visible) visibleRows.push({ row: row, card: card, audit: audit });
       });
-      if (!shown && brand.value && !type.value && !volume.value && !text) {
-        note.textContent = "Для этого бренда расчёт ещё не заполнен. Ноль не подставлен.";
-      } else if (!shown) {
-        note.textContent = "Ничего не найдено. Ноль не подставлен.";
-      } else {
-        note.textContent = "Показано " + shown + " из " + rows.length + ".";
-      }
+      visibleRows.sort(function (a, b) {
+        if (sort.value !== "catalog") {
+          var av = sort.value === "price-asc" ? a.audit.econ.sale : a.audit.econ.profit;
+          var bv = sort.value === "price-asc" ? b.audit.econ.sale : b.audit.econ.profit;
+          if (av == null && bv != null) return 1;
+          if (bv == null && av != null) return -1;
+          if (av != null && bv != null && av !== bv) return sort.value === "profit-desc" ? bv - av : av - bv;
+        }
+        return (a.row.brand + a.row.name + a.row.volume).localeCompare(b.row.brand + b.row.name + b.row.volume, "ru", { numeric: true });
+      });
+      visibleRows.forEach(function (entry) { container.appendChild(entry.card); });
+      var estimates = visibleRows.filter(function (entry) { return entry.audit.econ.profit != null; }).length;
+      document.getElementById("unit-total").textContent = visibleRows.length;
+      document.getElementById("unit-estimates").textContent = estimates;
+      document.getElementById("unit-gaps").textContent = visibleRows.length - estimates;
+      document.getElementById("unit-count").textContent = "Показано " + visibleRows.length + " из " + catalog.length + ". Все денежные суммы — на 1 штуку.";
+      document.getElementById("unit-empty").hidden = visibleRows.length > 0;
+      document.getElementById("unit-export").disabled = !visibleRows.length;
     }
     root.querySelector("#unit-filters").addEventListener("submit", function (event) { event.preventDefault(); });
-    [brand, type, volume].forEach(function (node) { node.addEventListener("change", apply); });
+    [brand, type, volume, status, sort].forEach(function (node) { node.addEventListener("change", apply); });
     query.addEventListener("input", apply);
+    document.getElementById("unit-reset").addEventListener("click", function () {
+      [brand, type, volume, query, status].forEach(function (node) { node.value = ""; });
+      sort.value = "catalog"; apply();
+    });
+    document.getElementById("unit-export").addEventListener("click", function () {
+      var values = [["Бренд", "Артикул", "Наименование", "Объём", "Цена продажи, руб.", "Товар и подготовка (учтено), руб.", "Комиссия по модели, руб.", "Налог по настройке, руб.", "Остаток (предварительно), руб.", "Доля остатка, %", "Статус", "Что проверить"]];
+      visibleRows.forEach(function (entry) {
+        var row = entry.row, a = entry.audit, e = a.econ;
+        function number(value) { return value == null ? "" : String(roundMoney(value)).replace(".", ","); }
+        values.push([row.brand, row.article, row.name, row.volume, number(e.sale), number(row.accountedRub), number(e.commission), number(e.tax), number(e.profit), number(e.margin == null ? null : e.margin * 100), unitStatus(a), a.missing.concat(a.checks, a.gaps, ["Комиссия и скидки требуют сверки; резерв не задан"]).join("; ")]);
+      });
+      var csv = "\uFEFF" + values.map(function (row) { return row.map(function (value) {
+        var text = String(value == null ? "" : value);
+        if (/^[=+@\t\r]/.test(text) || /^-[^\d]/.test(text)) text = "'" + text;
+        return '"' + text.replace(/"/g, '""') + '"';
+      }).join(";"); }).join("\r\n");
+      var url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+      var link = document.createElement("a"); link.href = url; link.download = "MA_Distribution_unit_review.csv";
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    });
     apply();
   }
 
@@ -1360,3 +1392,4 @@
   window.addEventListener("popstate", render);
   render();
 })();
+
