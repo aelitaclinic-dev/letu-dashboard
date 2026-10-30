@@ -264,6 +264,27 @@ tr.total td { font-weight: 680; background: var(--bg); }
 .unit-check-list li { margin: 8px 0; }
 .unit-method { margin-top: 22px !important; }
 button:disabled { opacity: .5; cursor: default; }
+.profit-presets, .profit-modes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.profit-hero { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 8px 0 18px; }
+.profit-hero > div { min-width: 0; background: var(--accent-soft); border-radius: 14px; padding: 14px 16px; }
+.profit-hero span, .profit-hero small { display: block; color: var(--muted); font-size: 13px; }
+.profit-hero strong { display: block; color: var(--accent); font-size: 28px; line-height: 1.2; margin: 6px 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.profit-hero small { font-size: 12px; }
+.profit-months { margin-top: 8px; }
+.profit-card.on { box-shadow: inset 0 0 0 2px var(--accent), var(--shadow); }
+.profit-reveal { list-style: none; }
+.profit-reveal::-webkit-details-marker { display: none; }
+.profit-card details[open] .when-closed, .profit-card details:not([open]) .when-open { display: none; }
+.profit-chart rect { cursor: pointer; }
+.profit-skus { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.profit-sku, .profit-check-row { display: flex; flex-direction: column; gap: 2px; min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--bg); }
+.profit-sku span, .profit-check-row span { color: var(--ink); font-size: 13px; overflow-wrap: anywhere; }
+.profit-check { display: flex; flex-direction: column; gap: 8px; }
+.profit-card .unit-metrics strong { font-size: 22px; }
+.profit-card .unit-facts > div { flex-wrap: wrap; align-items: baseline; }
+.profit-card .unit-facts dt { flex: 1 1 12em; }
+.profit-card .unit-facts dd { flex: 0 0 auto; white-space: nowrap; }
+.profit-note { flex: 1 0 100%; margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 @media (max-width: 960px) { .unit-products { grid-template-columns: 1fr; } }
 @media (max-width: 720px) {
   header.top, nav.menu { padding-left: 14px; padding-right: 14px; }
@@ -291,5 +312,9 @@ button:disabled { opacity: .5; cursor: default; }
   .unit-toolbar { align-items: start; flex-direction: column; }
   .unit-metrics strong { font-size: 22px; }
   .unit-metrics .unit-result strong { font-size: 27px; }
+  .profit-hero { grid-template-columns: 1fr; }
+  .profit-hero strong { font-size: 26px; }
+  .profit-presets, .profit-modes { flex-direction: column; }
+  .profit-presets button, .profit-modes button { width: 100%; }
 }
 
