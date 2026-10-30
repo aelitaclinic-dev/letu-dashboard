@@ -265,6 +265,51 @@ tr.total td { font-weight: 680; background: var(--bg); }
 .unit-method { margin-top: 22px !important; }
 button:disabled { opacity: .5; cursor: default; }
 .profit-presets, .profit-modes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.profit-banner {
+  background: #146C70;
+  color: #fff;
+  border-radius: 16px;
+  padding: 18px 20px 20px;
+  margin: 0 0 14px;
+  max-width: 100%;
+}
+.profit-banner.is-loss { background: #8E3D32; }
+.profit-banner-flag {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 2px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.profit-banner-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.profit-banner-cover {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 13px;
+  font-weight: 650;
+  white-space: normal;
+}
+.profit-banner-amount {
+  margin: 8px 0 6px;
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -.03em;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.profit-banner-meta { margin: 0; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.profit-cash { margin: 12px 0; padding: 10px 12px; border-radius: 10px; background: #E7F2F2; color: var(--ink); font-size: 13px; line-height: 1.45; }
 .profit-hero { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 8px 0 18px; }
 .profit-hero > div { min-width: 0; background: var(--accent-soft); border-radius: 14px; padding: 14px 16px; }
 .profit-hero span, .profit-hero small { display: block; color: var(--muted); font-size: 13px; }
@@ -315,6 +360,10 @@ button:disabled { opacity: .5; cursor: default; }
   .unit-metrics .unit-result strong { font-size: 27px; }
   .profit-hero { grid-template-columns: 1fr; }
   .profit-hero strong { font-size: 26px; }
+  .profit-banner { padding: 16px; }
+  .profit-banner-name { font-size: 15px; }
+  .profit-banner-cover { display: block; margin: 8px 0 0; }
+  .profit-banner-amount { font-size: 32px; }
   .profit-presets, .profit-modes { flex-direction: column; }
   .profit-presets button, .profit-modes button { width: 100%; }
 }
