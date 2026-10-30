@@ -762,6 +762,46 @@
     return octoberLeftOut ? ", январь–сентябрь" : "";
   }
 
+  function filmFold(rows) {
+    var complete = rows.filter(function (row) { return row.preliminaryState === "preliminary" && row.filmKop != null; });
+    var partials = rows.filter(function (row) { return row.preliminaryState === "partial" && row.filmKop != null; });
+    var chosen = complete.length ? complete : partials;
+    if (!chosen.length) return { qty: null, kop: null, status: "", rateKop: null };
+    return {
+      qty: chosen.reduce(function (acc, row) { return acc + (row.filmQty || 0); }, 0),
+      kop: chosen.reduce(function (acc, row) { return acc + row.filmKop; }, 0),
+      status: chosen[0].filmStatus || "Оценка",
+      rateKop: chosen[0].filmRateKop
+    };
+  }
+
+  function filmSummary(fold) {
+    if (!fold || fold.kop == null) return MISSING;
+    var count = fold.qty == null ? "" : " · " + qty(fold.qty) + " шт.";
+    var status = fold.status ? " · " + fold.status : "";
+    return money(fold.kop) + count + status;
+  }
+
+  function filmTable(rows) {
+    var body = rows.filter(function (row) { return row.revenueState !== "future"; }).map(function (row) {
+      return "<tr><td>" + esc(MONTH_NAME[row.month.slice(5)]) + "</td><td class='num'>"
+        + esc(row.filmQty == null ? MISSING : qty(row.filmQty))
+        + "</td><td class='num'>" + esc(row.filmKop == null ? MISSING : money(row.filmKop))
+        + "</td><td>" + esc(row.filmStatus || "") + "</td></tr>";
+    }).join("");
+    if (!body) return "";
+    var rated = rows.filter(function (row) { return row.filmRateKop != null; })[0];
+    var rateText = rated ? money(rated.filmRateKop) : MISSING;
+    return "<h3>Плёнка для упаковки</h3><p class='muted'>Отдельная статья: " + esc(rateText)
+      + " на одну упакованную единицу, статус «Оценка». Это временное управленческое допущение, не подтверждённая стоимость. "
+      + "Работа упаковщика, коробочка и этикетки в эту сумму не входят. Другие расходные материалы пустые, плёнка в них не записана. "
+      + "Возврат уже потраченную плёнку не уменьшает. Повторная упаковка не добавлена: данных о ней нет. "
+      + "Покупка рулона отдельно не списана. Предварительная прибыль уже уменьшена на эту сумму. "
+      + "Товар без плёнки в расчёт не входит; сейчас таких артикулов нет. Сумму можно изменить одним значением, оно не вписано в каждую продажу.</p>"
+      + "<div class='table-wrap'><table><thead><tr><th>Месяц</th><th class='num'>Упаковано, шт.</th><th class='num'>Сумма</th><th>Статус</th></tr></thead><tbody>"
+      + body + "</tbody></table></div>";
+  }
+
   function commissionReconciliation(rows) {
     var body = rows.filter(function (row) { return row.revenueState !== "future"; }).map(function (row) {
       var usedState = row.commissionState === "known" ? "known" : row.commissionState;
@@ -810,6 +850,7 @@
       line("Результат после расходов площадки", profitMoney(view.afterState, null)),
       line("Общие расходы", profitMoney(view.overheadState, null)),
       line("Налоги", profitMoney(view.taxState, null)),
+      line("Плёнка для упаковки" + preliminaryScope(rows, view), filmSummary(filmFold(rows))),
       line("Предварительная прибыль по учтённым суммам" + preliminaryScope(rows, view), profitMoney(view.preliminaryState, view.preliminaryKop)),
       line("Итоговая прибыль", profitMoney(view.profitState, null)),
     ].join("");
@@ -823,9 +864,9 @@
     }).join("");
     return "<section id='profit'><h2>Прибыль</h2><div class='panel'>" + notes.map(function (note) { return "<p>" + esc(note) + "</p>"; }).join("")
       + "</div><div class='table-wrap'><table><thead><tr><th>Показатель</th><th class='num'>Сумма</th></tr></thead><tbody>" + body + "</tbody></table></div>"
-      + "<p class='muted'>Комиссия — фактически удержанное вознаграждение: сумма строк минус скидка исполнителя. Она сходится с подвалом и второй раз из «к оплате» не вычитается. Прошлые месяцы по текущему тарифу не пересчитываются. Аванс в расходы не входит. Предварительная прибыль — выручка с учётом возвратов минус эта комиссия и маркетинг. Себестоимость, логистика, хранение, обработка возвратов и налог в неё не входят и нулём не подставлены. Итоговой прибылью она не называется. Неполный отчёт в сумму января–сентября не входит.</p>"
+      + "<p class='muted'>Комиссия — фактически удержанное вознаграждение: сумма строк минус скидка исполнителя. Она сходится с подвалом и второй раз из «к оплате» не вычитается. Прошлые месяцы по текущему тарифу не пересчитываются. Аванс в расходы не входит. Предварительная прибыль — выручка с учётом возвратов минус эта комиссия, маркетинг и оценка плёнки на упакованные единицы. Себестоимость партий, логистика, хранение, обработка возвратов и налог в неё не входят и нулём не подставлены. Итоговой прибылью она не называется. Неполный отчёт в сумму января–сентября не входит.</p>"
       + "<h3>По месяцам выбранных дат</h3><div class='table-wrap'><table><thead><tr><th>Месяц</th><th class='num'>Выручка с учётом возвратов</th><th class='num'>Себестоимость</th><th class='num'>Доля с себестоимостью</th><th class='num'>Предварительная по учтённым</th><th class='num'>Итоговая прибыль</th></tr></thead><tbody>"
-      + monthRows + "</tbody></table></div>" + commissionReconciliation(rows) + "</section>";
+      + monthRows + "</tbody></table></div>" + filmTable(rows) + commissionReconciliation(rows) + "</section>";
   }
 
   function profitMonthBlock(row, brand) {
@@ -847,6 +888,7 @@
       line("Результат после расходов площадки", NOT_CALC),
       line("Общие расходы", MISSING),
       line("Налоги", NOT_CALC),
+      line("Плёнка для упаковки", row.filmKop == null ? MISSING : money(row.filmKop) + (row.filmQty == null ? "" : " · " + qty(row.filmQty) + " шт.") + (row.filmStatus ? " · " + row.filmStatus : "")),
       line("Предварительная прибыль по учтённым суммам", profitMoney(row.preliminaryState, row.preliminaryKop)),
       line("Итоговая прибыль", NOT_CALC),
     ].join("");
@@ -941,6 +983,11 @@
       if (materials == null) return null;
       total += materials;
     }
+    if (!source.filmExcluded) {
+      var film = knownAmount(source.filmRub);
+      if (film == null) return null;
+      total += film;
+    }
     return Math.round(total * 100) / 100;
   }
 
@@ -967,6 +1014,9 @@
           boxRub: storedAmount(item, group, "boxRub"),
           packerRub: storedAmount(item, group, "packerRub"),
           materialsRub: storedAmount(item, group, "materialsRub"),
+          filmRub: storedAmount(item, group, "filmRub"),
+          filmStatus: item.filmStatus || group.filmStatus || "",
+          filmExcluded: item.filmExcluded === true || group.filmExcluded === true,
           rubPurchase: storedAmount(item, group, "rubPurchase"),
           freightExcluded: item.freightExcluded === true || group.freightExcluded === true,
           boxExcluded: item.boxExcluded === true || group.boxExcluded === true,
@@ -1104,6 +1154,7 @@
       checks.push("Цена после скидки выше витринной. Проверьте выгрузку цен.");
     }
     var gaps = UNFILLED_SELLING.slice();
+    if (!row.filmExcluded && (row.filmRub == null || row.filmRub === "")) missing.push("плёнка для упаковки");
     if (row.materialsRub == null || row.materialsRub === "") gaps.push("расходные материалы");
     if (econ.other == null) gaps.push("прочие расходы продажи");
     return { econ: econ, missing: missing, checks: checks, gaps: gaps,
@@ -1126,6 +1177,12 @@
     return excluded ? "не применяется" : rub(value);
   }
 
+  function filmFact(row) {
+    if (row.filmExcluded) return "не применяется";
+    if (row.filmRub == null || row.filmRub === "") return MISSING;
+    return rub(row.filmRub) + " · " + (row.filmStatus || "Оценка");
+  }
+
   function unitDetail(row) {
     var audit = unitAudit(row), econ = audit.econ;
     var commissionSource = row.commissionRateNote || "Источник ставки не указан.";
@@ -1140,7 +1197,7 @@
       + "<p class='note'>" + esc(purchaseNote) + "</p>"
       + unitFacts([["Закупка", rub(row.purchaseRub)], ["Международная доставка", freightText], [baseLabel, rub(row.baseRub), true]])
       + "<h4>2. Подготовка одной штуки</h4>"
-      + unitFacts([["Этикетка на товар", rub(row.productLabelRub)], ["Этикетка на коробку", appliedText(row.boxLabelExcluded, row.boxLabelRub)], ["Коробочка", appliedText(row.boxExcluded, row.boxRub)], ["Упаковщик", rub(row.packerRub)], ["Расходные материалы", rub(row.materialsRub)], [accountedLabel, rub(row.accountedRub), true]])
+      + unitFacts([["Этикетка на товар", rub(row.productLabelRub)], ["Этикетка на коробку", appliedText(row.boxLabelExcluded, row.boxLabelRub)], ["Коробочка", appliedText(row.boxExcluded, row.boxRub)], ["Упаковщик", rub(row.packerRub)], ["Плёнка для упаковки", filmFact(row)], ["Расходные материалы", rub(row.materialsRub)], [accountedLabel, rub(row.accountedRub), true]])
       + "<h4>3. Продажа одной штуки</h4>"
       + unitFacts([["Витринная цена", rub(econ.list)], ["Цена покупателю после скидки", rub(econ.sale), true], ["Комиссия по модели, " + percentText(econ.rate), rub(econ.commission)], ["Налог по настройке, " + percentText(econ.taxRate), rub(econ.tax)], ["Прочие учтённые расходы продажи", rub(econ.other)], ["Остаток после учтённых затрат", rub(econ.profit), true], ["Доля остатка в цене продажи", percentText(econ.margin)]])
       + "<p class='note'>Скидка второй раз не вычитается. Остаток — предварительная оценка на одну продажу по текущей выгрузке цен, а не чистая прибыль и не прибыль за год.</p>"
@@ -1163,9 +1220,10 @@
       + "<span class='unit-badge " + audit.key + "'>" + esc(unitStatus(audit)) + "</span></header>"
       + "<h3>" + esc(row.name) + "</h3><p class='unit-article'>Артикул: <b>" + esc(row.article) + "</b> · " + esc(row.productType) + "</p>"
       + "<div class='unit-metrics'><div><span>Цена продажи</span><strong>" + esc(rub(econ.sale)) + "</strong><small>после скидки, по выгрузке</small></div>"
-      + "<div><span>Товар и подготовка</span><strong>" + esc(rub(row.accountedRub)) + "</strong><small>" + (row.freightExcluded ? "закупка без доставки до Москвы, этикетка на товар, упаковщик" : "закупка, доставка, упаковка") + "</small></div>"
+      + "<div><span>Товар и подготовка</span><strong>" + esc(rub(row.accountedRub)) + "</strong><small>" + (row.freightExcluded ? "закупка без доставки до Москвы, этикетка на товар, упаковщик" : "закупка, доставка, упаковка") + (row.filmExcluded ? "" : ", плёнка") + "</small></div>"
       + "<div class='unit-result'><span>Остаток с продажи · оценка</span><strong>" + esc(rub(econ.profit)) + "</strong><small>" + (econ.margin == null ? "нужны исходные данные" : esc(percentText(econ.margin)) + " от цены · до неучтённых расходов") + "</small></div></div>"
       + "<p class='unit-deductions'>Комиссия: " + esc(percentText(econ.rate)) + (row.commissionObservedFrom ? " с " + esc(dayText(row.commissionObservedFrom)) : "") + " / " + esc(rub(econ.commission)) + " · Налог: " + esc(percentText(econ.taxRate)) + " / " + esc(rub(econ.tax)) + "</p>"
+      + "<p class='unit-deductions'>Плёнка для упаковки: " + esc(filmFact(row)) + "</p>"
       + (row.freightExcluded ? "<p class='unit-notice'>Доставка до Москвы не входит в закупку и не считается. Индивидуальная коробочка и этикетка на коробку не применяются.</p>" : "")
       + (audit.missing.length ? "<p class='unit-notice'>Заполнить: " + esc(audit.missing.join(", ")) + ".</p>" : "")
       + (audit.checks.length ? "<p class='unit-notice'>" + esc(audit.checks[0]) + "</p>" : "")
@@ -1211,7 +1269,7 @@
       + "<div class='unit-products' id='unit-products'>" + rows.map(unitCard).join("") + "</div>"
       + "<details class='fold unit-method'><summary>Как читать цифры и откуда они взяты</summary>"
       + "<p>Цена продажи — цена после скидки из выгрузки Л’Этуаль от " + esc(pricesDate) + ". Это не подтверждение цены каждой исторической продажи. Итоги года находятся на вкладке «Прибыль».</p>"
-      + "<p>Товар и подготовка = цена в юанях × курс + вес × тариф доставки + две этикетки + коробочка + упаковщик + известные расходные материалы. Это сумма учтённых затрат; полнота импортных расходов ещё требует сверки. Если закупка задана в рублях, юани и доставка до Москвы в сумму не входят: этой доставки в указанной закупке нет. У таких строк нет индивидуальной коробочки и этикетки на коробку. Этикетка на товар и упаковщик остаются.</p>"
+      + "<p>Товар и подготовка = цена в юанях × курс + вес × тариф доставки + две этикетки + коробочка + упаковщик + плёнка, если товар упаковывается в плёнку, + известные расходные материалы. Плёнка — отдельная оценка, не часть упаковщика, коробки, этикеток и других материалов. Это сумма учтённых затрат; полнота импортных расходов ещё требует сверки. Если закупка задана в рублях, юани и доставка до Москвы в сумму не входят: этой доставки в указанной закупке нет. У таких строк нет индивидуальной коробочки и этикетки на коробку. Этикетка на товар и упаковщик остаются.</p>"
       + "<p>Остаток = цена продажи − товар и подготовка − комиссия по модели − налог по настройке − известные прочие расходы продажи. Пустые статьи не считаются подтверждённым нулём; результат неполный.</p>"
       + "<p>Налог " + esc(percentText(DATA.unitEconomics && DATA.unitEconomics.taxRate)) + " от цены продажи — заданное пользователем допущение для ИП, не проверка налогового режима. Ставки комиссии взяты из исторических отчётов; перенос ставки с бренда отмечен на товаре. Порядок учёта скидок в комиссии нужно подтвердить документом.</p>"
       + "<p>Закупочные цены, вес и стоимость подготовки сохранены из исходных данных. Эта страница только показывает расчёт: постоянные изменения исходных затрат нужно внести в файл учёта и повторно опубликовать данные. CSV — выгрузка текущей выборки для проверки, не замена файла партий и остатков.</p></details></section>";
