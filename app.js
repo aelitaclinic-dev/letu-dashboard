@@ -11,6 +11,8 @@
   };
   var profitChartMode = "month";
   var profitHold = null;
+  var yOfProfit = null;
+  var profitY0 = 0;
   const SHORT_MONTH = {
     "01": "янв", "02": "фев", "03": "мар", "04": "апр", "05": "май", "06": "июн",
     "07": "июл", "08": "авг", "09": "сен", "10": "окт", "11": "ноя", "12": "дек",
@@ -1556,45 +1558,80 @@
     return "Остаток до неизвестных затрат";
   }
 
+  function profitBar(point, value, x, width, fill, tip, hatch) {
+    var y1 = yOfProfit(value);
+    var top = Math.min(profitY0, y1);
+    var barH = Math.max(Math.abs(y1 - profitY0), 1);
+    var mark = " class='profit-bar' data-profit-month='" + esc(point.month) + "'";
+    var rect = "<rect" + mark + " x='" + x.toFixed(1) + "' y='" + top.toFixed(1) + "' width='" + width.toFixed(1) + "' height='" + barH.toFixed(1) + "' rx='3' fill='" + fill + "'><title>" + esc(tip) + "</title></rect>";
+    if (!hatch) return rect;
+    return rect + "<rect data-profit-month='" + esc(point.month) + "' x='" + x.toFixed(1) + "' y='" + top.toFixed(1) + "' width='" + width.toFixed(1) + "' height='" + barH.toFixed(1) + "' rx='3' fill='url(#profit-hatch)'><title>" + esc(tip) + "</title></rect>";
+  }
+
   function drawProfitChart(rows, mode) {
     var points = [];
     var running = 0;
+    var runningCovered = 0;
+    var runningFilled = 0;
+    var runningRevenue = 0;
     rows.forEach(function (row) {
       var view = row.view;
       var label = SHORT_MONTH[row.month.slice(5)];
       var title = monthTitle(row.month);
       if (!view || view.status === "future" || view.resultKop == null) {
-        points.push({ month: row.month, value: null, label: label, tip: title + ": расчёта нет. Ноль не поставлен." });
-        return;
-      }
-      if (mode === "cumulative" && !view.comparable) {
+        var why = view && view.status === "future" ? "период ещё не наступил" : "расчёта нет";
         points.push({
           month: row.month,
           value: null,
+          covered: null,
           label: label,
-          tip: title + ": " + money(view.resultKop) + ". В накопленный итог не входит: расчёт не сопоставим с полными месяцами. Ноль не поставлен.",
+          tip: title + ": " + why + ". В накопленный итог ноль не поставлен.",
         });
         return;
       }
       var kop = view.resultKop;
+      var coveredKop = view.coveredResultKop;
+      var gap = view.partial ? " Неполный месяц." : "";
       if (mode === "cumulative") {
         running += view.resultKop;
+        runningCovered += view.coveredResultKop || 0;
+        runningFilled += view.filledRevenueKop || 0;
+        runningRevenue += view.revenueKop || 0;
         kop = running;
+        coveredKop = runningCovered;
+        points.push({
+          month: row.month,
+          value: kop / 100,
+          kop: kop,
+          covered: coveredKop / 100,
+          coveredKop: coveredKop,
+          label: label + (view.partial ? "*" : ""),
+          partial: view.partial,
+          kind: view.resultKind,
+          tip: title + ": До неизвестных затрат " + money(kop) + ". Этот месяц: " + resultLabel(view) + " " + money(view.resultKop) + "." + gap,
+          coveredTip: title + ": Прибыль рассчитанной части " + money(coveredKop) + ". Охват " + percentOf(runningFilled, runningRevenue) + "." + gap,
+        });
+        return;
       }
-      var mark = view.partial ? " Неполный месяц." : (view.resultKind === "remainder" ? " Часть себестоимости не заполнена." : "");
+      var uncovered = view.resultKind === "remainder" ? " Часть себестоимости не заполнена." : "";
       points.push({
         month: row.month,
         value: kop / 100,
         kop: kop,
+        covered: null,
         label: label + (view.partial ? "*" : ""),
         partial: view.partial,
         kind: view.resultKind,
-        tip: title + ": " + resultLabel(view) + " " + money(kop) + "." + mark,
+        tip: title + ": " + resultLabel(view) + " " + money(kop) + "." + gap + uncovered,
       });
     });
-    var nums = points.map(function (point) { return point.value; }).filter(function (value) { return value != null; });
+    var nums = [];
+    points.forEach(function (point) {
+      if (point.value != null) nums.push(point.value);
+      if (point.covered != null) nums.push(point.covered);
+    });
     if (!nums.length) {
-      return "<div class='chart-wrap' id='profit-chart'><h3 class='chart-title'>Предварительная прибыль по месяцам</h3><p>Нет сопоставимых сумм. Нулевой столбик не поставлен.</p></div>";
+      return "<div class='chart-wrap' id='profit-chart'><h3 class='chart-title'>Результат по месяцам</h3><p>Нет месяцев с расчётом. Нулевой столбик не поставлен.</p></div>";
     }
     var min = Math.min(0, Math.min.apply(null, nums));
     var max = Math.max(0, Math.max.apply(null, nums));
@@ -1604,48 +1641,50 @@
     var span = axisMax - axisMin || 1;
     var width = 760;
     var height = 250;
-    var padL = 64;
+    var padL = 72;
     var padR = 12;
     var padT = 16;
     var padB = 36;
     var plotW = width - padL - padR;
     var plotH = height - padT - padB;
     var group = plotW / points.length;
-    var barW = Math.min(28, group * 0.62);
-    function yOf(value) { return padT + plotH * (1 - (value - axisMin) / span); }
-    var y0 = yOf(0);
+    var paired = mode === "cumulative";
+    var barW = paired ? Math.min(14, group * 0.28) : Math.min(28, group * 0.62);
+    yOfProfit = function (value) { return padT + plotH * (1 - (value - axisMin) / span); };
+    profitY0 = yOfProfit(0);
     var svg = "<div class='chart-wrap' id='profit-chart'><h3 class='chart-title'>"
-      + (mode === "cumulative" ? "Накопленный итог сопоставимых месяцев" : "Предварительная прибыль по месяцам")
+      + (paired ? "Накопленный остаток до неизвестных затрат" : "Результат по месяцам")
       + "</h3><svg class='chart profit-chart' viewBox='0 0 " + width + " " + height + "' role='img'>";
     svg += "<pattern id='profit-hatch' width='6' height='6' patternUnits='userSpaceOnUse' patternTransform='rotate(45)'><line x1='0' y1='0' x2='0' y2='6' stroke='#8C5E4A' stroke-width='2'/></pattern>";
     for (var step = 0; step < 4; step += 1) {
       var tick = axisMin + (axisMax - axisMin) * step / 3;
-      var y = yOf(tick);
+      var y = yOfProfit(tick);
       svg += "<line x1='" + padL + "' y1='" + y.toFixed(1) + "' x2='" + (width - padR) + "' y2='" + y.toFixed(1) + "' stroke='#E5DDD8'/>";
       svg += "<text x='" + (padL - 8) + "' y='" + (y + 4).toFixed(1) + "' text-anchor='end' font-size='11' fill='#6B6168'>" + esc(axisLabel(tick)) + "</text>";
     }
-    svg += "<line x1='" + padL + "' y1='" + y0.toFixed(1) + "' x2='" + (width - padR) + "' y2='" + y0.toFixed(1) + "' stroke='#302B32' stroke-width='1'/>";
+    svg += "<line x1='" + padL + "' y1='" + profitY0.toFixed(1) + "' x2='" + (width - padR) + "' y2='" + profitY0.toFixed(1) + "' stroke='#302B32' stroke-width='1'/>";
     points.forEach(function (point, index) {
       var cx = padL + (index + 0.5) * group;
       svg += "<text x='" + cx.toFixed(1) + "' y='" + (height - 12) + "' text-anchor='middle' font-size='11' fill='#6B6168'>" + esc(point.label) + "</text>";
       if (point.value == null) {
-        svg += "<text x='" + cx.toFixed(1) + "' y='" + (y0 - 8).toFixed(1) + "' text-anchor='middle' font-size='11' fill='#8C5E4A'><title>" + esc(point.tip) + "</title>—</text>";
+        svg += "<text x='" + cx.toFixed(1) + "' y='" + (profitY0 - 8).toFixed(1) + "' text-anchor='middle' font-size='11' fill='#8C5E4A'><title>" + esc(point.tip) + "</title>—</text>";
         return;
       }
-      var y1 = yOf(point.value);
-      var top = Math.min(y0, y1);
-      var barH = Math.max(Math.abs(y1 - y0), 1);
-      var x = cx - barW / 2;
-      var fill = point.kind === "remainder" ? "#EBC2A6" : "#69465F";
-      svg += "<rect class='profit-bar' data-profit-month='" + esc(point.month) + "' x='" + x.toFixed(1) + "' y='" + top.toFixed(1) + "' width='" + barW.toFixed(1) + "' height='" + barH.toFixed(1) + "' rx='3' fill='" + fill + "'><title>" + esc(point.tip) + "</title></rect>";
-      if (point.partial) {
-        svg += "<rect data-profit-month='" + esc(point.month) + "' x='" + x.toFixed(1) + "' y='" + top.toFixed(1) + "' width='" + barW.toFixed(1) + "' height='" + barH.toFixed(1) + "' rx='3' fill='url(#profit-hatch)'><title>" + esc(point.tip) + "</title></rect>";
+      if (paired) {
+        svg += profitBar(point, point.value, cx - barW - 1.5, barW, "#EBC2A6", point.tip, point.partial);
+        svg += profitBar(point, point.covered, cx + 1.5, barW, "#69465F", point.coveredTip, false);
+        return;
       }
+      var fill = point.kind === "remainder" ? "#EBC2A6" : "#69465F";
+      svg += profitBar(point, point.value, cx - barW / 2, barW, fill, point.tip, point.partial);
     });
-    svg += "</svg><div class='legend'><span><i class='swatch' style='background:#69465F'></i>Полный месяц, себестоимость оценена по всей выручке</span><span><i class='swatch' style='background:#EBC2A6'></i>Остаток: часть себестоимости не заполнена</span><span><i class='swatch' style='background:#8C5E4A'></i>Штриховка — неполный месяц</span></div>";
-    svg += "<p class='muted'>" + (mode === "cumulative"
-      ? "Накопленный итог складывает только сопоставимые результаты с начала выбранного периода: полный месяц и оценочная себестоимость на всю его выручку. Пропуск без столбика — не ноль. Месяцы с разным охватом здесь не смешиваются."
-      : "Высота столбика совпадает с крупной суммой карточки. Отрицательная прибыль была бы ниже нуля. Звёздочка и штриховка — неполный месяц. Светлый столбик — остаток до неизвестных затрат, не прибыль всего месяца.") + "</p></div>";
+    if (paired) {
+      svg += "</svg><div class='legend'><span><i class='swatch' style='background:#EBC2A6'></i>До неизвестных затрат</span><span><i class='swatch' style='background:#69465F'></i>Прибыль рассчитанной части, в подсказке охват</span><span><i class='swatch' style='background:#8C5E4A'></i>Штриховка — неполный месяц</span><span>Прочерк — месяца в сумме нет</span></div>";
+      svg += "<p class='muted'>Накопленный ряд складывает каждый выбранный месяц, у которого есть расчёт. Это не сумма только полных месяцев. Подпись ряда — «До неизвестных затрат». Второй ряд — прибыль рассчитанной части, охват написан в подсказке. Пропущенный месяц остаётся прочерком и нулём не заменён.</p></div>";
+    } else {
+      svg += "</svg><div class='legend'><span><i class='swatch' style='background:#69465F'></i>Полный месяц, себестоимость оценена по всей выручке</span><span><i class='swatch' style='background:#EBC2A6'></i>Остаток: часть себестоимости не заполнена</span><span><i class='swatch' style='background:#8C5E4A'></i>Штриховка — неполный месяц</span></div>";
+      svg += "<p class='muted'>Высота столбика совпадает с крупной суммой карточки. Отрицательная прибыль была бы ниже нуля. Звёздочка и штриховка — неполный месяц. Светлый столбик — остаток до неизвестных затрат.</p></div>";
+    }
     return svg;
   }
 
@@ -1703,11 +1742,19 @@
       var amount = item.rubKop == null ? "сумма лишних штук в аналитике отдельно не выделена" : money(item.rubKop);
       return "<li>" + esc(item.article) + (item.name ? " · " + esc(item.name) : "") + " · " + esc(qty(item.qty)) + " шт. · " + esc(amount) + " · " + esc(item.note) + "</li>";
     }).join("");
+    var disputed = (view.disputed || []).map(function (item) {
+      return "<li>" + esc(item.article) + (item.name ? " · " + esc(item.name) : "") + " · " + esc(qty(item.qty)) + " шт. · выручка " + esc(money(item.revenueKop)) + " · оценка карточки " + esc(money(item.refusedKop)) + " не вычтена. " + esc(item.reason) + "</li>";
+    }).join("");
     var notes = (view.notes || []).map(function (note) { return "<li>" + esc(note) + "</li>"; }).join("");
-    var coveredLine = view.resultKind === "remainder"
-      ? "<p class='unit-notice'>Прибыль рассчитанной части: " + esc(money(view.coveredResultKop)) + ". Охват выручки с заполненной себестоимостью: " + esc(percentOf(view.filledRevenueKop, view.revenueKop)) + ". Документально подтверждённая себестоимость: 0%.</p>"
-      : "<p class='muted'>Охват выручки с заполненной себестоимостью: " + esc(percentOf(view.filledRevenueKop, view.revenueKop)) + ". Документально подтверждённая себестоимость: 0%. Это ещё не итоговая прибыль: логистики, хранения и общих расходов нет.</p>";
-    return "<article class='unit-product profit-card' id='profit-month-" + esc(row.month) + "'><div class='unit-product-head'><span class='unit-brand-label'>" + esc(monthTitle(row.month)) + "</span><span class='tag " + tagClass + "'>" + esc(view.status) + "</span></div><div class='unit-metrics'><div><span>Оборот</span><strong>" + esc(money(view.turnoverKop)) + "</strong><small>" + esc(qty(view.turnoverQty)) + " шт. до возвратов</small></div><div><span>Выручка после возвратов</span><strong>" + esc(money(view.revenueKop)) + "</strong><small>Возвраты " + esc(money(view.returnsKop)) + "</small></div><div><span>Учтённые затраты</span><strong>" + esc(money(view.accountedKop)) + "</strong></div><div class='unit-result'><span>" + esc(resultLabel(view)) + "</span><strong>" + esc(money(view.resultKop)) + "</strong><small>" + esc(marginName) + " " + esc(percentOf(marginPart, marginBase)) + "</small></div></div><details class='unit-breakdown'><summary class='profit-reveal'><span class='when-closed'>Раскрыть расходы</span><span class='when-open'>Скрыть расходы</span></summary>"
+    var coveredLine = "<p class='unit-notice'>Охват выручки товарами с заполненной себестоимостью: " + esc(percentOf(view.filledRevenueKop, view.revenueKop)) + ". Документально подтверждённая себестоимость: 0%."
+      + (view.resultKind === "remainder" ? " Прибыль рассчитанной части: " + esc(money(view.coveredResultKop)) + "." : "")
+      + "</p><p class='unit-notice'>Полнота учтённых расходов: неполная. Логистика, хранение, обработка возвратов, другие материалы и общие расходы не заданы."
+      + (view.freightExcludedQty ? " Без международной доставки: " + esc(qty(view.freightExcludedQty)) + " шт. на " + esc(money(view.freightGapRevenueKop)) + ". Ноль за эту доставку не поставлен." : "")
+      + "</p>";
+    var limits = "Охват себестоимости " + percentOf(view.filledRevenueKop, view.revenueKop) + ". Расходы учтены не полностью.";
+    if (view.freightExcludedQty) limits += " Без международной доставки: " + qty(view.freightExcludedQty) + " шт. на " + money(view.freightGapRevenueKop) + ".";
+    if (view.disputedRefusedKop) limits += " Спорная себестоимость не вычтена: " + money(view.disputedRefusedKop) + ".";
+    return "<article class='unit-product profit-card' id='profit-month-" + esc(row.month) + "'><div class='unit-product-head'><span class='unit-brand-label'>" + esc(monthTitle(row.month)) + "</span><span class='tag " + tagClass + "'>" + esc(view.status) + "</span></div><div class='unit-metrics'><div><span>Оборот</span><strong>" + esc(money(view.turnoverKop)) + "</strong><small>" + esc(qty(view.turnoverQty)) + " шт. до возвратов</small></div><div><span>Выручка после возвратов</span><strong>" + esc(money(view.revenueKop)) + "</strong><small>Возвраты " + esc(money(view.returnsKop)) + "</small></div><div><span>Учтённые затраты</span><strong>" + esc(money(view.accountedKop)) + "</strong></div><div class='unit-result'><span>" + esc(resultLabel(view)) + "</span><strong>" + esc(money(view.resultKop)) + "</strong><small>" + esc(marginName) + " " + esc(percentOf(marginPart, marginBase)) + "</small></div></div><p class='profit-limits'>" + esc(limits) + "</p><details class='unit-breakdown'><summary class='profit-reveal'><span class='when-closed'>Раскрыть расходы</span><span class='when-open'>Скрыть расходы</span></summary>"
       + coveredLine
       + "<h4>От выручки к результату</h4><dl class='unit-facts'>" + chain + "</dl>"
       + "<h4>Промежуточные итоги</h4><p class='muted'>Компоненты себестоимости и упаковки уже внутри промежуточных итогов и второй раз не вычитаются.</p><dl class='unit-facts'>" + steps + "</dl>"
@@ -1718,6 +1765,7 @@
       + profitFact("Расхождение", esc(money(view.commissionGapKop)))
       + profitFact("Операции без подтверждения", esc(String((view.unconfirmed || []).length)))
       + "</dl>"
+      + (disputed ? "<h4>Спорная себестоимость</h4><ul class='unit-check-list'>" + disputed + "</ul><p class='muted'>Влияние на результат месяца: остаток выше на " + esc(money(view.disputedRefusedKop)) + ", потому что оценка карточки не списана и нулём не заменена.</p>" : "")
       + (missing ? "<h4>Нет закупочной оценки</h4><ul class='unit-check-list'>" + missing + "</ul>" : "")
       + (unconfirmed ? "<h4>Комиссия не подтверждена отчётом</h4><ul class='unit-check-list'>" + unconfirmed + "</ul>" : "<p class='muted'>Продаж аналитики без строки этого отчёта нет.</p>")
       + "<h4>Как посчитано</h4><ul class='unit-check-list'>" + notes + "</ul></details></article>";
@@ -1756,8 +1804,8 @@
     };
     var coverage = "Продажи в аналитике загружены по " + dayText(cov.salesThrough) + ". Полные финансовые отчёты — по " + dayText(cov.financeFullThrough) + ". Последний финансовый отчёт — по " + dayText(cov.financeThrough) + ". Дата 30 октября 2026 отчёты до этого дня не продлевает.";
     var heroNote = allPreliminary
-      ? "Сумма месячных результатов. Рентабельность посчитана из общих сумм, проценты месяцев не складывались."
-      : "Сумма карточек выбранных месяцев. Месяцы с неполной себестоимостью дают остаток до неизвестных затрат, а не прибыль всего месяца. Проценты рентабельности не складывались.";
+      ? "Сумма всех выбранных месяцев с расчётом. Охват себестоимости полный. Расходы всё равно учтены не полностью: логистики, хранения и общих расходов нет. Рентабельность посчитана из общих сумм."
+      : "Сумма всех выбранных месяцев с расчётом, а не только полных. Охват себестоимости " + percentOf(filled, revenue) + ". Расходы учтены не полностью. Проценты рентабельности не складывались.";
     var cards = [
       "<div><span>Оборот</span><strong>" + esc(money(turnover)) + "</strong><small>Реализованные продажи до вычета возвратов. Заказы сюда не входят.</small></div>",
       "<div><span>Возвраты</span><strong>" + esc(money(returns)) + "</strong><small>Как в отчётах. Минус уменьшает оборот.</small></div>",
@@ -1779,7 +1827,7 @@
       + "<p class='muted'>" + esc(coverage) + "</p>"
       + "<div class='profit-hero'>" + cards + "</div>"
       + "<div class='profit-modes'><button type='button' data-profit-mode='month'" + (profitChartMode === "month" ? "" : " class='secondary'") + ">По месяцам</button><button type='button' data-profit-mode='cumulative'" + (profitChartMode === "cumulative" ? "" : " class='secondary'") + ">Накопленным итогом</button></div>"
-      + drawProfitChart(ready, profitChartMode)
+      + drawProfitChart(rows, profitChartMode)
       + "<div class='unit-products profit-months'>" + rows.map(profitCard).join("") + "</div>"
       + futureNote
       + "<h3>Сверка комиссии</h3><p class='muted'>Сумма по строкам отчёта сходится с итогом отчёта. В прибыль входит именно она. Расхождение не подгоняется. Продажа без строки отчёта не получает текущую ставку, среднюю ставку или ноль.</p><div class='profit-check'>" + check + "</div></section>";

@@ -285,6 +285,7 @@ button:disabled { opacity: .5; cursor: default; }
 .profit-card .unit-facts dt { flex: 1 1 12em; }
 .profit-card .unit-facts dd { flex: 0 0 auto; white-space: nowrap; }
 .profit-note { flex: 1 0 100%; margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+.profit-limits { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft); color: var(--ink); font-size: 13px; line-height: 1.45; }
 @media (max-width: 960px) { .unit-products { grid-template-columns: 1fr; } }
 @media (max-width: 720px) {
   header.top, nav.menu { padding-left: 14px; padding-right: 14px; }
