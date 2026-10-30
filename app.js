@@ -1484,7 +1484,7 @@
       + "<section id='year'><h2>Месяцы 2026</h2><div class='panel'><p>Январь 2026 на этой таблице есть: у него свой файл заказов и свой отчёт исполнителя. Свод с 1 января по 27 октября в итог не прибавляется и по месяцам не режется.</p></div>"
       + brandTableNote + yearTable(chosen) + spanCheck(state.from, state.to, movement, state.brand)
       + "<h2>Динамика</h2><div class='panel'>" + dynamics(chosen) + "<p>План не задан. Прогноз не построен: в аналитике нет подневной ленты заказов.</p></div></section>"
-      + "<section><h2>Прибыль</h2><p class='muted'>Помесячный расчёт открывается отдельно. Заказы, начисления к выплате и поступления на счёт на этой сводке прибылью не называются.</p><p><a class='button' href='#profit'>Открыть прибыль</a></p></section>"
+      + "<section><h2>Прибыль</h2><p class='muted'>Помесячный расчёт открывается отдельно. Заказы, начисления к выплате и поступления на счёт на этой сводке прибылью не называются.</p><p><a class='button' href='#profit'>Открыть прибыль</a> <a class='button secondary' href='#expenses'>Расходы бизнеса</a></p></section>"
       + "<h2 id='goods'>Рейтинг товаров</h2><p class='muted'>Сложены отдельные файлы месяцев внутри выбранных дат. Сводный файл второй раз не прибавлен. Себестоимости нет, поэтому место в списке — по доставке, не по прибыли.</p>"
       + productTable(goods.slice(0, 8), "По сумме доставки") + productTable(byQty, "По количеству доставки")
       + stockBlock()
@@ -1785,7 +1785,7 @@
     if (view.freightExcludedQty) limits += " Без международной доставки: " + qty(view.freightExcludedQty) + " шт. на " + money(view.freightGapRevenueKop) + ".";
     if (view.disputedRefusedKop) limits += " Спорная себестоимость не вычтена: " + money(view.disputedRefusedKop) + ".";
     var cashLine = view.declarationCashKop == null ? "" : "<p class='profit-cash'>Движение денег: оплата деклараций " + esc(money(view.declarationCashKop)) + ". В результат месяца не входит.</p>";
-    return "<article class='unit-product profit-card' id='profit-month-" + esc(row.month) + "' data-result-kop='" + view.resultKop + "'><div class='unit-product-head'><span class='unit-brand-label'>" + esc(monthTitle(row.month)) + "</span><span class='tag " + tagClass + "'>" + esc(view.status) + "</span></div><div class='unit-metrics'><div><span>Оборот</span><strong>" + esc(money(view.turnoverKop)) + "</strong><small>" + esc(qty(view.turnoverQty)) + " шт. до возвратов</small></div><div><span>Выручка после возвратов</span><strong>" + esc(money(view.revenueKop)) + "</strong><small>Возвраты " + esc(money(view.returnsKop)) + "</small></div><div><span>Учтённые затраты</span><strong>" + esc(money(view.accountedKop)) + "</strong></div><div class='unit-result'><span>" + esc(resultLabel(view)) + "</span><strong>" + esc(money(view.resultKop)) + "</strong><small>" + esc(marginName) + " " + esc(percentOf(marginPart, marginBase)) + "</small></div></div><p class='profit-limits'>" + esc(limits) + "</p>" + cashLine + "<details class='unit-breakdown'><summary class='profit-reveal'><span class='when-closed'>Раскрыть расходы</span><span class='when-open'>Скрыть расходы</span></summary>"
+    return "<article class='unit-product profit-card' id='profit-month-" + esc(row.month) + "' data-result-kop='" + view.resultKop + "'><div class='unit-product-head'><span class='unit-brand-label'>" + esc(monthTitle(row.month)) + "</span><span class='tag " + tagClass + "'>" + esc(view.status) + "</span></div><div class='unit-metrics'><div><span>Оборот</span><strong>" + esc(money(view.turnoverKop)) + "</strong><small>" + esc(qty(view.turnoverQty)) + " шт. до возвратов</small></div><div><span>Выручка после возвратов</span><strong>" + esc(money(view.revenueKop)) + "</strong><small>Возвраты " + esc(money(view.returnsKop)) + "</small></div><div><span>Учтённые затраты</span><strong>" + esc(money(view.accountedKop)) + "</strong></div><div class='unit-result'><span>" + esc(resultLabel(view)) + "</span><strong>" + esc(money(view.resultKop)) + "</strong><small>" + esc(marginName) + " " + esc(percentOf(marginPart, marginBase)) + "</small></div></div><p class='profit-limits'>" + esc(limits) + "</p>" + cashLine + businessMonthBox(row.month, view.resultKop) + "<details class='unit-breakdown'><summary class='profit-reveal'><span class='when-closed'>Раскрыть расходы</span><span class='when-open'>Скрыть расходы</span></summary>"
       + coveredLine
       + "<h4>От выручки к результату</h4><dl class='unit-facts'>" + chain + "</dl>"
       + "<h4>Промежуточные итоги</h4><p class='muted'>Компоненты себестоимости и упаковки уже внутри промежуточных итогов и второй раз не вычитаются.</p><dl class='unit-facts'>" + steps + "</dl>"
@@ -1848,7 +1848,7 @@
         return monthTitle(row.month) + " в расчёте по отчёту " + dayText(row.view.financeStart) + "–" + dayText(row.view.financeEnd);
       }).join(". ");
     }
-    var bannerMeta = dateLine + (result == null ? ". Нулевая сумма не поставлена." : ". Сумма карточек выбранных месяцев.");
+    var bannerMeta = dateLine + (result == null ? ". Нулевая сумма не поставлена." : ". Сумма карточек выбранных месяцев. Расходы бизнеса из этой суммы не вычтены.");
     var bannerCover = result == null || costComplete ? "" : "<span class='profit-banner-cover'>Охват расчёта " + esc(percentOf(filled, revenue)) + "</span>";
     var banner = "<div class='profit-banner" + (loss ? " is-loss" : "") + "' id='profit-banner' data-result-kop='" + (result == null ? "" : String(result)) + "'>"
       + (loss ? "<p class='profit-banner-flag'>Убыток</p>" : "")
@@ -1892,7 +1892,7 @@
     var tripsBlock = "<h3>Поездки на склад Л’Этуаль</h3><p class='muted'>" + esc(registers.tripRule || "Поездка относится к месяцу выполнения. Бензин внутри оплаты курьера повторно не прибавляется.") + "</p>"
       + (tripRows || "<p class='profit-limits'>Документов о поездках нет. Сумма неизвестна, ноль не поставлен и в прибыль не входит.</p><div class='profit-sku'><span>Дата: нет в документах</span><span>Площадка назначения: нет в документах</span><span>Оплата курьера: сумма неизвестна</span><span>Бензин: сумма неизвестна</span><span>Прочие прямые расходы: сумма неизвестна</span><span>Итог: сумма неизвестна</span><span>Статус: не заполнен</span></div>");
     var declarationRows = (registers.declarations || []).map(function (item) {
-      return "<div class='profit-sku'><b>" + esc(item.paidLabel || "Декларация") + "</b><span>Номер: " + esc(item.number || "Нет в документах") + "</span><span>Стоимость: " + esc(money(item.costKop)) + "</span><span>Дата оплаты: " + esc(item.paidOn ? dayText(item.paidOn) : "Нет в документах") + "</span><span>Начало действия: " + esc(item.validFrom ? dayText(item.validFrom) : "Нет в документах") + "</span><span>Окончание действия: " + esc(item.validTo ? dayText(item.validTo) : "Нет в документах") + "</span><span>Юрлицо: " + esc(item.entity || "Нет в документах") + "</span><span>Товары и бренды: " + esc(item.coverageLabel || "Нет в документах") + "</span><span>В прибыли: не распределено</span></div>";
+      return "<div class='profit-sku'><b>" + esc(item.paidLabel || "Декларация") + "</b><span>Номер: " + esc(item.number || "Нет в документах") + "</span><span>Стоимость: " + esc(money(item.costKop)) + "</span><span>Дата оплаты: " + esc(item.paidOn ? dayText(item.paidOn) : "Нет в документах") + "</span><span>Начало действия: " + esc(item.validFrom ? dayText(item.validFrom) : "Нет в документах") + "</span><span>Окончание действия: " + esc(item.validTo ? dayText(item.validTo) : "Нет в документах") + "</span><span>Юрлицо: " + esc(item.entity === "ip" ? "ИП" : item.entity === "ooo" ? "ООО" : "Нужно уточнить") + "</span><span>Товары и бренды: " + esc(item.coverageLabel || "Нет в документах") + "</span><span>В прибыли: не распределено</span></div>";
     }).join("");
     var declarationsBlock = "<h3>Декларации</h3><p class='muted'>" + esc(registers.declarationMethod || "") + "</p>"
       + (registers.septemberCashNote ? "<p class='profit-cash'>" + esc(registers.septemberCashNote) + "</p>" : "")
@@ -1903,6 +1903,7 @@
       + "<form id='profit-custom' class='filters'><label>С месяца<select id='profit-from'>" + options(bounds.from) + "</select></label><label>По месяц<select id='profit-to'>" + options(bounds.to) + "</select></label><button type='submit'>Показать месяцы</button></form>"
       + banner
       + "<p class='muted'>" + esc(coverage) + "</p>"
+      + businessPeriodBox(bounds, result)
       + "<div class='profit-hero'>" + cards + "</div>"
       + "<div class='profit-modes'><button type='button' data-profit-mode='month'" + (profitChartMode === "month" ? "" : " class='secondary'") + ">По месяцам</button><button type='button' data-profit-mode='cumulative'" + (profitChartMode === "cumulative" ? "" : " class='secondary'") + ">Накопленным итогом</button></div>"
       + drawProfitChart(rows, profitChartMode)
@@ -1952,6 +1953,565 @@
   }
 
 
+  var EXPENSE_KEY = "ma-distribution-expenses-v1";
+  var expenseEntity = "all";
+  var expenseEditing = null;
+  var expenseFilters = { category: "", channel: "", status: "", from: "2026-01", to: "2026-10" };
+
+  function expenseBook() {
+    return DATA.businessExpenses || { records: [], entities: [], categories: [], channels: [], methods: [], unitAlready: [], note: "" };
+  }
+
+  function loadExpenses() {
+    var seeds = expenseBook().records || [];
+    var saved = [];
+    try {
+      saved = JSON.parse(localStorage.getItem(EXPENSE_KEY) || "[]");
+    } catch (error) {
+      saved = [];
+    }
+    if (!Array.isArray(saved)) saved = [];
+    var byId = {};
+    seeds.forEach(function (row) { byId[row.id] = Object.assign({}, row); });
+    saved.forEach(function (row) {
+      if (!row || !row.id) return;
+      if (row.deleted) {
+        delete byId[row.id];
+        return;
+      }
+      byId[row.id] = Object.assign({}, byId[row.id] || {}, row);
+    });
+    var entityOrder = { ip: 0, ooo: 1 };
+    return Object.keys(byId).map(function (id) { return byId[id]; }).sort(function (a, b) {
+      var byEntity = (entityOrder[a.entity] == null ? 9 : entityOrder[a.entity]) - (entityOrder[b.entity] == null ? 9 : entityOrder[b.entity]);
+      if (byEntity) return byEntity;
+      var byStatus = (a.status === "planned" ? 1 : 0) - (b.status === "planned" ? 1 : 0);
+      if (byStatus) return byStatus;
+      var byOrder = (a.order == null ? 999 : a.order) - (b.order == null ? 999 : b.order);
+      if (byOrder) return byOrder;
+      return String(a.yearLabel || a.date || "").localeCompare(String(b.yearLabel || b.date || ""), "ru") || String(a.title).localeCompare(String(b.title), "ru");
+    });
+  }
+
+  function saveExpenseOverride(row) {
+    var saved = [];
+    try { saved = JSON.parse(localStorage.getItem(EXPENSE_KEY) || "[]"); } catch (error) { saved = []; }
+    if (!Array.isArray(saved)) saved = [];
+    var next = saved.filter(function (item) { return item.id !== row.id; });
+    next.push(row);
+    localStorage.setItem(EXPENSE_KEY, JSON.stringify(next));
+  }
+
+  function labelOf(list, id) {
+    var found = (list || []).filter(function (item) { return item.id === id; })[0];
+    return found ? found.label : "Нужно уточнить";
+  }
+
+  function entityLabel(id) {
+    if (id === "ip") return "ИП";
+    if (id === "ooo") return "ООО";
+    return "Нужно уточнить";
+  }
+
+  function expenseAmount(kop) {
+    if (kop == null) return "Нужно уточнить";
+    return money(kop);
+  }
+
+  function needsReviewExpense(row) {
+    var payer = row.payerEntity || row.entity;
+    var beneficiary = row.beneficiaryEntity || row.entity;
+    if (payer && beneficiary && payer !== beneficiary) return true;
+    var owners = { "wb-ip": "ip", "wb-ooo": "ooo", "ozon-ip": "ip", "ozon-ooo": "ooo" };
+    return !!(owners[row.channelScope] && payer && owners[row.channelScope] !== payer);
+  }
+
+  function evenTermKop(cost, from, to, month) {
+    if (cost == null || !from || !to || to < from) return null;
+    var months = [];
+    var cursor = from.slice(0, 7);
+    var last = to.slice(0, 7);
+    while (cursor <= last) {
+      months.push(cursor);
+      var year = Number(cursor.slice(0, 4));
+      var mon = Number(cursor.slice(5));
+      cursor = mon === 12 ? (year + 1) + "-01" : year + "-" + (mon < 9 ? "0" : "") + (mon + 1);
+    }
+    if (months.indexOf(month) < 0) return 0;
+    var totalDays = Math.round((new Date(to + "T00:00:00Z") - new Date(from + "T00:00:00Z")) / 86400000) + 1;
+    var allocated = 0;
+    var chosen = 0;
+    months.forEach(function (key, index) {
+      var year = Number(key.slice(0, 4));
+      var mon = Number(key.slice(5));
+      var lastDay = new Date(Date.UTC(year, mon, 0)).getUTCDate();
+      var monthEnd = key + "-" + (lastDay < 10 ? "0" : "") + lastDay;
+      var left = key + "-01" > from ? key + "-01" : from;
+      var right = monthEnd < to ? monthEnd : to;
+      var days = Math.round((new Date(right + "T00:00:00Z") - new Date(left + "T00:00:00Z")) / 86400000) + 1;
+      var share = index === months.length - 1 ? cost - allocated : Math.round(cost * days / totalDays);
+      if (index !== months.length - 1) allocated += share;
+      if (key === month) chosen = share;
+    });
+    return chosen;
+  }
+
+  function shareOfExpense(total, row, channel) {
+    var scope = row.channelScope || "unknown";
+    if (scope === "unknown" || scope === "business") return null;
+    if (scope === "several") {
+      var shares = row.channelShares || {};
+      if (!row.allocationRule || shares[channel] == null || shares[channel] === "") return null;
+      var fraction = Number(shares[channel]);
+      if (!(fraction >= 0 && fraction <= 1)) return null;
+      return Math.round(total * fraction);
+    }
+    if (scope !== channel) return 0;
+    return total;
+  }
+
+  function expenseShare(row, month, entity, channel) {
+    if (row.entity !== entity) return { state: "skip", kop: null, reason: "Другое юрлицо в этот расчёт не входит." };
+    if (needsReviewExpense(row)) return { state: "review", kop: null, reason: "Плательщик и получатель выгоды различаются. Затрата сама не перенесена." };
+    if (row.fuelIncludedInCourier) return { state: "included", kop: null, reason: "Бензин уже входит в оплату курьера и повторно не добавляется." };
+    if (row.amountKop == null) return { state: "undefined", kop: null, reason: "Сумма неизвестна." };
+    if (!row.methodConfirmed || !row.allocationMethod) {
+      var reason = row.proposedMethod === "term"
+        ? "Предложено распределение по сроку действия. Срок не подтверждён, поэтому доля не начислена."
+        : "Способ включения в прибыль не подтверждён.";
+      return { state: "undefined", kop: null, reason: reason };
+    }
+    var scope = row.channelScope || "unknown";
+    if (scope === "business") return { state: "excluded", kop: null, reason: "Расход бизнеса в целом. Между площадками не распределён." };
+    if (scope === "unknown") return { state: "undefined", kop: null, reason: "Площадка не выбрана." };
+    var gross = null;
+    if (row.allocationMethod === "month") {
+      var paid = row.paidMonth || String(row.date || "").slice(0, 7);
+      if (!paid) return { state: "undefined", kop: null, reason: "Не указан месяц, в который списать всю сумму." };
+      gross = paid === month ? row.amountKop : 0;
+    } else if (row.allocationMethod === "usage") {
+      if (row.usedKop == null || !row.useMonth) return { state: "undefined", kop: null, reason: "Нет месяца или суммы фактического использования. Покупка сама расходом периода не становится." };
+      gross = row.useMonth === month ? row.usedKop : 0;
+    } else if (row.allocationMethod === "term") {
+      gross = evenTermKop(row.amountKop, row.validFrom, row.validTo, month);
+      if (gross == null) return { state: "undefined", kop: null, reason: "Нет подтверждённого срока действия." };
+    } else {
+      return { state: "undefined", kop: null, reason: "Способ включения не распознан." };
+    }
+    var share = shareOfExpense(gross, row, channel);
+    if (share == null && scope === "several") return { state: "undefined", kop: null, reason: "Нет правила деления между площадками." };
+    if (share == null) return { state: "undefined", kop: null, reason: "Долю площадки назвать нельзя." };
+    return { state: "known", kop: share, reason: "" };
+  }
+
+  function businessEffect(month, resultKop) {
+    var gaps = [];
+    var known = [];
+    var rows = loadExpenses();
+    if (!rows.length) return { accounted: null, after: null, gaps: ["Список расходов не загружен."] };
+    rows.forEach(function (row) {
+      var share = expenseShare(row, month, "ip", "letu");
+      if (share.state === "skip" || share.state === "excluded" || share.state === "included") return;
+      if (share.state === "known") known.push(share.kop);
+      else gaps.push((row.title || "Расход") + (row.yearLabel ? " · " + row.yearLabel : "") + " · " + share.reason);
+    });
+    var accounted = gaps.length ? null : known.reduce(function (acc, item) { return acc + item; }, 0);
+    return {
+      accounted: accounted,
+      after: accounted == null || resultKop == null ? null : resultKop - accounted,
+      gaps: gaps,
+    };
+  }
+
+  function businessMonthBox(month, resultKop) {
+    var effect = businessEffect(month, resultKop);
+    var gaps = effect.gaps.slice(0, 3).map(function (item) { return "<li>" + esc(item) + "</li>"; }).join("");
+    return "<div class='profit-business'><p><b>До расходов бизнеса:</b> " + esc(money(resultKop)) + "</p>"
+      + "<p><b>Учтённые расходы бизнеса:</b> " + esc(effect.accounted == null ? "Не определены" : money(effect.accounted)) + "</p>"
+      + "<p><b>После расходов бизнеса:</b> " + esc(effect.after == null ? "Не посчитан" : money(effect.after)) + "</p>"
+      + (gaps ? "<ul class='unit-check-list'>" + gaps + "</ul>" : "")
+      + "<p class='muted'>Это кабинет ИП. Расходы ООО сюда не входят. Налог 7% на ООО не переносится.</p></div>";
+  }
+
+  function nextMonth(month) {
+    var year = Number(month.slice(0, 4));
+    var mon = Number(month.slice(5));
+    return mon === 12 ? (year + 1) + "-01" : year + "-" + (mon < 9 ? "0" : "") + (mon + 1);
+  }
+
+  function businessPeriodBox(bounds, result) {
+    var gaps = [];
+    var seen = {};
+    var accounted = 0;
+    var blocked = false;
+    var cursor = bounds.from;
+    while (cursor && cursor <= bounds.to) {
+      var effect = businessEffect(cursor, 0);
+      if (effect.accounted == null) blocked = true;
+      else accounted += effect.accounted;
+      effect.gaps.forEach(function (item) {
+        if (!seen[item]) {
+          seen[item] = true;
+          gaps.push(item);
+        }
+      });
+      cursor = nextMonth(cursor);
+    }
+    var after = blocked || result == null ? null : result - accounted;
+    var gapList = gaps.slice(0, 4).map(function (item) { return "<li>" + esc(item) + "</li>"; }).join("");
+    return "<div class='profit-business'><h3>Расходы бизнеса в этом расчёте</h3>"
+      + "<p><b>До расходов бизнеса:</b> " + esc(result == null ? "Нет расчёта" : money(result)) + "</p>"
+      + "<p><b>Учтённые расходы бизнеса:</b> " + esc(blocked ? "Не определены" : money(accounted)) + "</p>"
+      + "<p><b>После расходов бизнеса:</b> " + esc(after == null ? "Не посчитан" : money(after)) + "</p>"
+      + (gapList ? "<ul class='unit-check-list'>" + gapList + "</ul>" : "")
+      + "<p class='muted'>Пока срок, товары и площадка деклараций ИП не подтверждены, старые декларации в 2026 целиком не списываются. Оплата и распределённая стоимость вместе не вычитаются. Расходы ООО в прибыль ИП не входят. <a href='#expenses'>Открыть расходы бизнеса</a></p></div>";
+  }
+
+  function monthInRange(month, start, end) {
+    return !!month && month >= start && month <= end;
+  }
+
+  function expenseSummary(rows, start, end) {
+    var per = { ip: emptyExpenseBucket(), ooo: emptyExpenseBucket() };
+    rows.forEach(function (row) {
+      var bucket = per[row.entity];
+      if (!bucket) return;
+      if (row.currency && row.currency !== "RUB") {
+        bucket.incomplete += 1;
+        return;
+      }
+      var paidMonth = row.paidMonth || String(row.date || "").slice(0, 7);
+      var incomplete = (row.needs && row.needs.length) || row.amountKop == null || !row.channelScope || row.channelScope === "unknown" || !row.methodConfirmed;
+      if (incomplete) bucket.incomplete += 1;
+      if (row.status === "planned") {
+        if (row.amountKop == null) bucket.plannedUnknown += 1;
+        else bucket.plannedKop += row.amountKop;
+        return;
+      }
+      if (row.status === "paid" && row.amountKop != null && paidMonth && monthInRange(paidMonth, start, end)) {
+        bucket.paidKop += row.amountKop;
+        bucket.paidCount += 1;
+      } else if (row.status === "paid" && row.amountKop != null && paidMonth && !monthInRange(paidMonth, start, end)) {
+        bucket.paidOutsideKop += row.amountKop;
+      } else if (row.status === "paid" && row.amountKop != null && row.paidYear) {
+        var yearText = String(row.paidYear);
+        if (start.slice(0, 4) <= yearText && yearText <= end.slice(0, 4)) {
+          bucket.paidKop += row.amountKop;
+          bucket.paidMonthUnknown += 1;
+        } else bucket.paidOutsideKop += row.amountKop;
+      }
+      var cursor = start;
+      while (cursor <= end) {
+        var share = expenseShare(row, cursor, row.entity, "letu");
+        if (share.state === "known" && share.kop) bucket.accountedKnown += share.kop;
+        else if (share.state === "undefined" || share.state === "review") bucket.accountedUndefined += 1;
+        var year = Number(cursor.slice(0, 4));
+        var mon = Number(cursor.slice(5));
+        cursor = mon === 12 ? (year + 1) + "-01" : year + "-" + (mon < 9 ? "0" : "") + (mon + 1);
+      }
+    });
+    ["ip", "ooo"].forEach(function (id) {
+      if (per[id].accountedUndefined) per[id].accountedKop = null;
+      else per[id].accountedKop = per[id].accountedKnown;
+    });
+    return per;
+  }
+
+  function emptyExpenseBucket() {
+    return { paidKop: 0, paidCount: 0, paidOutsideKop: 0, paidMonthUnknown: 0, accountedKop: 0, accountedKnown: 0, accountedUndefined: 0, plannedKop: 0, plannedUnknown: 0, incomplete: 0 };
+  }
+
+  function expenseOptions(list, selected, placeholder) {
+    var head = "<option value=''>" + esc(placeholder || "Все") + "</option>";
+    return head + (list || []).map(function (item) {
+      return "<option value='" + esc(item.id) + "'" + (item.id === selected ? " selected" : "") + ">" + esc(item.label) + "</option>";
+    }).join("");
+  }
+
+  function expenseMonthOptions(selected, withEmpty) {
+    var html = withEmpty ? "<option value=''>Не выбран</option>" : "";
+    [2023, 2024, 2025, 2026].forEach(function (year) {
+      for (var mon = 1; mon <= 12; mon += 1) {
+        var value = year + "-" + (mon < 10 ? "0" : "") + mon;
+        html += "<option value='" + value + "'" + (value === selected ? " selected" : "") + ">" + esc(MONTH_NAME[value.slice(5)] + " " + year) + "</option>";
+      }
+    });
+    return html;
+  }
+
+  function expenseRowIncomplete(row) {
+    return (row.needs && row.needs.length) || row.amountKop == null || !row.channelScope || row.channelScope === "unknown" || !row.methodConfirmed || needsReviewExpense(row);
+  }
+
+  function renderExpenses() {
+    var book = expenseBook();
+    var rows = loadExpenses();
+    var filters = expenseFilters;
+    var summary = expenseSummary(rows, filters.from, filters.to);
+    var shown = rows.filter(function (row) {
+      if (expenseEntity !== "all" && row.entity !== expenseEntity) return false;
+      if (filters.category && row.category !== filters.category) return false;
+      if (filters.channel && row.channelScope !== filters.channel) return false;
+      if (filters.status === "paid" && row.status !== "paid") return false;
+      if (filters.status === "planned" && row.status !== "planned") return false;
+      if (filters.status === "incomplete" && !expenseRowIncomplete(row)) return false;
+      return true;
+    });
+    var switcher = ["all", "ip", "ooo"].map(function (id) {
+      var text = id === "all" ? "Все" : entityLabel(id);
+      return "<button type='button' data-expense-entity='" + id + "'" + (expenseEntity === id ? "" : " class='secondary'") + ">" + esc(text) + "</button>";
+    }).join("");
+    function totalCard(id) {
+      var item = summary[id];
+      var planned = "Нет записей";
+      if (item.plannedUnknown && item.plannedKop) planned = expenseAmount(item.plannedKop) + ", и ещё есть запись без суммы";
+      else if (item.plannedUnknown) planned = "Сумма неизвестна";
+      else if (item.plannedKop) planned = expenseAmount(item.plannedKop);
+      var paidText = item.paidKop ? expenseAmount(item.paidKop) : (item.paidOutsideKop ? "В этом периоде оплат нет" : "Нет записей");
+      return "<div class='profit-business'><h3>" + esc(entityLabel(id)) + "</h3>"
+        + "<p><b>Фактически оплачено за период:</b> " + esc(paidText) + (item.paidMonthUnknown ? ". Месяц части оплат нужно уточнить." : "") + "</p>"
+        + "<p><b>Учтено в расходах периода:</b> " + esc(item.accountedKop == null ? "Не определены" : money(item.accountedKop)) + "</p>"
+        + "<p><b>Планируемые:</b> " + esc(planned) + "</p>"
+        + "<p><b>Не хватает данных:</b> " + esc(String(item.incomplete)) + "</p>"
+        + (item.paidOutsideKop ? "<p class='muted'>Оплаты вне выбранного периода: " + esc(money(item.paidOutsideKop)) + ". В эту цифру периода они не входят.</p>" : "")
+        + "</div>";
+    }
+    var list = shown.map(function (row) {
+      var profitText = "Не определено";
+      var share = expenseShare(row, filters.to, row.entity, row.channelScope === "several" ? "letu" : (row.channelScope || "letu"));
+      if (share.state === "included") profitText = "Уже включено в другой расход";
+      else if (share.state === "excluded") profitText = "Бизнес в целом, по площадкам не разделено";
+      else if (share.state === "review") profitText = "Нужно уточнить: разные юрлица";
+      else if (share.state === "known") profitText = "В выбранном способе: " + money(share.kop);
+      return "<article class='profit-sku expense-row'><b>" + esc(row.title || "Расход") + "</b>"
+        + "<span>" + esc(entityLabel(row.entity)) + " · " + esc(labelOf(book.categories, row.category)) + "</span>"
+        + "<span>Дата: " + esc(row.date ? dayText(row.date) : (row.yearLabel || "Нужно уточнить")) + "</span>"
+        + "<span>Сумма: " + esc(row.amountKop == null ? "Нужно уточнить" : money(row.amountKop) + (row.currency && row.currency !== "RUB" ? " " + row.currency : "")) + "</span>"
+        + "<span>Площадка: " + esc(labelOf(book.channels, row.channelScope)) + "</span>"
+        + "<span>Статус: " + esc(row.status === "planned" ? "Планируется" : "Оплачен") + "</span>"
+        + "<span>В прибыли: " + esc(profitText) + "</span>"
+        + (row.comment ? "<span>" + esc(row.comment) + "</span>" : "")
+        + "<span><button type='button' class='secondary' data-expense-edit='" + esc(row.id) + "'>Изменить</button></span>"
+        + "</article>";
+    }).join("");
+    var already = (book.unitAlready || []).map(function (item) {
+      return "<li>" + esc(item.name) + " — " + esc(item.detail) + ". " + esc(item.status) + ".</li>";
+    }).join("");
+    return "<section id='expenses'><div class='unit-heading'><h2>Расходы бизнеса</h2><span class='unit-date'>ИП и ООО отдельно</span></div>"
+      + "<div class='unit-intro'><strong>Здесь платежи и расходы периода не смешиваются.</strong> ИП и ООО не складываются в одну прибыль. Комиссии и удержания из отчётов площадок повторно не добавляются. " + esc(book.note || "") + " Новые записи сохраняются только в этом браузере. Цены, карточки и остатки в магазинах не меняются.</div>"
+      + "<div class='profit-presets'>" + switcher + "</div>"
+      + "<form id='expense-filters' class='filters'>"
+      + "<label>С месяца<select id='expense-from'>" + expenseMonthOptions(filters.from, false) + "</select></label>"
+      + "<label>По месяц<select id='expense-to'>" + expenseMonthOptions(filters.to, false) + "</select></label>"
+      + "<label>Категория<select id='expense-category'>" + expenseOptions(book.categories, filters.category, "Все категории") + "</select></label>"
+      + "<label>Площадка<select id='expense-channel'>" + expenseOptions(book.channels, filters.channel, "Все площадки") + "</select></label>"
+      + "<label>Статус<select id='expense-status'><option value=''" + (filters.status === "" ? " selected" : "") + ">Все</option><option value='paid'" + (filters.status === "paid" ? " selected" : "") + ">Оплачен</option><option value='planned'" + (filters.status === "planned" ? " selected" : "") + ">Планируется</option><option value='incomplete'" + (filters.status === "incomplete" ? " selected" : "") + ">Не хватает данных</option></select></label>"
+      + "<button type='submit'>Показать</button></form>"
+      + "<div class='expense-totals'>" + totalCard("ip") + totalCard("ooo") + "</div>"
+      + "<p><button type='button' id='expense-add'>Добавить расход</button> <button type='button' class='secondary' id='expense-reset'>Убрать мои правки</button></p>"
+      + expenseForm()
+      + "<div class='profit-skus expense-list'>" + (list || "<p>В этом фильтре записей нет.</p>") + "</div>"
+      + "<h3>Уже в юнит-экономике</h3><p class='muted'>Эти суммы уже входят в прибыль по карточкам. Новая запись с тем же смыслом создаст двойное списание, если не выбрать «дополнение» или «замена». Замена сам расчёт карточки не стирает.</p><ul class='unit-check-list'>" + already + "</ul></section>";
+  }
+
+  function expenseForm() {
+    var book = expenseBook();
+    var row = expenseEditing || {};
+    var open = expenseEditing ? " open" : "";
+    return "<details class='unit-breakdown' id='expense-editor'" + open + "><summary>" + esc(expenseEditing ? "Изменить расход" : "Форма расхода") + "</summary><form id='expense-form' class='stack'>"
+      + "<input type='hidden' id='expense-id' value='" + esc(row.id || "") + "'>"
+      + "<label>Дата<input id='expense-date' type='date' value='" + esc(row.date || "") + "'></label>"
+      + "<label>Юрлицо<select id='expense-entity'><option value='ip'" + (row.entity === "ooo" ? "" : " selected") + ">ИП</option><option value='ooo'" + (row.entity === "ooo" ? " selected" : "") + ">ООО</option></select></label>"
+      + "<label>Категория<select id='expense-cat'>" + expenseOptions(book.categories, row.category || "", "Выберите") + "</select></label>"
+      + "<label>Название<input id='expense-title' value='" + esc(row.title || "") + "'></label>"
+      + "<label>Сумма, рубли<input id='expense-amount' inputmode='decimal' placeholder='Пусто, если сумма неизвестна' value='" + esc(row.amountKop == null ? "" : String(row.amountKop / 100).replace(".", ",")) + "'></label>"
+      + "<label>Валюта<select id='expense-currency'><option value='RUB'" + ((row.currency || "RUB") === "RUB" ? " selected" : "") + ">₽</option><option value='CNY'" + (row.currency === "CNY" ? " selected" : "") + ">¥</option><option value='USD'" + (row.currency === "USD" ? " selected" : "") + ">$</option></select></label>"
+      + "<label>Площадка или кабинет<select id='expense-place'>" + expenseOptions(book.channels, row.channelScope || "unknown", "Нужно уточнить") + "</select></label>"
+      + "<label>Статус<select id='expense-state'><option value='paid'" + (row.status === "planned" ? "" : " selected") + ">Оплачен</option><option value='planned'" + (row.status === "planned" ? " selected" : "") + ">Планируется</option></select></label>"
+      + "<label>Комментарий<textarea id='expense-comment'>" + esc(row.comment || "") + "</textarea></label>"
+      + "<label>Документ, если есть<input id='expense-document' placeholder='Название, без файла' value='" + esc(row.document || "") + "'></label>"
+      + "<p id='expense-pack-note' class='profit-limits'>Для упаковки, плёнки и упаковщика отметьте ниже: это дополнение или замена. Иначе запись не сохранится и текущий расчёт не задвоится.</p>"
+      + "<details><summary>Дополнительно, если нужно</summary>"
+      + "<label>Получатель выгоды<select id='expense-beneficiary'><option value=''>Тот же, кто платит</option><option value='ip'" + (row.beneficiaryEntity === "ip" && row.payerEntity && row.beneficiaryEntity !== row.payerEntity ? " selected" : "") + ">ИП</option><option value='ooo'" + (row.beneficiaryEntity === "ooo" && row.payerEntity && row.beneficiaryEntity !== row.payerEntity ? " selected" : "") + ">ООО</option></select></label>"
+      + "<label>Бренд<input id='expense-brand' value='" + esc(row.brand || "") + "'></label>"
+      + "<label>Товары<input id='expense-goods' value='" + esc(row.goods || "") + "'></label>"
+      + "<label>Партия<input id='expense-batch' value='" + esc(row.batch || "") + "'></label>"
+      + "<label>Количество<input id='expense-qty' inputmode='decimal' value='" + esc(row.qty == null ? "" : String(row.qty)) + "'></label>"
+      + "<label>Стоимость единицы, ₽<input id='expense-unit' inputmode='decimal' value='" + esc(row.unitKop == null ? "" : String(row.unitKop / 100).replace(".", ",")) + "'></label>"
+      + "<label>Начало периода<input id='expense-from-date' type='date' value='" + esc(row.validFrom || "") + "'></label>"
+      + "<label>Окончание периода<input id='expense-to-date' type='date' value='" + esc(row.validTo || "") + "'></label>"
+      + "<label>Как включать в прибыль<select id='expense-method'><option value=''>Пока не выбран</option>" + (book.methods || []).map(function (item) { return "<option value='" + esc(item.id) + "'" + ((row.allocationMethod || row.proposedMethod) === item.id ? " selected" : "") + ">" + esc(item.label) + "</option>"; }).join("") + "</select></label>"
+      + "<label><span>Учитывать этим способом</span><input id='expense-confirm' type='checkbox'" + (row.methodConfirmed ? " checked" : "") + "></label>"
+      + "<label>Правило для нескольких площадок<input id='expense-rule' placeholder='Например: вручную' value='" + esc(row.allocationRule || "") + "'></label>"
+      + "<label>Доля Л’Этуаль, если площадок несколько<input id='expense-share' inputmode='decimal' placeholder='Например 0,5' value='" + esc(row.channelShares && row.channelShares.letu != null ? String(row.channelShares.letu).replace(".", ",") : "") + "'></label>"
+      + "<label><span>Бензин уже входит в оплату курьера</span><input id='expense-fuel' type='checkbox'" + (row.fuelIncludedInCourier ? " checked" : "") + "></label>"
+      + "<label>Использовано на товары, ₽<input id='expense-used' inputmode='decimal' value='" + esc(row.usedKop == null ? "" : String(row.usedKop / 100).replace(".", ",")) + "'></label>"
+      + "<label>Месяц использования<select id='expense-use-month'>" + expenseMonthOptions(row.useMonth || "", true) + "</select></label>"
+      + "<label>Связь с текущей упаковкой<select id='expense-unit-role'><option value=''>Не про упаковку из карточек</option><option value='extra'" + (row.unitRole === "extra" ? " selected" : "") + ">Дополнение, не повтор</option><option value='replace'" + (row.unitRole === "replace" ? " selected" : "") + ">Замена текущей оценки, карточку само не стирает</option></select></label>"
+      + "</details><p id='expense-error' class='profit-limits'></p><button type='submit'>Сохранить расход</button></form></details>";
+  }
+
+  function parseExpenseMoney(text) {
+    var raw = String(text || "").replace(/\s/g, "").replace(",", ".");
+    if (!raw) return null;
+    if (!/^\d+(\.\d{1,2})?$/.test(raw)) return undefined;
+    var parts = raw.split(".");
+    var rub = Number(parts[0]);
+    var kop = parts[1] ? Number((parts[1] + "00").slice(0, 2)) : 0;
+    return rub * 100 + kop;
+  }
+
+  function bindExpenses() {
+    document.querySelectorAll("[data-expense-entity]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        expenseEntity = button.getAttribute("data-expense-entity");
+        render();
+      });
+    });
+    var filters = document.getElementById("expense-filters");
+    if (filters) {
+      filters.addEventListener("submit", function (event) {
+        event.preventDefault();
+        expenseFilters.from = document.getElementById("expense-from").value;
+        expenseFilters.to = document.getElementById("expense-to").value;
+        if (expenseFilters.from > expenseFilters.to) {
+          var swap = expenseFilters.from;
+          expenseFilters.from = expenseFilters.to;
+          expenseFilters.to = swap;
+        }
+        expenseFilters.category = document.getElementById("expense-category").value;
+        expenseFilters.channel = document.getElementById("expense-channel").value;
+        expenseFilters.status = document.getElementById("expense-status").value;
+        render();
+      });
+    }
+    var add = document.getElementById("expense-add");
+    if (add) {
+      add.addEventListener("click", function () {
+        expenseEditing = { id: "", entity: expenseEntity === "ooo" ? "ooo" : "ip", status: "paid", currency: "RUB", channelScope: "unknown" };
+        render();
+        var editor = document.getElementById("expense-editor");
+        if (editor) {
+          editor.open = true;
+          editor.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+    var reset = document.getElementById("expense-reset");
+    if (reset) {
+      reset.addEventListener("click", function () {
+        localStorage.removeItem(EXPENSE_KEY);
+        expenseEditing = null;
+        render();
+      });
+    }
+    document.querySelectorAll("[data-expense-edit]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var id = button.getAttribute("data-expense-edit");
+        expenseEditing = loadExpenses().filter(function (row) { return row.id === id; })[0] || null;
+        render();
+        var editor = document.getElementById("expense-editor");
+        if (editor) {
+          editor.open = true;
+          editor.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    });
+    var form = document.getElementById("expense-form");
+    if (!form) return;
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var error = document.getElementById("expense-error");
+      var amount = parseExpenseMoney(document.getElementById("expense-amount").value);
+      var category = document.getElementById("expense-cat").value;
+      var title = document.getElementById("expense-title").value.trim();
+      var entity = document.getElementById("expense-entity").value;
+      var unitRole = document.getElementById("expense-unit-role").value;
+      if (!category || !title || !entity) {
+        error.textContent = "Нужны юрлицо, категория и название.";
+        return;
+      }
+      if (amount === undefined) {
+        error.textContent = "Сумма пустая, если она неизвестна, или число с копейками. Ноль сам не подставляется.";
+        return;
+      }
+      if ((category === "packaging" || category === "packer") && unitRole !== "extra" && unitRole !== "replace") {
+        error.textContent = "Этикетки, коробка, плёнка и упаковщик уже в карточках. Отметьте дополнение или замену, чтобы не списать их второй раз.";
+        return;
+      }
+      var beneficiary = document.getElementById("expense-beneficiary").value || entity;
+      var place = document.getElementById("expense-place").value || "unknown";
+      var owners = { "wb-ip": "ip", "wb-ooo": "ooo", "ozon-ip": "ip", "ozon-ooo": "ooo" };
+      if (owners[place] && owners[place] !== entity) beneficiary = owners[place];
+      var shareText = document.getElementById("expense-share").value.trim().replace(",", ".");
+      var shares = null;
+      if (shareText) {
+        var fraction = Number(shareText);
+        if (!(fraction >= 0 && fraction <= 1)) {
+          error.textContent = "Доля Л’Этуаль — число от 0 до 1. Например 0,5.";
+          return;
+        }
+        shares = { letu: String(fraction) };
+      }
+      var used = parseExpenseMoney(document.getElementById("expense-used").value);
+      var unit = parseExpenseMoney(document.getElementById("expense-unit").value);
+      if (used === undefined || unit === undefined) {
+        error.textContent = "Дополнительные суммы оставьте пустыми или запишите число.";
+        return;
+      }
+      var method = document.getElementById("expense-method").value;
+      var confirmed = document.getElementById("expense-confirm").checked && !!method;
+      if (document.getElementById("expense-confirm").checked && !method) {
+        error.textContent = "Сначала выберите способ включения в прибыль.";
+        return;
+      }
+      var existing = document.getElementById("expense-id").value;
+      var record = {
+        id: existing || ("local-" + Date.now()),
+        local: !existing || existing.indexOf("local-") === 0,
+        date: document.getElementById("expense-date").value || null,
+        paidMonth: (document.getElementById("expense-date").value || "").slice(0, 7) || null,
+        yearLabel: document.getElementById("expense-date").value ? "" : "Дату нужно уточнить",
+        entity: entity,
+        payerEntity: entity,
+        beneficiaryEntity: beneficiary,
+        category: category,
+        title: title,
+        amountKop: amount,
+        currency: document.getElementById("expense-currency").value || "RUB",
+        channelScope: place,
+        status: document.getElementById("expense-state").value,
+        comment: document.getElementById("expense-comment").value.trim(),
+        document: document.getElementById("expense-document").value.trim() || null,
+        brand: document.getElementById("expense-brand").value.trim() || null,
+        goods: document.getElementById("expense-goods").value.trim() || null,
+        batch: document.getElementById("expense-batch").value.trim() || null,
+        qty: document.getElementById("expense-qty").value.trim() || null,
+        unitKop: unit,
+        validFrom: document.getElementById("expense-from-date").value || null,
+        validTo: document.getElementById("expense-to-date").value || null,
+        allocationMethod: confirmed ? method : null,
+        proposedMethod: method || null,
+        methodConfirmed: confirmed,
+        fuelIncludedInCourier: document.getElementById("expense-fuel").checked,
+        allocationRule: document.getElementById("expense-rule").value.trim() || null,
+        channelShares: shares,
+        usedKop: used,
+        useMonth: document.getElementById("expense-use-month").value || null,
+        unitRole: unitRole || null,
+        needs: [],
+      };
+      ["date", "validFrom", "validTo", "goods", "channel"].forEach(function (key) {
+        if (key === "channel" && record.channelScope === "unknown") record.needs.push("channel");
+        else if (key !== "channel" && !record[key]) record.needs.push(key);
+      });
+      if (record.amountKop == null) record.needs.push("amount");
+      saveExpenseOverride(record);
+      expenseEditing = null;
+      render();
+    });
+  }
+
   function render() {
     const visible = document.getElementById("fresh-visible");
     const more = document.getElementById("fresh-more");
@@ -1969,10 +2529,15 @@
     if (hash.indexOf("m/") === 0) screen.innerHTML = renderMonth(hash.slice(2), state);
     else if (hash === "unit") screen.innerHTML = renderUnitPage(state);
     else if (hash === "profit" || hash.indexOf("profit/") === 0) screen.innerHTML = renderProfitPage();
+    else if (hash === "expenses" || hash.indexOf("expenses/") === 0) screen.innerHTML = renderExpenses();
     else screen.innerHTML = renderHome(state);
     markNav(hash);
     if (hash === "unit") {
       bindUnitPage();
+      window.scrollTo(0, 0);
+    }
+    if (hash === "expenses" || hash.indexOf("expenses/") === 0) {
+      bindExpenses();
       window.scrollTo(0, 0);
     }
     if (hash === "profit" || hash.indexOf("profit/") === 0) {
@@ -2001,6 +2566,7 @@
     if (hash === "unit") current = "#unit";
     else if (hash === "year" || hash.indexOf("m/") === 0) current = "#year";
     else if (hash === "profit" || hash.indexOf("profit/") === 0) current = "#profit";
+    else if (hash === "expenses" || hash.indexOf("expenses/") === 0) current = "#expenses";
     else if (hash === "stock") current = "#stock";
     document.querySelectorAll("nav.menu a").forEach(function (link) {
       link.classList.toggle("on", link.getAttribute("href") === current);

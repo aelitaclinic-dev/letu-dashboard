@@ -310,6 +310,12 @@ button:disabled { opacity: .5; cursor: default; }
 }
 .profit-banner-meta { margin: 0; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
 .profit-cash { margin: 12px 0; padding: 10px 12px; border-radius: 10px; background: #E7F2F2; color: var(--ink); font-size: 13px; line-height: 1.45; }
+.profit-business { margin: 12px 0; padding: 12px 14px; border-radius: 14px; background: #E7F2F2; color: var(--ink); }
+.profit-business h3 { margin: 0 0 8px; font-size: 16px; }
+.profit-business p { margin: 6px 0; }
+.expense-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 14px; }
+.expense-list { margin-top: 12px; }
+#expense-form label { margin-bottom: 8px; }
 .profit-hero { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 8px 0 18px; }
 .profit-hero > div { min-width: 0; background: var(--accent-soft); border-radius: 14px; padding: 14px 16px; }
 .profit-hero span, .profit-hero small { display: block; color: var(--muted); font-size: 13px; }
@@ -360,6 +366,7 @@ button:disabled { opacity: .5; cursor: default; }
   .unit-metrics .unit-result strong { font-size: 27px; }
   .profit-hero { grid-template-columns: 1fr; }
   .profit-hero strong { font-size: 26px; }
+  .expense-totals { grid-template-columns: 1fr; }
   .profit-banner { padding: 16px; }
   .profit-banner-name { font-size: 15px; }
   .profit-banner-cover { display: block; margin: 8px 0 0; }
