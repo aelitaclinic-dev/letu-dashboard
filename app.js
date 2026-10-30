@@ -2164,7 +2164,7 @@
       + "<p><b>Учтённые расходы бизнеса:</b> " + esc(blocked ? "Не определены" : money(accounted)) + "</p>"
       + "<p><b>После расходов бизнеса:</b> " + esc(after == null ? "Не посчитан" : money(after)) + "</p>"
       + (gapList ? "<ul class='unit-check-list'>" + gapList + "</ul>" : "")
-      + "<p class='muted'>Пока срок, товары и площадка деклараций ИП не подтверждены, старые декларации в 2026 целиком не списываются. Оплата и распределённая стоимость вместе не вычитаются. Расходы ООО в прибыль ИП не входят. <a href='#expenses'>Открыть расходы бизнеса</a></p></div>";
+      + "<p class='muted'>Декларации ИП 2023 года относятся к шампуням и бальзамам Kérastase и L'Oréal Professionnel и к Л’Этуаль. Срок действия не подтверждён, поэтому в 2026 они целиком не списываются. Оплата и распределённая стоимость вместе не вычитаются. Расходы ООО в прибыль ИП не входят. <a href='#expenses'>Открыть расходы бизнеса</a></p></div>";
   }
 
   function monthInRange(month, start, end) {
@@ -2288,6 +2288,7 @@
         + "<span>Дата: " + esc(row.date ? dayText(row.date) : (row.yearLabel || "Нужно уточнить")) + "</span>"
         + "<span>Сумма: " + esc(row.amountKop == null ? "Нужно уточнить" : money(row.amountKop) + (row.currency && row.currency !== "RUB" ? " " + row.currency : "")) + "</span>"
         + "<span>Площадка: " + esc(labelOf(book.channels, row.channelScope)) + "</span>"
+        + (row.brand || row.goods ? "<span>Товары: " + esc([row.brand, row.goods].filter(Boolean).join(", ")) + "</span>" : "")
         + "<span>Статус: " + esc(row.status === "planned" ? "Планируется" : "Оплачен") + "</span>"
         + "<span>В прибыли: " + esc(profitText) + "</span>"
         + (row.comment ? "<span>" + esc(row.comment) + "</span>" : "")
