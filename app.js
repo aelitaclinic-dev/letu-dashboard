@@ -66,7 +66,9 @@
   function params() {
     const query = new URLSearchParams(location.search);
     let from = query.get("from") || "2026-01-01";
-    let to = query.get("to") || "2026-10-28";
+    var wb = wbStore();
+    var wbTo = wb && [wb.sales, wb.orders].filter(function (v) { return v && v.state === "ready"; }).map(function (v) { return v.to; }).sort().pop();
+    let to = query.get("to") || (wbTo && wbTo > DATA.asOf ? wbTo : DATA.asOf || "2026-10-28");
     const brand = query.get("brand") || "";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
       from = "2026-01-01";
@@ -2513,6 +2515,94 @@
     });
   }
 
+  // WB files contain daily product aggregates only. Keys stay in GitHub Actions.
+  var WB_SNAPSHOT = null;
+  function wbStore() {
+    var ip = WB_SNAPSHOT && WB_SNAPSHOT.stores && WB_SNAPSHOT.stores.ip;
+    return ip && [ip.orders, ip.sales].some(function (s) { return s && s.state === "ready"; }) ? ip : null;
+  }
+  function wbSelected(source, state) {
+    if (!source || source.state !== "ready") return null;
+    var ranges = source.coverage || [[source.from, source.to]];
+    if (!ranges.some(function (r) { return r[0] <= state.to && r[1] >= state.from; })) return null;
+    return source.rows.filter(function (row) { return row.date >= state.from && row.date <= state.to; });
+  }
+  function wbStats(rows, event) {
+    if (rows == null) return null;
+    return rows.filter(function (r) { return r.event === event; }).reduce(function (a, r) {
+      a.qty += r.qty; a.amount += r.knownAmountKop; a.missing += r.missingAmountQty; a.zero += r.zeroAmountQty;
+      return a;
+    }, {qty: 0, amount: 0, missing: 0, zero: 0});
+  }
+  function wbAmount(s) { return !s || s.missing ? "Нет полной суммы" : money(s.amount); }
+  function wbNet(rows) {
+    var sales = wbStats(rows, "sale"), returns = wbStats(rows, "return");
+    return !sales || sales.missing || returns.missing ? null : sales.amount - returns.amount;
+  }
+  function wbCard(label, value, note) {
+    return "<div class='market-empty-metric'><span>" + esc(label) + "</span><strong>" + esc(value == null ? "Нет данных" : value)
+      + "</strong><small>" + esc(note) + "</small></div>";
+  }
+  function wbTable(headers, rows) {
+    return "<div class='table-wrap'><table><thead><tr>" + headers.map(function (v) { return "<th>" + esc(v) + "</th>"; }).join("")
+      + "</tr></thead><tbody>" + rows.map(function (r) { return "<tr>" + r.map(function (v) { return "<td>" + esc(v) + "</td>"; }).join("") + "</tr>"; }).join("")
+      + "</tbody></table></div>";
+  }
+  function wbSourceNote(label, source, state) {
+    if (!source || source.state !== "ready") return label + ": нет выгрузки" + (source && source.lastError ? ". " + source.lastError : "") + ".";
+    var coverage = source.coverage || [[source.from, source.to]];
+    var complete = coverage.some(function (r) { return r[0] <= state.from && r[1] >= state.to; });
+    return label + ": обновлено " + source.fetchedAt.replace("T", " ").slice(0, 19) + " МСК; даты в выгрузке: "
+      + coverage.map(function (r) { return dayText(r[0]) + "–" + dayText(r[1]); }).join(", ") + ". "
+      + (!complete ? "Выбранный период покрыт не полностью. " : "")
+      + (source.lastError ? "Последнее обновление не удалось: " + source.lastError : "");
+  }
+  function renderWBContent(section, store, state) {
+    var ip = wbStore(), sales = wbSelected(ip.sales, state), orders = wbSelected(ip.orders, state);
+    var sold = wbStats(sales, "sale"), returned = wbStats(sales, "return"), ordered = wbStats(orders, "order"), canceled = wbStats(orders, "cancel");
+    var html = "<section class='market-note'><h3>Оперативные данные · ИП</h3><p>" + (store === "all" ? "В этом обзоре только ИП. Кабинет ООО ещё не подключён. " : "")
+      + "Суммы предварительные: цена продавца после скидки до удержаний WB. Это не финансовая выручка и не чистая прибыль. Данные текущего дня ещё обновляются.</p>"
+      + "<p>" + esc(wbSourceNote("Продажи и возвраты", ip.sales, state)) + "</p><p>" + esc(wbSourceNote("Заказы", ip.orders, state)) + "</p></section>";
+    if (section === "summary") {
+      html += "<div class='market-empty-metrics'>"
+        + wbCard("Продано, шт.", sold ? qty(sold.qty) : null, "Выкупы из оперативной статистики")
+        + wbCard("Возвращено, шт.", returned ? qty(returned.qty) : null, "Возвраты по дате операции")
+        + wbCard("Заказы без отмен, шт.", ordered ? qty(ordered.qty) : null, "Статус на момент выгрузки")
+        + wbCard("Отменённые заказы, шт.", canceled ? qty(canceled.qty) : null, "Не вычитаются из продаж повторно") + "</div>";
+      html += "<div class='market-empty-metrics'>" + wbCard("Продажи, предварительно", wbAmount(sold), "Без комиссий и логистики")
+        + wbCard("Возвраты, предварительно", wbAmount(returned), "По цене продавца")
+        + wbCard("Продажи минус возвраты", wbNet(sales) == null ? null : money(wbNet(sales)), "Только полученные операции")
+        + wbCard("Чистая прибыль", null, "Нужны финансовые отчёты и затраты") + "</div>";
+      if (sales && sales.length) {
+        var days = Array.from(new Set(sales.map(function (r) { return r.date; }))).sort().reverse();
+        html += "<h3>Продажи и возвраты по дням</h3>" + wbTable(["Дата", "Продано, шт.", "Возвраты, шт.", "Продажи, предварительно", "Возвраты, предварительно"], days.map(function (day) {
+          var rows = sales.filter(function (r) { return r.date === day; }), s = wbStats(rows, "sale"), r = wbStats(rows, "return");
+          return [dayText(day), qty(s.qty), qty(r.qty), wbAmount(s), wbAmount(r)];
+        }));
+      } else html += "<p>" + (sales ? "В полученной выгрузке за эти даты операций продаж и возвратов нет." : "Продажи за выбранные даты не загружены.") + "</p>";
+    } else if (section === "unit") {
+      html += "<h3>Товары: продажи и возвраты</h3><p>Цены ниже — средние по полученным операциям. Себестоимость и прибыль по товарам ещё не рассчитаны.</p>";
+      var products = {};
+      (sales || []).forEach(function (r) { var key = JSON.stringify([r.nmId, r.article, r.brand]); (products[key] || (products[key] = [])).push(r); });
+      html += wbTable(["Артикул", "nmID", "Бренд", "Продано, шт.", "Возвраты, шт.", "Продажи, предварительно", "Средняя цена продажи"], Object.keys(products).sort().map(function (key) {
+        var rows = products[key], s = wbStats(rows, "sale"), r = wbStats(rows, "return");
+        return [rows[0].article || "Не указан", rows[0].nmId, rows[0].brand || "Не указан", qty(s.qty), qty(r.qty), wbAmount(s), s.qty && !s.missing ? money(Math.round(s.amount / s.qty)) : "Нет данных"];
+      }));
+      if (!sales || !sales.length) html += "<p>Нет полученных операций за выбранные даты.</p>";
+    } else if (section === "profit") {
+      html += "<h3>Для прибыли нужны финансовые отчёты</h3><p>Заказы, выкупы и возвраты уже отображаются в сводке. Комиссии, логистика, удержания, себестоимость и налоги пока не загружены в расчёт Wildberries. Отсутствующие расходы не заменяются нулями.</p><a class='button secondary' href='#expenses'>Общие расходы ИП / ООО</a>";
+    } else if (section === "payouts") {
+      var b = ip.balance;
+      if (b && b.state === "ready") html += "<h3>Текущий баланс WB</h3><p>Снимок от " + esc(b.fetchedAt.replace("T", " ").slice(0, 19)) + " МСК. Не зависит от выбранного периода и не подтверждает поступление денег в банк.</p><div class='market-empty-metrics'>"
+        + wbCard("Текущий баланс", money(b.currentKop), "По данным WB") + wbCard("Доступно к выводу", money(b.availableKop), "Это не фактическая выплата") + "</div>";
+      else html += "<p>Текущий баланс не получен." + (b && b.lastError ? " " + esc(b.lastError) : "") + "</p>";
+      if (b && b.state === "ready" && b.lastError) html += "<p>Последнее обновление баланса не удалось: " + esc(b.lastError) + "</p>";
+      html += "<p>История фактических выплат пока не подключена.</p>";
+    } else html += "<h3>Остатки ещё не загружены</h3><p>Этот этап подключает оперативные заказы, продажи, возвраты и доступный баланс. Остатки, поставки и обращения покупателей подключим отдельно.</p>";
+    if (sales && sales.some(function (r) { return r.missingAmountQty || r.zeroAmountQty; })) html += "<p>В части операций WB ещё не указал цену или вернул ноль. Денежные суммы требуют уточнения; количество операций сохранено.</p>";
+    return html;
+  }
+
   // Marketplace navigation reuses the existing L'Etoile screens and expense book.
   // No marketplace credentials or fabricated data belong in this public application.
   function marketPeriodForm(state) {
@@ -2536,25 +2626,29 @@
     var financeWindow = windowPhrase(selected, "useFinance", "financeStart", "financeEnd");
     var partial = selected.some(function (row) { return row.financeState === "partial"; });
     function tile(id, name, monogram, connected, storeText) {
-      var href = connected ? "#letu" : "#" + id + "/all/summary";
+      var loadedWB = id === "wb" && wbStore();
+      var wbRows = loadedWB ? wbSelected(loadedWB.sales, state) : null;
+      var tileAmount = loadedWB ? wbNet(wbRows) : revenue;
+      connected = connected || !!loadedWB;
+      var href = id === "letu" ? "#letu" : "#" + id + "/all/summary";
       return "<a class='market-tile market-" + id + "' href='" + href + "' aria-label='Открыть " + esc(name) + "'>"
         + "<div class='market-tile-top'><span class='market-symbol' aria-hidden='true'>" + esc(monogram) + "</span>"
-        + "<span class='market-status " + (connected ? "connected" : "pending") + "'>" + (connected ? "Данные загружены" : "Не подключено") + "</span></div>"
+        + "<span class='market-status " + (connected ? "connected" : "pending") + "'>" + (loadedWB ? "ИП: данные загружены" : connected ? "Данные загружены" : "Не подключено") + "</span></div>"
         + "<h3>" + esc(name) + "</h3><p class='market-store-caption'>" + esc(storeText) + "</p>"
-        + "<div class='market-sales'><span>Продажи после возвратов</span><strong>" + (connected && revenue != null ? esc(money(revenue)) : "—") + "</strong>"
-        + "<small>" + (connected ? (revenue != null ? "По финансовым отчётам · " + esc(financeWindow) + (partial ? " · неполный период" : "") : "Нет отчётов внутри выбранных дат") : "Появятся после загрузки данных") + "</small></div>"
+        + "<div class='market-sales'><span>Продажи после возвратов</span><strong>" + (connected && tileAmount != null ? esc(money(tileAmount)) : "—") + "</strong>"
+        + "<small>" + (loadedWB ? "Оперативная статистика ИП · предварительно" : connected ? (revenue != null ? "По финансовым отчётам · " + esc(financeWindow) + (partial ? " · неполный период" : "") : "Нет отчётов внутри выбранных дат") : "Появятся после загрузки данных") + "</small></div>"
         + "<dl class='market-tile-details'><div><dt>Чистая прибыль</dt><dd>" + (connected ? "Уточняется" : "—") + "</dd></div>"
         + "<div><dt>Маржинальность</dt><dd>" + (connected ? "Уточняется" : "—") + "</dd></div></dl>"
-        + "<p class='market-data-note'>" + (connected ? "Предварительный расчёт — в разделе «Прибыль». Часть затрат требует уточнения." : "Два отдельных кабинета: ИП и ООО. Можно смотреть вместе или по отдельности.") + "</p>"
+        + "<p class='market-data-note'>" + (loadedWB ? "Загружен ИП. ООО ещё не подключено. Финансовый результат пока не рассчитан." : connected ? "Предварительный расчёт — в разделе «Прибыль». Часть затрат требует уточнения." : "Два отдельных кабинета: ИП и ООО. Можно смотреть вместе или по отдельности.") + "</p>"
         + "<span class='market-open'>Открыть площадку <span aria-hidden='true'>↗</span></span></a>";
     }
     return marketHeading("MA DISTRIBUTION / ОБЗОР", "Бизнес на одном экране", "Выберите площадку, чтобы перейти к продажам, прибыли и магазинам.")
       + marketPeriodForm(state)
-      + "<div class='market-overview-meta'><span><i class='live-dot'></i> 1 из 3 площадок с данными</span><span>ИП и ООО — раздельный учёт</span></div>"
+      + "<div class='market-overview-meta'><span><i class='live-dot'></i> " + (wbStore() ? "2" : "1") + " из 3 площадок с данными</span><span>ИП и ООО — раздельный учёт</span></div>"
       + "<section class='market-tiles' aria-label='Маркетплейсы'>" + tile("letu", "Л’Этуаль", "Л’", true, "ИП · Барская Регина Александровна")
       + tile("wb", "Wildberries", "WB", false, "2 магазина · ИП и ООО") + tile("ozon", "Ozon", "O", false, "2 магазина · ИП и ООО") + "</section>"
-      + "<section class='market-overview-bottom'><div class='market-note'><span class='market-eyebrow'>ПОЛНОТА ОБЗОРА</span><h3>Сейчас в обзоре — Л’Этуаль</h3>"
-      + "<p>Данные Wildberries и Ozon ещё не загружены. Общий итог бизнеса появится после подключения площадок. Отсутствующие данные не считаются нулевыми продажами.</p></div>"
+      + "<section class='market-overview-bottom'><div class='market-note'><span class='market-eyebrow'>ПОЛНОТА ОБЗОРА</span><h3>Л’Этуаль и подключение площадок</h3>"
+      + "<p>" + (wbStore() ? "Оперативные данные Wildberries ИП доступны отдельно. Финансовые отчёты Wildberries, кабинет ООО и Ozon ещё не подключены." : "Данные Wildberries и Ozon ещё не загружены.") + " Общий итог бизнеса появится после проверки сопоставимости данных. Отсутствующие данные не считаются нулевыми продажами.</p></div>"
       + "<a class='market-expense-link' href='#expenses'><span class='market-eyebrow'>ОБЩИЙ УЧЁТ</span><h3>Расходы ИП / ООО <span aria-hidden='true'>↗</span></h3>"
       + "<p>Закупки, упаковка, зарплата, документы и другие расходы бизнеса — в одном разделе.</p><span class='market-open'>Открыть расходы</span></a></section>";
   }
@@ -2570,6 +2664,7 @@
       ["stock", "Остатки", "Товары на складах", "Здесь будут остатки по артикулам и складам с датой последней загрузки."]
     ];
     var active = sections.filter(function (item) { return item[0] === section; })[0] || sections[0];
+    var hasWB = channel === "wb" && store !== "ooo" && !!wbStore();
     var base = "#" + channel + "/";
     var stores = [["all", "Все магазины"], ["ip", "ИП"], ["ooo", "ООО"]].map(function (item) {
       return "<a href='" + base + item[0] + "/" + active[0] + "'" + (store === item[0] ? " class='selected' aria-current='page'" : "") + ">" + item[1] + "</a>";
@@ -2582,18 +2677,18 @@
     }).join("");
     var comparison = store === "all" && active[0] === "summary" ? "<section class='market-store-comparison'><h3>Магазины " + name + "</h3><div class='market-store-grid'>"
       + [["ip", "ИП", "Отдельный кабинет индивидуального предпринимателя"], ["ooo", "ООО", "Отдельный кабинет юридического лица"]].map(function (item) {
-        return "<a class='market-store-card' href='" + base + item[0] + "/summary'><div><h4>" + item[1] + "</h4><span class='market-status pending'>Не подключено</span></div><p>" + item[2] + "</p><span class='market-open'>Открыть магазин ↗</span></a>";
+        return "<a class='market-store-card' href='" + base + item[0] + "/summary'><div><h4>" + item[1] + "</h4><span class='market-status " + (channel === "wb" && item[0] === "ip" && wbStore() ? "connected" : "pending") + "'>" + (channel === "wb" && item[0] === "ip" && wbStore() ? "Оперативные данные" : "Не подключено") + "</span></div><p>" + item[2] + "</p><span class='market-open'>Открыть магазин ↗</span></a>";
       }).join("") + "</div></section>" : "";
     return marketHeading("ПЛОЩАДКИ / " + name.toUpperCase(), name, "Два магазина. Общий обзор и отдельный результат каждого юридического лица.")
-      + "<div class='market-store-bar'><nav class='store-switch' aria-label='Магазины " + name + "'>" + stores + "</nav><span class='market-status pending'>Данные ещё не подключены</span></div>"
+      + "<div class='market-store-bar'><nav class='store-switch' aria-label='Магазины " + name + "'>" + stores + "</nav><span class='market-status " + (hasWB ? "connected" : "pending") + "'>" + (hasWB ? "ИП: оперативные данные" : "Данные ещё не подключены") + "</span></div>"
       + marketPeriodForm(state)
       + "<nav class='market-sections' aria-label='Разделы " + name + "'>" + tabs + "</nav>"
       + "<div class='market-section-title'><h3>" + esc(active[1]) + "</h3><span>" + esc(storeName) + " · " + esc(dayText(state.from)) + "–" + esc(dayText(state.to)) + "</span></div>"
-      + (active[0] === "summary" ? "<div class='market-empty-metrics'>" + metrics + "</div>" : "")
+      + (active[0] === "summary" && !hasWB ? "<div class='market-empty-metrics'>" + metrics + "</div>" : "")
       + comparison
-      + "<section class='market-empty-state'><span class='market-empty-icon' aria-hidden='true'>" + (channel === "wb" ? "WB" : "O") + "</span><div><span class='market-eyebrow'>" + esc(name) + " · " + esc(storeName) + "</span><h3>" + esc(active[2]) + "</h3><p>" + esc(active[3]) + "</p>"
+      + (hasWB ? renderWBContent(active[0], store, state) : "<section class='market-empty-state'><span class='market-empty-icon' aria-hidden='true'>" + (channel === "wb" ? "WB" : "O") + "</span><div><span class='market-eyebrow'>" + esc(name) + " · " + esc(storeName) + "</span><h3>" + esc(active[2]) + "</h3><p>" + esc(active[3]) + "</p>"
       + "<p class='market-empty-caption'>Данные " + (store === "all" ? "кабинетов ИП и ООО" : "кабинета " + storeName) + " ещё не загружены. Показатели появятся после подключения API и проверки выгрузки.</p>"
-      + (active[0] === "profit" ? "<a class='button secondary' href='#expenses'>Открыть общие расходы ИП / ООО</a>" : "") + "</div></section>";
+      + (active[0] === "profit" ? "<a class='button secondary' href='#expenses'>Открыть общие расходы ИП / ООО</a>" : "") + "</div></section>");
   }
 
   function updateMarketNavigation(hash, channel) {
@@ -2691,6 +2786,23 @@
   window.addEventListener("hashchange", render);
   window.addEventListener("popstate", render);
   render();
+  // Read GitHub's data file directly: commits made by Actions do not trigger branch-based Pages builds.
+  var wbDataURL = location.hostname === "aelitaclinic-dev.github.io"
+    ? "https://raw.githubusercontent.com/aelitaclinic-dev/letu-dashboard/main/wb-data.json" : "wb-data.json";
+  fetch(wbDataURL, {cache: "no-store"}).then(function (response) {
+    if (!response.ok) return null;
+    return response.json();
+  }).then(function (data) {
+    if (!data || data.schemaVersion !== 1 || !data.stores) return;
+    var ip = data.stores.ip;
+    if (!ip || ![ip.orders, ip.sales].every(function (source) {
+      return !source || source.state !== "ready" || (Array.isArray(source.rows) && Array.isArray(source.coverage)
+        && source.rows.every(function (r) { return typeof r.date === "string" && Number.isSafeInteger(r.qty)
+          && Number.isSafeInteger(r.knownAmountKop) && Number.isSafeInteger(r.missingAmountQty) && Number.isSafeInteger(r.zeroAmountQty); }));
+    })) return;
+    WB_SNAPSHOT = data;
+    render();
+  }).catch(function () { /* No snapshot yet: the existing empty states remain visible. */ });
 })();
 
 
