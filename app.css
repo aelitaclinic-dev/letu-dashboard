@@ -610,3 +610,12 @@ button:disabled { opacity: .5; cursor: default; }
   .wb-months-section > .wb-panel-heading { flex-wrap: wrap; }
   .wb-panel-heading > p { max-width: none; }
 }
+
+/* Explicit source separation for accounting history. */
+.wb-source-picker { display:flex; gap:6px; padding:5px; width:fit-content; max-width:100%; border-radius:12px; background:#eee9eb; margin:22px 0 10px; flex-wrap:wrap; }
+.wb-source-picker button { padding:10px 17px; border:0; border-radius:9px; background:transparent; color:#6c6269; cursor:pointer; font:inherit; font-size:13px; font-weight:600; }
+.wb-source-picker button[aria-pressed=true] { background:#fff; color:#562443; box-shadow:0 2px 5px #30202c12; }
+.wb-source-picker button:disabled { opacity:.55; cursor:default; }
+.wb-basis-note,.wb-orders-coverage { font-size:12px; line-height:1.65; color:#7d727a; }
+.wb-basis-note { max-width:900px; margin:0 0 18px; }
+.wb-orders-coverage { margin:12px 2px 24px; }

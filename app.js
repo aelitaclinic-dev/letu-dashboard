@@ -2517,6 +2517,7 @@
 
   // WB files contain daily product aggregates only. Keys stay in GitHub Actions.
   var WB_SNAPSHOT = null;
+  var WB_FINANCE_SNAPSHOT = null;
   function wbStore() {
     var ip = WB_SNAPSHOT && WB_SNAPSHOT.stores && WB_SNAPSHOT.stores.ip;
     return ip && [ip.orders, ip.sales].some(function (s) { return s && s.state === "ready"; }) ? ip : null;
@@ -2567,10 +2568,10 @@
       var from = key + "-01", to = key + "-" + String(new Date(Date.UTC(Number(year), i + 1, 0)).getUTCDate());
       var sales = wbSelected(ip.sales, {from: from, to: to}), orders = wbSelected(ip.orders, {from: from, to: to});
       var sold = wbStats(sales, "sale"), returned = wbStats(sales, "return"), ordered = wbStats(orders, "order"), canceled = wbStats(orders, "cancel");
-      var available = sales !== null || orders !== null;
-      var complete = wbCovered(ip.sales, from, to) && wbCovered(ip.orders, from, to) && to < reference;
+      var available = ip.financeMode ? sales !== null : sales !== null || orders !== null;
+      var complete = wbCovered(ip.sales, from, to) && (ip.financeMode || wbCovered(ip.orders, from, to)) && to < reference;
       var allOrders = ordered && canceled ? {qty: ordered.qty + canceled.qty, amount: ordered.amount + canceled.amount, missing: ordered.missing + canceled.missing} : null;
-      var sourceRanges = [ip.sales, ip.orders].filter(function (s) { return s && s.state === "ready"; }).reduce(function (a, s) { return a.concat(s.coverage || []); }, []);
+      var sourceRanges = (ip.financeMode ? [ip.sales] : [ip.sales, ip.orders]).filter(function (s) { return s && s.state === "ready"; }).reduce(function (a, s) { return a.concat(s.coverage || []); }, []);
       var covered = sourceRanges.filter(function (r) { return r[0] <= to && r[1] >= from; });
       var visibleFrom = covered.length ? covered.map(function (r) { return r[0] > from ? r[0] : from; }).sort()[0] : null;
       var visibleTo = covered.length ? covered.map(function (r) { return r[1] < to ? r[1] : to; }).sort().pop() : null;
@@ -2626,7 +2627,11 @@
     return "<div class='wb-chart-scroll'>" + svg + "</svg></div><p class='wb-chart-legend'><span><i></i> " + (metric === "orders" ? "Все заказы, включая отменённые" : "Продажи за вычетом возвратов") + "</span><span>Пунктир — неполный месяц · — нет данных</span></p>";
   }
   function renderWBAnnual(store) {
-    var ip = wbStore(), query = new URLSearchParams(location.search);
+    var operational = wbStore(), query = new URLSearchParams(location.search);
+    var financeReady = !!(WB_FINANCE_SNAPSHOT && WB_FINANCE_SNAPSHOT.sales && WB_FINANCE_SNAPSHOT.sales.state === "ready");
+    var financeMode = financeReady && query.get("wbSource") !== "operational";
+    var ip = financeMode ? {sales: WB_FINANCE_SNAPSHOT.sales, orders: operational.orders,
+      lastAttemptAt: WB_FINANCE_SNAPSHOT.generatedAt, financeMode: true} : operational;
     var latest = (ip.lastAttemptAt || WB_SNAPSHOT.generatedAt || new Date().toISOString()).slice(0, 10);
     var requested = query.get("wbYear"), year = /^20\d\d$/.test(requested || "") ? requested : latest.slice(0, 4);
     var months = wbMonthModel(year, ip), selectedKey = query.get("wbMonth");
@@ -2640,13 +2645,16 @@
     var loaded = months.filter(function (m) { return m.available; }).length;
     var html = "<div class='wb-annual'><div class='wb-year-heading'><div><p class='market-eyebrow'>МАГАЗИН ИП / ОБЗОР ГОДА</p><h3>Бизнес в цифрах <span>" + year + "</span></h3><p>Продажи, заказы и возвраты — по месяцам и за год.</p></div><label class='wb-year-select'>Год обзора<select id='wb-year' aria-label='Год обзора'>"
       + years.sort().reverse().map(function (v) { return "<option value='" + v + "'" + (String(v) === year ? " selected" : "") + ">" + v + "</option>"; }).join("") + "</select></label></div>";
+    html += "<div class='wb-source-picker' role='group' aria-label='Источник продаж'><button type='button' data-wb-source='finance' aria-pressed='" + financeMode + "'" + (financeReady ? "" : " disabled") + ">По отчётам WB" + (financeReady ? "" : " · ожидаем историю") + "</button><button type='button' data-wb-source='operational' aria-pressed='" + !financeMode + "'>Текущая статистика</button></div>";
+    html += "<p class='wb-basis-note'>" + (financeMode ? "Продажи и возвраты — по недельным финансовым отчётам, по дате учёта WB. Суммы до комиссий и расходов. Последняя неделя появится после закрытия отчёта." : "Предварительные продажи по цене продавца после скидки. Суммы могут отличаться от финансовых отчётов WB.") + "</p>";
     html += "<div class='wb-coverage'><span class='wb-coverage-dot'></span><div><strong>" + (loaded ? "Загружено месяцев: " + loaded + " из 12" : "За этот год данных пока нет") + "</strong><span>Продажи: " + esc(wbSourceRanges(ip.sales, year)) + ". Итог ниже — только по полученным данным.</span></div><a href='#wb-data-source'>Откуда цифры ↗</a></div>";
     if (store === "all") html += "<p class='wb-scope-note'>В обзоре только ИП. Магазин ООО ещё не подключён.</p>";
     html += "<div class='wb-year-kpis'><article class='wb-year-kpi primary'><span>Продажи после возвратов</span><strong>" + esc(wbNet(sales) == null ? "—" : money(wbNet(sales))) + "</strong><small>До комиссий и расходов WB</small></article>"
       + "<article class='wb-year-kpi'><span>Продано товаров</span><strong>" + esc(wbFigure(sold, true)) + "<em> шт.</em></strong><small>Продажи: " + esc(wbFigure(sold, false)) + "</small></article>"
-      + "<article class='wb-year-kpi'><span>Заказано товаров</span><strong>" + esc(wbFigure(allOrders, true)) + "<em> шт.</em></strong><small>На " + esc(wbFigure(allOrders, false)) + " · отменено " + esc(wbFigure(canceled, true)) + " шт.</small></article>"
+      + "<article class='wb-year-kpi'><span>Заказы · текущая история</span><strong>" + esc(wbFigure(allOrders, true)) + "<em> шт.</em></strong><small>На " + esc(wbFigure(allOrders, false)) + " · отменено " + esc(wbFigure(canceled, true)) + " шт.</small><small>" + esc(wbSourceRanges(ip.orders, year)) + "</small></article>"
       + "<article class='wb-year-kpi'><span>Возвращено товаров</span><strong>" + esc(wbFigure(returned, true)) + "<em> шт.</em></strong><small>На " + esc(wbFigure(returned, false)) + "</small></article>"
       + "<article class='wb-year-kpi profit'><span>Чистая прибыль</span><strong>—</strong><small>Следующий этап: учёт расходов</small></article></div>";
+    html += "<p class='wb-orders-coverage'>Заказы и отмены доступны отдельно: " + esc(wbSourceRanges(ip.orders, year)) + ". За месяцы без истории заказов показан прочерк. Суммы двух источников не складываются.</p>";
     html += "<section class='wb-chart-panel' aria-label='График по месяцам'><div class='wb-panel-heading'><div><p class='market-eyebrow'>ДИНАМИКА ГОДА</p><h3>Как меняется результат</h3></div><div class='wb-chart-units'" + (metric === "profit" ? " hidden" : "") + ">"
       + [["rub", "Рубли"], ["qty", "Штуки"]].map(function (v) { return "<button type='button' data-wb-units='" + v[0] + "' aria-pressed='" + ((units ? "qty" : "rub") === v[0]) + "'>" + v[1] + "</button>"; }).join("") + "</div></div><div class='wb-chart-tabs'>"
       + [["sales", "Продажи после возвратов"], ["orders", "Заказы"], ["profit", "Прибыль"]].map(function (v) { return "<button type='button' data-wb-metric='" + v[0] + "' aria-pressed='" + (metric === v[0]) + "'>" + v[1] + (v[0] === "profit" ? " <span>скоро</span>" : "") + "</button>"; }).join("") + "</div>"
@@ -2663,11 +2671,12 @@
     }).join("") + "</div><p class='wb-month-footnote'>Суммы на плашках округлены до рубля; точные суммы — в деталях месяца. Рост сравнивается только между полностью загруженными месяцами.</p></section>";
     html += "<section class='wb-month-detail' id='wb-month-detail' tabindex='-1'><div class='wb-panel-heading'><div><p class='market-eyebrow'>ДЕТАЛИ МЕСЯЦА</p><h3>" + esc(selected.label) + " " + year + "</h3></div><span class='wb-month-badge'>" + selected.status + "</span></div>";
     if (selected.available) {
-      html += "<p class='wb-detail-period'>Данные за " + esc(dayText(selected.visibleFrom) + "–" + dayText(selected.visibleTo)) + ". " + (selected.complete ? "Месяц загружен полностью." : "Месяц загружен не полностью или ещё обновляется.") + "</p><div class='wb-detail-metrics'>"
+      html += "<p class='wb-detail-period'>Данные за " + esc(dayText(selected.visibleFrom) + "–" + dayText(selected.visibleTo)) + ". " + (selected.complete ? "Продажи и возвраты загружены за полный месяц." : "Продажи и возвраты за месяц загружены не полностью или ещё обновляются.") + "</p><div class='wb-detail-metrics'>"
         + wbCard("Продажи", wbFigure(selected.sold, false), wbFigure(selected.sold, true) + " шт.")
         + wbCard("Возвраты", wbFigure(selected.returned, false), wbFigure(selected.returned, true) + " шт.")
         + wbCard("Продажи после возвратов", selected.net == null ? null : money(selected.net), "До комиссий и расходов WB")
         + wbCard("Заказы, включая отмены", wbFigure(selected.allOrders, false), wbFigure(selected.allOrders, true) + " шт. · отменено " + wbFigure(selected.canceled, true)) + "</div>";
+      html += "<p class='wb-orders-coverage'>Заказы и отмены: " + esc(wbSourceRanges(ip.orders, year)) + ". " + (wbCovered(ip.orders, selected.from, selected.to) ? "За выбранный месяц история заказов полная." : "История заказов за выбранный месяц неполная или отсутствует.") + "</p>";
       var dayRows = (selected.sales || []).concat(selected.orders || []);
       var days = Array.from(new Set(dayRows.map(function (r) { return r.date; }))).sort().reverse();
       html += "<details class='wb-daily-fold'><summary>Операции по дням <span>" + days.length + " дней с операциями</span></summary>" + wbTable(["Дата", "Продано, шт.", "Возвраты, шт.", "Заказано, шт.", "Продажи после возвратов"], days.map(function (day) {
@@ -2678,7 +2687,7 @@
       })) + "</details>";
       if ((selected.sales || []).some(function (r) { return r.missingAmountQty || r.zeroAmountQty; })) html += "<p class='wb-scope-note'>В части операций цена отсутствует или равна нулю. Денежные суммы требуют уточнения.</p>";
     } else html += "<p class='wb-detail-empty'>" + (selected.future ? "Этот месяц ещё впереди. Здесь появятся продажи, заказы и возвраты." : "Операции за этот месяц пока не загружены. Прочерк означает отсутствие данных.") + "</p>";
-    html += "</section><details class='wb-source-fold' id='wb-data-source'><summary>Откуда берутся цифры и что они означают</summary><div><h4>Источник — статистика Wildberries, кабинет ИП</h4><p>«Продано» — количество выкупов. Сумма продаж складывается из цен продавца после скидок. «Продажи после возвратов» — сумма продаж минус сумма возвратов. Комиссии, логистика, себестоимость, налоги и другие расходы пока не вычтены.</p><p>«Заказано» включает отменённые заказы. Заказы группируются по дате заказа, продажи и возвраты — по дате своей операции. Продажа может относиться к заказу из более раннего месяца.</p><p>Годовой итог включает только полученные операции. Нет данных за месяц — нет подтверждённого итога за весь год. Прибыль будет рассчитана отдельно после подключения расходов.</p><p>" + esc(wbSourceNote("Продажи и возвраты", ip.sales, period)) + "</p><p>" + esc(wbSourceNote("Заказы", ip.orders, period)) + "</p></div></details></div>";
+    html += "</section><details class='wb-source-fold' id='wb-data-source'><summary>Откуда берутся цифры и что они означают</summary><div><h4>Источник — " + (financeMode ? "финансовые отчёты" : "статистика") + " Wildberries, кабинет ИП</h4><p>" + (financeMode ? "«Продано» и «Возвраты» — операции продажи и возврата из недельных отчётов. Сумма — реализованная стоимость товаров по отчёту WB. Группировка по дате учёта операции WB; она может отличаться от даты заказа и покупки. Служебные операции, компенсации и корректировки не добавляются к обычным продажам." : "«Продано» — количество выкупов. Сумма продаж складывается из цен продавца после скидок.") + " «Продажи после возвратов» — сумма продаж минус сумма возвратов. Комиссии, логистика, себестоимость, налоги и другие расходы пока не вычтены.</p><p>«Заказано» включает отменённые заказы. Заказы группируются по дате заказа. Дата продаж и возвратов зависит от выбранного источника: дата учёта в отчёте WB или дата операции в текущей статистике. Продажа может относиться к заказу из более раннего месяца.</p><p>Годовой итог включает только полученные операции. Нет данных за месяц — нет подтверждённого итога за весь год. Прибыль будет рассчитана отдельно после подключения расходов.</p><p>" + esc(wbSourceNote("Продажи и возвраты", ip.sales, period)) + "</p><p>" + esc(wbSourceNote("Заказы", ip.orders, period)) + "</p></div></details></div>";
     return html;
   }
   function bindWBAnnual() {
@@ -2697,6 +2706,7 @@
     document.querySelectorAll("[data-wb-month]").forEach(function (button) { button.addEventListener("click", function () { change("wbMonth", button.dataset.wbMonth, true); }); });
     document.querySelectorAll("[data-wb-metric]").forEach(function (button) { button.addEventListener("click", function () { change("wbMetric", button.dataset.wbMetric); }); });
     document.querySelectorAll("[data-wb-units]").forEach(function (button) { button.addEventListener("click", function () { change("wbUnits", button.dataset.wbUnits); }); });
+    document.querySelectorAll("[data-wb-source]").forEach(function (button) { button.addEventListener("click", function () { change("wbSource", button.dataset.wbSource); }); });
     var source = document.querySelector(".wb-coverage a");
     source.addEventListener("click", function (event) { event.preventDefault(); var fold = document.getElementById("wb-data-source"); fold.open = true; fold.scrollIntoView({behavior: "instant"}); });
   }
@@ -2735,7 +2745,7 @@
       }));
       if (!sales || !sales.length) html += "<p>Нет полученных операций за выбранные даты.</p>";
     } else if (section === "profit") {
-      html += "<h3>Для прибыли нужны финансовые отчёты</h3><p>Заказы, выкупы и возвраты уже отображаются в сводке. Комиссии, логистика, удержания, себестоимость и налоги пока не загружены в расчёт Wildberries. Отсутствующие расходы не заменяются нулями.</p><a class='button secondary' href='#expenses'>Общие расходы ИП / ООО</a>";
+      html += "<h3>Для прибыли нужен учёт расходов</h3><p>" + (WB_FINANCE_SNAPSHOT ? "История продаж и возвратов по финансовым отчётам уже подключена в сводке. " : "Заказы, выкупы и возвраты уже отображаются в сводке. ") + "Комиссии, логистика, удержания, себестоимость и налоги пока не включены в расчёт Wildberries. Отсутствующие расходы не заменяются нулями.</p><a class='button secondary' href='#expenses'>Общие расходы ИП / ООО</a>";
     } else if (section === "payouts") {
       var b = ip.balance;
       if (b && b.state === "ready") html += "<h3>Текущий баланс WB</h3><p>Снимок от " + esc(b.fetchedAt.replace("T", " ").slice(0, 19)) + " МСК. Не зависит от выбранного периода и не подтверждает поступление денег в банк.</p><div class='market-empty-metrics'>"
@@ -2793,7 +2803,7 @@
       + "<section class='market-tiles' aria-label='Маркетплейсы'>" + tile("letu", "Л’Этуаль", "Л’", true, "ИП · Барская Регина Александровна")
       + tile("wb", "Wildberries", "WB", false, "2 магазина · ИП и ООО") + tile("ozon", "Ozon", "O", false, "2 магазина · ИП и ООО") + "</section>"
       + "<section class='market-overview-bottom'><div class='market-note'><span class='market-eyebrow'>ПОЛНОТА ОБЗОРА</span><h3>Л’Этуаль и подключение площадок</h3>"
-      + "<p>" + (wbStore() ? "Оперативные данные Wildberries ИП доступны отдельно. Финансовые отчёты Wildberries, кабинет ООО и Ozon ещё не подключены." : "Данные Wildberries и Ozon ещё не загружены.") + " Общий итог бизнеса появится после проверки сопоставимости данных. Отсутствующие данные не считаются нулевыми продажами.</p></div>"
+      + "<p>" + (wbStore() ? "Данные Wildberries ИП доступны отдельно. В сводке ИП указаны подключённые источники. Кабинет ООО и Ozon ещё не подключены." : "Данные Wildberries и Ozon ещё не загружены.") + " Общий итог бизнеса появится после проверки сопоставимости данных. Отсутствующие данные не считаются нулевыми продажами.</p></div>"
       + "<a class='market-expense-link' href='#expenses'><span class='market-eyebrow'>ОБЩИЙ УЧЁТ</span><h3>Расходы ИП / ООО <span aria-hidden='true'>↗</span></h3>"
       + "<p>Закупки, упаковка, зарплата, документы и другие расходы бизнеса — в одном разделе.</p><span class='market-open'>Открыть расходы</span></a></section>";
   }
@@ -2826,7 +2836,7 @@
         return "<a class='market-store-card' href='" + base + item[0] + "/summary'><div><h4>" + item[1] + "</h4><span class='market-status " + (channel === "wb" && item[0] === "ip" && wbStore() ? "connected" : "pending") + "'>" + (channel === "wb" && item[0] === "ip" && wbStore() ? "Оперативные данные" : "Не подключено") + "</span></div><p>" + item[2] + "</p><span class='market-open'>Открыть магазин ↗</span></a>";
       }).join("") + "</div></section>" : "";
     return marketHeading("ПЛОЩАДКИ / " + name.toUpperCase(), name, annualWB ? "Магазин ИП · продажи и результат по месяцам" : "Два магазина. Общий обзор и отдельный результат каждого юридического лица.")
-      + "<div class='market-store-bar'><nav class='store-switch' aria-label='Магазины " + name + "'>" + stores + "</nav><span class='market-status " + (hasWB ? "connected" : "pending") + "'>" + (hasWB ? "ИП: оперативные данные" : "Данные ещё не подключены") + "</span></div>"
+      + "<div class='market-store-bar'><nav class='store-switch' aria-label='Магазины " + name + "'>" + stores + "</nav><span class='market-status " + (hasWB ? "connected" : "pending") + "'>" + (hasWB ? "ИП: " + (WB_FINANCE_SNAPSHOT ? "отчёты и статистика" : "оперативные данные") : "Данные ещё не подключены") + "</span></div>"
       + (annualWB ? "" : marketPeriodForm(state))
       + "<nav class='market-sections' aria-label='Разделы " + name + "'>" + tabs + "</nav>"
       + (annualWB ? "" : "<div class='market-section-title'><h3>" + esc(active[1]) + "</h3><span>" + esc(storeName) + " · " + esc(dayText(state.from)) + "–" + esc(dayText(state.to)) + "</span></div>")
@@ -2936,6 +2946,22 @@
   // Read GitHub's data file directly: commits made by Actions do not trigger branch-based Pages builds.
   var wbDataURL = location.hostname === "aelitaclinic-dev.github.io"
     ? "https://raw.githubusercontent.com/aelitaclinic-dev/letu-dashboard/main/wb-data.json" : "wb-data.json";
+  var wbFinanceURL = location.hostname === "aelitaclinic-dev.github.io"
+    ? "https://raw.githubusercontent.com/aelitaclinic-dev/letu-dashboard/main/wb-finance.json" : "wb-finance.json";
+  fetch(wbFinanceURL, {cache: "no-store"}).then(function (response) {
+    return response.ok ? response.json() : null;
+  }).then(function (data) {
+    var source = data && data.sales;
+    if (!data || data.schemaVersion !== 1 || !source || source.state !== "ready"
+      || source.basis !== "retailAmount" || source.dateBasis !== "rrDate" || source.period !== "weekly"
+      || !Array.isArray(source.coverage) || !source.coverage.length || !Array.isArray(source.rows)
+      || typeof source.fetchedAt !== "string" || typeof data.generatedAt !== "string"
+      || !source.coverage.every(function (r) { return Array.isArray(r) && r.length === 2 && /^\d{4}-\d{2}-\d{2}$/.test(r[0]) && /^\d{4}-\d{2}-\d{2}$/.test(r[1]) && r[0] <= r[1]; })
+      || !source.rows.every(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.date) && ["sale", "return"].indexOf(r.event) >= 0
+        && [r.qty, r.knownAmountKop, r.missingAmountQty, r.zeroAmountQty].every(function (v) { return Number.isSafeInteger(v) && v >= 0; }); })) return;
+    WB_FINANCE_SNAPSHOT = data;
+    if (wbStore()) render();
+  }).catch(function () { /* Preserve operational view when finance is unavailable. */ });
   fetch(wbDataURL, {cache: "no-store"}).then(function (response) {
     if (!response.ok) return null;
     return response.json();
