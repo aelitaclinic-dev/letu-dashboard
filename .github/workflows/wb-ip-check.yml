@@ -1,0 +1,82 @@
+name: WB IP — проверка подключения
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: wb-ip-connection-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Проверить секрет и доступ к WB
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Проверить токен без вывода секретов
+        env:
+          WB_IP_API_TOKEN: ${{ secrets.WB_IP_API_TOKEN }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+
+          def result(message, success=False):
+              print(message)
+              summary = os.environ.get("GITHUB_STEP_SUMMARY")
+              if summary:
+                  with open(summary, "a", encoding="utf-8") as output:
+                      output.write("## Wildberries ИП: проверка подключения\n\n")
+                      output.write(message + "\n\n")
+                      output.write("Значение токена и ответ с данными продавца не публикуются. "
+                                   "Проверка не меняет магазин или файлы дашборда.\n")
+              sys.exit(0 if success else 1)
+
+          token = os.environ.get("WB_IP_API_TOKEN", "").strip()
+          if not token:
+              result("Секрет WB_IP_API_TOKEN отсутствует или пуст. "
+                     "Добавьте его в Settings → Secrets and variables → Actions.")
+          if any(character.isspace() for character in token):
+              result("Внутри токена есть пробел или перенос строки. "
+                     "Обновите WB_IP_API_TOKEN, вставив только ключ WB.")
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, request, file, code, message, headers, new_url):
+                  return None
+
+          request = urllib.request.Request(
+              "https://common-api.wildberries.ru/api/v1/seller-info",
+              headers={"Authorization": token, "Accept": "application/json"},
+              method="GET",
+          )
+          try:
+              opener = urllib.request.build_opener(NoRedirect())
+              with opener.open(request, timeout=25) as response:
+                  status = response.status
+          except urllib.error.HTTPError as error:
+              reasons = {
+                  401: "WB не принял токен: проверьте значение и срок действия.",
+                  402: "WB требует оплату или подключение доступа к этому методу.",
+                  403: "WB запретил доступ: нужно проверить тип токена и ограничения API.",
+                  429: "Достигнут лимит WB для этого метода. "
+                       "У базового токена проверка продавца может быть доступна раз в сутки; "
+                       "не запускайте проверку многократно.",
+              }
+              result("HTTP " + str(error.code) + ": " + reasons.get(
+                  error.code, "WB вернул ошибку или перенаправление. "
+                  "Проверка остановлена; ответ с данными не выводится."))
+          except Exception:
+              result("Запрос к WB не завершился: ошибка сети, TLS или время ожидания. "
+                     "Это ещё не означает, что токен неправильный.")
+
+          if status != 200:
+              result("WB вернул неожиданный HTTP-статус: " + str(status))
+          result("Успешно: секрет WB_IP_API_TOKEN доступен этому запуску, "
+                 "WB принял токен и вернул HTTP 200 на запрос информации о продавце. "
+                 "Загрузка продаж, финансов и остальных категорий пока не проверялась.", True)
+          PY
