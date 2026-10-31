@@ -2513,6 +2513,108 @@
     });
   }
 
+  // Marketplace navigation reuses the existing L'Etoile screens and expense book.
+  // No marketplace credentials or fabricated data belong in this public application.
+  function marketPeriodForm(state) {
+    return "<form class='market-period' id='period-filter'><div class='period-caption'>Период обзора</div>"
+      + "<label>С даты<input type='date' name='from' required value='" + esc(state.from) + "'></label>"
+      + "<label>По дату<input type='date' name='to' required value='" + esc(state.to) + "'></label>"
+      + "<button type='submit'>Применить</button></form>";
+  }
+
+  function marketHeading(eyebrow, title, description) {
+    return "<div class='market-heading'><p class='market-eyebrow'>" + esc(eyebrow) + "</p><h2>" + esc(title)
+      + "</h2><p>" + esc(description) + "</p></div>";
+  }
+
+  function renderOverview(state) {
+    var selected = screenMonths(state.from, state.to).filter(function (row) { return row.useFinance; });
+    var profitRows = ((DATA.profit && DATA.profit.months) || []).filter(function (row) {
+      return selected.some(function (month) { return month.month === row.month; }) && row.view && row.view.revenueKop != null;
+    });
+    var revenue = viewSum(profitRows, "revenueKop");
+    var financeWindow = windowPhrase(selected, "useFinance", "financeStart", "financeEnd");
+    var partial = selected.some(function (row) { return row.financeState === "partial"; });
+    function tile(id, name, monogram, connected, storeText) {
+      var href = connected ? "#letu" : "#" + id + "/all/summary";
+      return "<a class='market-tile market-" + id + "' href='" + href + "' aria-label='Открыть " + esc(name) + "'>"
+        + "<div class='market-tile-top'><span class='market-symbol' aria-hidden='true'>" + esc(monogram) + "</span>"
+        + "<span class='market-status " + (connected ? "connected" : "pending") + "'>" + (connected ? "Данные загружены" : "Не подключено") + "</span></div>"
+        + "<h3>" + esc(name) + "</h3><p class='market-store-caption'>" + esc(storeText) + "</p>"
+        + "<div class='market-sales'><span>Продажи после возвратов</span><strong>" + (connected && revenue != null ? esc(money(revenue)) : "—") + "</strong>"
+        + "<small>" + (connected ? (revenue != null ? "По финансовым отчётам · " + esc(financeWindow) + (partial ? " · неполный период" : "") : "Нет отчётов внутри выбранных дат") : "Появятся после загрузки данных") + "</small></div>"
+        + "<dl class='market-tile-details'><div><dt>Чистая прибыль</dt><dd>" + (connected ? "Уточняется" : "—") + "</dd></div>"
+        + "<div><dt>Маржинальность</dt><dd>" + (connected ? "Уточняется" : "—") + "</dd></div></dl>"
+        + "<p class='market-data-note'>" + (connected ? "Предварительный расчёт — в разделе «Прибыль». Часть затрат требует уточнения." : "Два отдельных кабинета: ИП и ООО. Можно смотреть вместе или по отдельности.") + "</p>"
+        + "<span class='market-open'>Открыть площадку <span aria-hidden='true'>↗</span></span></a>";
+    }
+    return marketHeading("MA DISTRIBUTION / ОБЗОР", "Бизнес на одном экране", "Выберите площадку, чтобы перейти к продажам, прибыли и магазинам.")
+      + marketPeriodForm(state)
+      + "<div class='market-overview-meta'><span><i class='live-dot'></i> 1 из 3 площадок с данными</span><span>ИП и ООО — раздельный учёт</span></div>"
+      + "<section class='market-tiles' aria-label='Маркетплейсы'>" + tile("letu", "Л’Этуаль", "Л’", true, "ИП · Барская Регина Александровна")
+      + tile("wb", "Wildberries", "WB", false, "2 магазина · ИП и ООО") + tile("ozon", "Ozon", "O", false, "2 магазина · ИП и ООО") + "</section>"
+      + "<section class='market-overview-bottom'><div class='market-note'><span class='market-eyebrow'>ПОЛНОТА ОБЗОРА</span><h3>Сейчас в обзоре — Л’Этуаль</h3>"
+      + "<p>Данные Wildberries и Ozon ещё не загружены. Общий итог бизнеса появится после подключения площадок. Отсутствующие данные не считаются нулевыми продажами.</p></div>"
+      + "<a class='market-expense-link' href='#expenses'><span class='market-eyebrow'>ОБЩИЙ УЧЁТ</span><h3>Расходы ИП / ООО <span aria-hidden='true'>↗</span></h3>"
+      + "<p>Закупки, упаковка, зарплата, документы и другие расходы бизнеса — в одном разделе.</p><span class='market-open'>Открыть расходы</span></a></section>";
+  }
+
+  function renderMarketplace(channel, store, section, state) {
+    var name = channel === "wb" ? "Wildberries" : "Ozon";
+    var storeName = store === "all" ? "Все магазины" : (store === "ip" ? "ИП" : "ООО");
+    var sections = [
+      ["summary", "Сводка", "Продажи, возвраты и результат", "Здесь будут продажи, возвраты, прибыль и динамика за выбранный период."],
+      ["unit", "Товары и юнит-экономика", "Прибыль по каждому товару", "Здесь будут артикулы, цены продажи, себестоимость, расходы и прибыль на единицу товара."],
+      ["profit", "Прибыль и расходы", "Из чего складывается прибыль", "Здесь будут выручка после возвратов, комиссии, логистика, себестоимость, налоги и распределённые расходы бизнеса."],
+      ["payouts", "Выплаты", "От начисления до поступления", "Здесь будут начисления, удержания и подтверждённые выплаты. Поступления денег учитываются отдельно от продаж и прибыли."],
+      ["stock", "Остатки", "Товары на складах", "Здесь будут остатки по артикулам и складам с датой последней загрузки."]
+    ];
+    var active = sections.filter(function (item) { return item[0] === section; })[0] || sections[0];
+    var base = "#" + channel + "/";
+    var stores = [["all", "Все магазины"], ["ip", "ИП"], ["ooo", "ООО"]].map(function (item) {
+      return "<a href='" + base + item[0] + "/" + active[0] + "'" + (store === item[0] ? " class='selected' aria-current='page'" : "") + ">" + item[1] + "</a>";
+    }).join("");
+    var tabs = sections.map(function (item) {
+      return "<a href='" + base + store + "/" + item[0] + "'" + (active[0] === item[0] ? " class='selected' aria-current='page'" : "") + ">" + item[1] + "</a>";
+    }).join("");
+    var metrics = ["Продажи после возвратов", "Чистая прибыль", "Маржинальность", "Фактические выплаты"].map(function (label) {
+      return "<div class='market-empty-metric'><span>" + label + "</span><strong>—</strong><small>Нет данных</small></div>";
+    }).join("");
+    var comparison = store === "all" && active[0] === "summary" ? "<section class='market-store-comparison'><h3>Магазины " + name + "</h3><div class='market-store-grid'>"
+      + [["ip", "ИП", "Отдельный кабинет индивидуального предпринимателя"], ["ooo", "ООО", "Отдельный кабинет юридического лица"]].map(function (item) {
+        return "<a class='market-store-card' href='" + base + item[0] + "/summary'><div><h4>" + item[1] + "</h4><span class='market-status pending'>Не подключено</span></div><p>" + item[2] + "</p><span class='market-open'>Открыть магазин ↗</span></a>";
+      }).join("") + "</div></section>" : "";
+    return marketHeading("ПЛОЩАДКИ / " + name.toUpperCase(), name, "Два магазина. Общий обзор и отдельный результат каждого юридического лица.")
+      + "<div class='market-store-bar'><nav class='store-switch' aria-label='Магазины " + name + "'>" + stores + "</nav><span class='market-status pending'>Данные ещё не подключены</span></div>"
+      + marketPeriodForm(state)
+      + "<nav class='market-sections' aria-label='Разделы " + name + "'>" + tabs + "</nav>"
+      + "<div class='market-section-title'><h3>" + esc(active[1]) + "</h3><span>" + esc(storeName) + " · " + esc(dayText(state.from)) + "–" + esc(dayText(state.to)) + "</span></div>"
+      + (active[0] === "summary" ? "<div class='market-empty-metrics'>" + metrics + "</div>" : "")
+      + comparison
+      + "<section class='market-empty-state'><span class='market-empty-icon' aria-hidden='true'>" + (channel === "wb" ? "WB" : "O") + "</span><div><span class='market-eyebrow'>" + esc(name) + " · " + esc(storeName) + "</span><h3>" + esc(active[2]) + "</h3><p>" + esc(active[3]) + "</p>"
+      + "<p class='market-empty-caption'>Данные " + (store === "all" ? "кабинетов ИП и ООО" : "кабинета " + storeName) + " ещё не загружены. Показатели появятся после подключения API и проверки выгрузки.</p>"
+      + (active[0] === "profit" ? "<a class='button secondary' href='#expenses'>Открыть общие расходы ИП / ООО</a>" : "") + "</div></section>";
+  }
+
+  function updateMarketNavigation(hash, channel) {
+    var expensePage = hash === "expenses" || hash.indexOf("expenses/") === 0;
+    var overview = !hash || hash === "overview";
+    var isLetu = !overview && !channel && !expensePage;
+    document.querySelector("nav.menu").hidden = !isLetu;
+    document.getElementById("freshness").hidden = !isLetu;
+    document.getElementById("page-context").textContent = overview ? "Все площадки · единый обзор бизнеса"
+      : expensePage ? "Общие расходы бизнеса · раздельный учёт ИП и ООО"
+      : channel ? (channel === "wb" ? "Wildberries" : "Ozon") + " · кабинеты ИП и ООО"
+      : "Л’Этуаль · ИП Барская Регина Александровна";
+    var current = overview ? "#overview" : expensePage ? "#expenses" : channel ? "#" + channel + "/all/summary" : "#letu";
+    document.querySelectorAll(".market-nav a").forEach(function (link) {
+      var on = link.getAttribute("href") === current;
+      link.classList.toggle("on", on);
+      if (on) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
+    });
+    document.title = "MA Distribution — " + (overview ? "обзор бизнеса" : expensePage ? "расходы ИП / ООО" : channel ? (channel === "wb" ? "Wildberries" : "Ozon") : "Л’Этуаль");
+  }
+
   function render() {
     const visible = document.getElementById("fresh-visible");
     const more = document.getElementById("fresh-more");
@@ -2527,19 +2629,25 @@
     if (more) more.textContent = DATA.freshness;
     const state = params();
     const hash = location.hash.replace(/^#/, "");
-    if (hash.indexOf("m/") === 0) screen.innerHTML = renderMonth(hash.slice(2), state);
+    const route = hash.split("/");
+    const channel = route[0] === "wb" || route[0] === "ozon" ? route[0] : null;
+    updateMarketNavigation(hash, channel);
+    if (!hash || hash === "overview") screen.innerHTML = renderOverview(state);
+    else if (channel) screen.innerHTML = renderMarketplace(channel, ["all", "ip", "ooo"].indexOf(route[1]) >= 0 ? route[1] : "all", route[2] || "summary", state);
+    else if (hash.indexOf("m/") === 0) screen.innerHTML = renderMonth(hash.slice(2), state);
     else if (hash === "unit") screen.innerHTML = renderUnitPage(state);
     else if (hash === "profit" || hash.indexOf("profit/") === 0) screen.innerHTML = renderProfitPage();
     else if (hash === "expenses" || hash.indexOf("expenses/") === 0) screen.innerHTML = renderExpenses();
     else screen.innerHTML = renderHome(state);
     markNav(hash);
+    if (!hash || hash === "overview" || hash === "letu" || channel) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     if (hash === "unit") {
       bindUnitPage();
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     }
     if (hash === "expenses" || hash.indexOf("expenses/") === 0) {
       bindExpenses();
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     }
     if (hash === "profit" || hash.indexOf("profit/") === 0) {
       bindProfitPage();
@@ -2548,13 +2656,19 @@
         if (hold) hold.scrollIntoView();
         profitHold = null;
       } else {
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
       }
     }
     const form = document.getElementById("period-filter");
     if (form) {
       form.addEventListener("submit", function (event) {
         event.preventDefault();
+        if (form.elements.from && form.elements.to && form.elements.from.value > form.elements.to.value) {
+          form.elements.to.setCustomValidity("Дата окончания должна быть не раньше даты начала.");
+          form.elements.to.reportValidity();
+          form.elements.to.addEventListener("input", function () { this.setCustomValidity(""); }, { once: true });
+          return;
+        }
         const next = new URLSearchParams(new FormData(form));
         history.pushState(null, "", location.pathname + "?" + next.toString() + location.hash);
         render();
@@ -2563,7 +2677,7 @@
   }
 
   function markNav(hash) {
-    let current = "#top";
+    let current = "#letu";
     if (hash === "unit") current = "#unit";
     else if (hash === "year" || hash.indexOf("m/") === 0) current = "#year";
     else if (hash === "profit" || hash.indexOf("profit/") === 0) current = "#profit";
@@ -2578,4 +2692,5 @@
   window.addEventListener("popstate", render);
   render();
 })();
+
 
