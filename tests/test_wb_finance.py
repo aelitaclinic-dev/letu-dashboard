@@ -17,9 +17,11 @@ class FinanceTests(unittest.TestCase):
         self.assertNotIn('PRIVATE',str(result)); self.assertEqual(result['sales']['coverage'],[['2026-01-01','2026-01-18']])
     def test_returns_and_non_sale_rows(self):
         row=self.row(); row.update(sellerOperName='Возврат',docTypeName='Возврат')
-        logistic=self.row(); logistic.update(rrdId=2,sellerOperName='Логистика')
+        logistic=self.row(); logistic.update(rrdId=2,sellerOperName='Логистика',returnAmount=1,deliveryAmount=0,bonusTypeName='От клиента при отказе')
         result=self.calc([row,logistic]); self.assertEqual(result['sales']['rows'][0]['event'],'return')
         self.assertEqual(result['sales']['excludedOtherOperationRows'],1)
+        self.assertEqual(result['reverseLogistics']['rows'][0]['reverseQty'],1)
+        self.assertEqual(result['sales']['rows'][0]['qty'],2)
     def test_conflicting_duplicates_fail(self):
         other=self.row(); other['quantity']=3
         with self.assertRaises(sync.SyncError): self.calc([self.row(),other])

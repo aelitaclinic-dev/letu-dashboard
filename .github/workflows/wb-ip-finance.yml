@@ -10,7 +10,9 @@ on:
     branches: [main]
     paths:
       - scripts/wb_finance_sync.py
+      - scripts/wb_returns_sync.py
       - tests/test_wb_finance.py
+      - tests/test_wb_returns.py
       - .github/workflows/wb-ip-finance.yml
 permissions:
   contents: write
@@ -24,7 +26,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Проверить расчёты и защиту данных
-        run: python -m unittest discover -s tests -p test_wb_finance.py
+        run: python -m unittest discover -s tests -p 'test_wb_*.py'
+      - name: Получить отчёт о возвратах продавцу
+        env:
+          WB_IP_API_TOKEN: ${{ secrets.WB_IP_API_TOKEN }}
+        run: python scripts/wb_returns_sync.py
       - name: Получить финансовую историю
         env:
           WB_IP_FINANCE_API_TOKEN: ${{ secrets.WB_IP_FINANCE_API_TOKEN }}
@@ -34,7 +40,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add wb-finance.json
+          git add wb-finance.json wb-returns.json
           if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Update WB IP financial history aggregates'
           git pull --rebase origin main

@@ -16,7 +16,7 @@ import urllib.request
 MOSCOW = dt.timezone(dt.timedelta(hours=3))
 BASE = 'https://finance-api.wildberries.ru/api/finance/v1/sales-reports/'
 FIELDS = ['rrdId', 'dateFrom', 'dateTo', 'currency', 'rrDate', 'sellerOperName',
-          'docTypeName', 'quantity', 'retailAmount']
+          'docTypeName', 'quantity', 'retailAmount', 'returnAmount', 'deliveryAmount', 'bonusTypeName']
 
 class SyncError(Exception):
     pass
@@ -99,6 +99,7 @@ def aggregate(rows, reports, start, end, fetched):
             coverage.append([lo, hi])
     coverage = merge_ranges(coverage)
     seen, output, skipped = {}, {}, 0
+    audit, logistics = {}, {}
     for row in rows:
         ident = row.get('rrdId')
         if not isinstance(ident, int) or isinstance(ident, bool) or ident <= 0:
@@ -109,6 +110,22 @@ def aggregate(rows, reports, start, end, fetched):
             continue
         seen[ident] = row
         operation = row.get('sellerOperName')
+        operation_key = (str(operation or ''), str(row.get('docTypeName') or ''))
+        audit_item = audit.setdefault(operation_key, dict(rows=0, quantity=0, reverseDeliveryQty=0))
+        audit_item['rows'] += 1
+        if isinstance(row.get('quantity'), int):
+            audit_item['quantity'] += row['quantity']
+        if operation == 'Логистика':
+            date = day(row.get('rrDate'))
+            if start <= date <= end:
+                reverse, forward = row.get('returnAmount'), row.get('deliveryAmount')
+                if not all(isinstance(n, int) and not isinstance(n, bool) and n >= 0 for n in [reverse, forward]):
+                    raise SyncError('Invalid logistics quantity')
+                audit_item['reverseDeliveryQty'] += reverse
+                key = (date, str(row.get('bonusTypeName') or 'Без уточнения'))
+                item = logistics.setdefault(key, dict(date=date, type=key[1], reverseQty=0, forwardQty=0))
+                item['reverseQty'] += reverse
+                item['forwardQty'] += forward
         if operation not in ('Продажа', 'Возврат'):
             skipped += 1
             continue
@@ -134,6 +151,9 @@ def aggregate(rows, reports, start, end, fetched):
         item['missingAmountQty'] += quantity if amount is None else 0
         item['zeroAmountQty'] += quantity if amount == 0 else 0
     return {'schemaVersion': 1, 'generatedAt': fetched,
+        'audit': [dict(operation=k[0], document=k[1], **v) for k,v in sorted(audit.items())],
+        'reverseLogistics': {'state': 'ready', 'fetchedAt': fetched, 'coverage': coverage,
+                             'rows': [logistics[k] for k in sorted(logistics)]},
         'sales': {'state': 'ready', 'fetchedAt': fetched, 'from': start, 'to': end,
                   'coverage': coverage, 'rows': [output[key] for key in sorted(output)],
                   'basis': 'retailAmount', 'dateBasis': 'rrDate', 'period': 'weekly',
