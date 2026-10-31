@@ -1,0 +1,272 @@
+name: WB IP — загрузить данные
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: wb-ip-data-loader
+  cancel-in-progress: false
+jobs:
+  load:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Получить файлы сайта
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Загрузить заказы, продажи, возвраты и баланс
+        env:
+          WB_IP_API_TOKEN: ${{ secrets.WB_IP_API_TOKEN }}
+        shell: python
+        run: |
+          """Fetch operational WB data; persist aggregates only, never tokens or orders."""
+          import datetime as dt
+          import json
+          import os
+          from pathlib import Path
+          from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+          import sys
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          
+          MSK = dt.timezone(dt.timedelta(hours=3))
+          BASE = "https://statistics-api.wildberries.ru"
+          PATH = Path("wb-data.json")
+          
+          
+          class DataError(Exception):
+              pass
+          
+          
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, request, file, code, message, headers, new_url):
+                  return None
+          
+          
+          def money(value):
+              if value is None or isinstance(value, bool):
+                  return None
+              try:
+                  number = Decimal(str(value))
+                  if not number.is_finite():
+                      return None
+                  return int((abs(number) * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+              except (InvalidOperation, ValueError, TypeError):
+                  return None
+          
+          
+          def text(value, maximum=200):
+              return str(value or "")[:maximum]
+          
+          
+          def aggregate(rows, kind, start, end):
+              if not isinstance(rows, list):
+                  raise DataError("WB вернул неожиданный формат. Предыдущие данные сохранены.")
+              if len(rows) >= 79000:
+                  raise DataError("Ответ близок к лимиту строк. Нужна постраничная загрузка; неполная сумма не публикуется.")
+              groups, unique = {}, {}
+              duplicates = 0
+              for row in rows:
+                  if not isinstance(row, dict):
+                      raise DataError("В ответе WB есть строка неизвестного формата.")
+                  day = str(row.get("date", ""))[:10]
+                  try:
+                      dt.date.fromisoformat(day)
+                  except ValueError:
+                      raise DataError("В ответе отсутствует дата операции.")
+                  if not start <= day <= end:
+                      continue
+                  if kind == "orders":
+                      identity = str(row.get("srid") or "")
+                      if not identity or not isinstance(row.get("isCancel"), bool):
+                          raise DataError("Не хватает идентификатора заказа или признака отмены.")
+                      event = "cancel" if row["isCancel"] else "order"
+                  else:
+                      identity = str(row.get("saleID") or "")
+                      if not identity.startswith(("S", "R")):
+                          raise DataError("Не удалось отличить продажу от возврата. Суммы не обновлены.")
+                      event = "return" if identity.startswith("R") else "sale"
+                  if identity in unique:
+                      duplicates += 1
+                      old = unique[identity]
+                      if row.get("lastChangeDate", "") < old[0].get("lastChangeDate", ""):
+                          continue
+                      if row.get("lastChangeDate", "") == old[0].get("lastChangeDate", "") and event != old[1]:
+                          raise DataError("Противоречивые дубликаты операции. Предыдущие данные сохранены.")
+                  unique[identity] = (row, event)
+              for row, event in unique.values():
+                  day = str(row["date"])[:10]
+                  key = (day, text(row.get("nmId"), 30), text(row.get("supplierArticle")), text(row.get("brand")), event)
+                  item = groups.setdefault(key, {
+                      "date": day, "nmId": key[1], "article": key[2], "brand": key[3],
+                      "event": event, "qty": 0, "knownAmountKop": 0, "missingAmountQty": 0,
+                      "zeroAmountQty": 0,
+                  })
+                  item["qty"] += 1
+                  amount = money(row.get("priceWithDisc"))
+                  if amount is None:
+                      item["missingAmountQty"] += 1
+                  else:
+                      item["knownAmountKop"] += amount
+                      if amount == 0:
+                          item["zeroAmountQty"] += 1
+              return sorted(groups.values(), key=lambda item: (item["date"], item["article"], item["event"])), duplicates
+          
+          
+          def fetch(token, url):
+              request = urllib.request.Request(url, headers={"Authorization": token, "Accept": "application/json"}, method="GET")
+              try:
+                  with urllib.request.build_opener(NoRedirect()).open(request, timeout=45) as response:
+                      if response.status == 204:
+                          return []
+                      if response.status != 200:
+                          raise DataError("Неожиданный HTTP-статус WB.")
+                      data = response.read(100_000_001)
+                      if len(data) > 100_000_000:
+                          raise DataError("Ответ слишком большой для одной загрузки.")
+                      return json.loads(data.decode("utf-8"))
+              except urllib.error.HTTPError as error:
+                  reason = {
+                      401: "Токен не принят или истёк.",
+                      402: "WB требует оплату или другой уровень доступа.",
+                      403: "У токена нет доступа к этому методу или действуют ограничения WB.",
+                      429: "Лимит запросов WB. Не запускайте загрузку повторно сразу.",
+                  }.get(error.code, "Ошибка WB; предыдущее значение сохранено.")
+                  raise DataError("HTTP " + str(error.code) + ": " + reason) from None
+              except (urllib.error.URLError, TimeoutError, OSError):
+                  raise DataError("Нет ответа WB: сеть, TLS или время ожидания.") from None
+              except (ValueError, UnicodeError):
+                  raise DataError("WB вернул ответ, который не удалось прочитать как JSON.") from None
+          
+          
+          def cooling_down(section, hours, now):
+              if section.get("state") != "ready" or not section.get("fetchedAt"):
+                  return False
+              try:
+                  previous = dt.datetime.fromisoformat(section["fetchedAt"])
+                  return now - previous < dt.timedelta(hours=hours, minutes=5)
+              except (ValueError, TypeError):
+                  return False
+          
+          
+          def merge_coverage(intervals):
+              merged = []
+              for start, end in sorted(intervals):
+                  if merged and dt.date.fromisoformat(start) <= dt.date.fromisoformat(merged[-1][1]) + dt.timedelta(days=1):
+                      merged[-1][1] = max(merged[-1][1], end)
+                  else:
+                      merged.append([start, end])
+              return merged
+          
+          
+          def run():
+              token = os.environ.get("WB_IP_API_TOKEN", "").strip()
+              if not token or any(character.isspace() for character in token):
+                  print("Добавьте корректный секрет WB_IP_API_TOKEN. Значение ключа не выводится.")
+                  return 1
+              now = dt.datetime.now(MSK)
+              today = now.date().isoformat()
+              start = (now.date() - dt.timedelta(days=89)).isoformat()
+              stamp = now.isoformat(timespec="seconds")
+              if PATH.exists():
+                  try:
+                      document = json.loads(PATH.read_text(encoding="utf-8"))
+                      if document.get("schemaVersion") != 1:
+                          raise ValueError()
+                  except (ValueError, OSError):
+                      print("Существующая выгрузка имеет неизвестный формат. Файл не перезаписан.")
+                      return 1
+              else:
+                  document = {"schemaVersion": 1, "stores": {}}
+              store = document.setdefault("stores", {}).setdefault("ip", {})
+              messages = []
+              for kind, hours, path in [
+                  ("orders", 3, "/api/v1/supplier/orders"),
+                  ("sales", 2, "/api/v1/supplier/sales"),
+              ]:
+                  previous = store.get(kind, {})
+                  if cooling_down(previous, hours, now):
+                      messages.append(kind + ": использована предыдущая выгрузка, чтобы соблюсти лимит WB.")
+                      continue
+                  try:
+                      query = urllib.parse.urlencode({"dateFrom": start + "T00:00:00", "flag": 0})
+                      rows, duplicates = aggregate(fetch(token, BASE + path + "?" + query), kind, start, today)
+                      historical = [item for item in previous.get("rows", []) if item.get("date", "") < start]
+                      store[kind] = {
+                          "state": "ready", "fetchedAt": stamp, "from": start, "to": today,
+                          "rows": historical + rows, "duplicatesRemoved": duplicates,
+                          "coverage": merge_coverage(previous.get("coverage", []) + [[start, today]]),
+                          "note": "Оперативные данные WB. Суммы предварительные, не финансовый отчёт.",
+                      }
+                      messages.append(kind + ": выгрузка получена; опубликованы только суммы по дате и артикулу.")
+                  except DataError as error:
+                      store[kind] = dict(previous, lastAttemptAt=stamp, lastError=str(error))
+                      if previous.get("state") != "ready":
+                          store[kind]["state"] = "error"
+                      messages.append(kind + ": " + str(error))
+              # Seller balance is a current snapshot, never a statement of actual bank payments.
+              previous = store.get("balance", {})
+              if not cooling_down(previous, 24, now):
+                  try:
+                      response = fetch(token, "https://finance-api.wildberries.ru/api/v1/account/balance")
+                      if not isinstance(response, dict) or response.get("currency") != "RUB":
+                          raise DataError("Баланс недоступен в рублях или имеет неизвестный формат.")
+                      def signed(value):
+                          if value is None:
+                              return None
+                          amount = money(value)
+                          if amount is None:
+                              return None
+                          return -amount if Decimal(str(value)) < 0 else amount
+                      current, available = signed(response.get("current")), signed(response.get("for_withdraw"))
+                      if current is None or available is None:
+                          raise DataError("В балансе отсутствуют обязательные суммы.")
+                      store["balance"] = {"state": "ready", "fetchedAt": stamp, "currency": "RUB", "currentKop": current, "availableKop": available}
+                      messages.append("balance: получен текущий снимок; это не фактическая выплата.")
+                  except DataError as error:
+                      store["balance"] = dict(previous, lastAttemptAt=stamp, lastError=str(error))
+                      if previous.get("state") != "ready":
+                          store["balance"]["state"] = "error"
+                      messages.append("balance: " + str(error))
+              else:
+                  messages.append("balance: использован предыдущий снимок, чтобы соблюсти суточный лимит WB.")
+              store["financeReports"] = {"state": "not_connected", "note": "Финансовые отчёты не загружены. Чистая прибыль, комиссии и фактические выплаты не рассчитаны."}
+              store["lastAttemptAt"] = stamp
+              document["generatedAt"] = stamp
+              success = any(store.get(key, {}).get("state") == "ready" for key in ("orders", "sales"))
+              summary = os.environ.get("GITHUB_STEP_SUMMARY")
+              if summary:
+                  with open(summary, "a", encoding="utf-8") as out:
+                      out.write("## Wildberries ИП — загрузка\n\n" + "\n".join("- " + message for message in messages) + "\n\n")
+                      out.write("Токен, идентификаторы заказов и данные покупателей не выводятся и не сохраняются.\n")
+              for message in messages:
+                  print(message)
+              if not success:
+                  print("Нет подтверждённой выгрузки заказов или продаж. Файл сайта не обновлён.")
+                  return 1
+              # Only the allowlisted aggregate schema above reaches the public repository.
+              temporary = PATH.with_suffix(".tmp")
+              temporary.write_text(json.dumps(document, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+              temporary.replace(PATH)
+              return 0
+          
+          
+          if __name__ == "__main__":
+              sys.exit(run())
+      - name: Сохранить сводные данные для дашборда
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- wb-data.json
+          if git diff --cached --quiet; then
+            echo 'Данные не изменились.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Update Wildberries IP operational aggregates'
+          git push origin HEAD:main
+          echo 'Данные сохранены. Откройте сайт через несколько минут и обновите страницу.' >> "$GITHUB_STEP_SUMMARY"
