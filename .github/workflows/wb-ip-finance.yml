@@ -1,0 +1,41 @@
+name: WB ИП — финансовая история
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: Год истории (пусто — текущий)
+        required: false
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - scripts/wb_finance_sync.py
+      - tests/test_wb_finance.py
+      - .github/workflows/wb-ip-finance.yml
+permissions:
+  contents: write
+concurrency:
+  group: wb-ip-finance-history
+  cancel-in-progress: false
+jobs:
+  finance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Проверить расчёты и защиту данных
+        run: python -m unittest discover -s tests -p test_wb_finance.py
+      - name: Получить финансовую историю
+        env:
+          WB_IP_FINANCE_API_TOKEN: ${{ secrets.WB_IP_FINANCE_API_TOKEN }}
+          WB_FINANCE_YEAR: ${{ inputs.year }}
+        run: python scripts/wb_finance_sync.py
+      - name: Сохранить только сводные показатели
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add wb-finance.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Update WB IP financial history aggregates'
+          git pull --rebase origin main
+          git push origin HEAD:main
