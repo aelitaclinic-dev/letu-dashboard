@@ -2557,7 +2557,152 @@
       + (!complete ? "Выбранный период покрыт не полностью. " : "")
       + (source.lastError ? "Последнее обновление не удалось: " + source.lastError : "");
   }
+  function wbCovered(source, from, to) {
+    return !!(source && source.state === "ready" && (source.coverage || []).some(function (r) { return r[0] <= from && r[1] >= to; }));
+  }
+  function wbMonthModel(year, ip) {
+    var reference = (ip.lastAttemptAt || WB_SNAPSHOT.generatedAt || new Date().toISOString()).slice(0, 10);
+    return Array.from({length: 12}, function (_, i) {
+      var key = year + "-" + String(i + 1).padStart(2, "0");
+      var from = key + "-01", to = key + "-" + String(new Date(Date.UTC(Number(year), i + 1, 0)).getUTCDate());
+      var sales = wbSelected(ip.sales, {from: from, to: to}), orders = wbSelected(ip.orders, {from: from, to: to});
+      var sold = wbStats(sales, "sale"), returned = wbStats(sales, "return"), ordered = wbStats(orders, "order"), canceled = wbStats(orders, "cancel");
+      var available = sales !== null || orders !== null;
+      var complete = wbCovered(ip.sales, from, to) && wbCovered(ip.orders, from, to) && to < reference;
+      var allOrders = ordered && canceled ? {qty: ordered.qty + canceled.qty, amount: ordered.amount + canceled.amount, missing: ordered.missing + canceled.missing} : null;
+      var sourceRanges = [ip.sales, ip.orders].filter(function (s) { return s && s.state === "ready"; }).reduce(function (a, s) { return a.concat(s.coverage || []); }, []);
+      var covered = sourceRanges.filter(function (r) { return r[0] <= to && r[1] >= from; });
+      var visibleFrom = covered.length ? covered.map(function (r) { return r[0] > from ? r[0] : from; }).sort()[0] : null;
+      var visibleTo = covered.length ? covered.map(function (r) { return r[1] < to ? r[1] : to; }).sort().pop() : null;
+      return {key: key, label: MONTH_NAME[key.slice(5)], from: from, to: to, sales: sales, orders: orders, sold: sold, returned: returned,
+        ordered: ordered, canceled: canceled, allOrders: allOrders, net: wbNet(sales), available: available, complete: complete,
+        future: from > reference, visibleFrom: visibleFrom, visibleTo: visibleTo,
+        status: complete ? "Полный месяц" : available ? "Неполный месяц" : from > reference ? "Впереди" : "Нет данных"};
+    });
+  }
+  function wbShortMoney(kop) {
+    if (kop == null) return "—";
+    return Math.round(kop / 100).toLocaleString("ru-RU") + " ₽";
+  }
+  function wbFigure(stat, units) { return !stat ? "—" : units ? qty(stat.qty) : stat.missing ? "Сумма уточняется" : money(stat.amount); }
+  function wbSourceRanges(source, year) {
+    if (!source || source.state !== "ready") return "не загружены";
+    return (source.coverage || []).filter(function (r) { return r[0] <= year + "-12-31" && r[1] >= year + "-01-01"; }).map(function (r) {
+      return dayText(r[0] < year + "-01-01" ? year + "-01-01" : r[0]) + "–" + dayText(r[1] > year + "-12-31" ? year + "-12-31" : r[1]);
+    }).join(", ") || "за этот год не загружены";
+  }
+  function wbTrendChart(months, metric, units) {
+    if (metric === "profit") return "<div class='wb-profit-empty'><span class='wb-profit-symbol' aria-hidden='true'>₽</span><h4>Прибыль появится после расчёта расходов</h4><p>Подключим комиссии WB, логистику, себестоимость и налоги. Здесь будет видно, как меняется прибыль за каждый месяц и за год.</p><a href='#wb/ip/profit'>Что входит в расчёт →</a></div>";
+    var values = months.map(function (m) {
+      if (metric === "orders") return !m.allOrders ? null : units ? m.allOrders.qty : m.allOrders.missing ? null : m.allOrders.amount / 100;
+      return !m.sold || !m.returned ? null : units ? m.sold.qty - m.returned.qty : m.net == null ? null : m.net / 100;
+    });
+    var known = values.filter(function (v) { return v !== null; });
+    if (!known.length) return "<div class='wb-profit-empty'><h4>За этот год пока нет выгрузки</h4><p>График появится, когда будут загружены операции. Месяцы без данных не считаются нулевыми.</p></div>";
+    var min = Math.min.apply(null, [0].concat(known)), max = Math.max.apply(null, [1].concat(known));
+    var step = Math.pow(10, Math.floor(Math.log10(Math.max(max - min, 1)))) / 2;
+    min = Math.floor(min / step) * step; max = Math.ceil(max / step) * step;
+    var left = 78, right = 1090, top = 25, bottom = 238;
+    var x = function (i) { return left + i * (right - left) / 11; }, y = function (v) { return bottom - (v - min) / (max - min) * (bottom - top); };
+    var compact = function (v) { return Math.abs(v) >= 1000000 ? (v / 1000000).toLocaleString("ru-RU", {maximumFractionDigits: 1}) + " млн" : Math.abs(v) >= 1000 ? (v / 1000).toLocaleString("ru-RU", {maximumFractionDigits: 1}) + " тыс." : Math.round(v).toLocaleString("ru-RU"); };
+    var svg = "<svg class='wb-year-svg' viewBox='0 0 1120 295' role='img' aria-label='" + esc((metric === "orders" ? "Заказы" : "Продажи после возвратов") + " по месяцам, " + (units ? "штуки" : "рубли")) + "'><title>Показаны только месяцы с выгрузкой. Пунктир — неполный месяц.</title>";
+    for (var tick = 0; tick <= 4; tick++) {
+      var value = min + (max - min) * tick / 4, yy = y(value);
+      svg += "<line x1='" + left + "' x2='" + right + "' y1='" + yy + "' y2='" + yy + "' class='wb-grid-line'/><text x='63' y='" + (yy + 4) + "' text-anchor='end' class='wb-axis'>" + esc(compact(value)) + "</text>";
+    }
+    var segments = [], segment = [];
+    values.forEach(function (v, i) { if (v === null) { if (segment.length) segments.push(segment); segment = []; } else segment.push([i, v]); });
+    if (segment.length) segments.push(segment);
+    segments.forEach(function (part) {
+      if (part.length > 1) svg += "<path d='M " + x(part[0][0]) + " " + y(0) + " L " + part.map(function (p) { return x(p[0]) + " " + y(p[1]); }).join(" L ") + " L " + x(part[part.length - 1][0]) + " " + y(0) + " Z' class='wb-chart-area'/>";
+      part.forEach(function (point, j) { if (!j) return; var prev = part[j - 1]; svg += "<line x1='" + x(prev[0]) + "' y1='" + y(prev[1]) + "' x2='" + x(point[0]) + "' y2='" + y(point[1]) + "' class='wb-chart-line" + (!months[prev[0]].complete || !months[point[0]].complete ? " partial" : "") + "'/>"; });
+    });
+    months.forEach(function (m, i) {
+      var v = values[i];
+      if (v !== null) svg += "<circle cx='" + x(i) + "' cy='" + y(v) + "' r='5.5' class='wb-chart-point" + (m.complete ? "" : " partial") + "'><title>" + esc(m.label + ": " + (units ? qty(v) + " шт." : money(Math.round(v * 100))) + " · " + m.status) + "</title></circle>";
+      else svg += "<text x='" + x(i) + "' y='" + (bottom - 12) + "' text-anchor='middle' class='wb-gap-mark'>—</text>";
+      svg += "<text x='" + x(i) + "' y='268' text-anchor='middle' class='wb-axis" + (v !== null ? " has-data" : "") + "'>" + esc(SHORT_MONTH[m.key.slice(5)]) + "</text>";
+    });
+    return "<div class='wb-chart-scroll'>" + svg + "</svg></div><p class='wb-chart-legend'><span><i></i> " + (metric === "orders" ? "Все заказы, включая отменённые" : "Продажи за вычетом возвратов") + "</span><span>Пунктир — неполный месяц · — нет данных</span></p>";
+  }
+  function renderWBAnnual(store) {
+    var ip = wbStore(), query = new URLSearchParams(location.search);
+    var latest = (ip.lastAttemptAt || WB_SNAPSHOT.generatedAt || new Date().toISOString()).slice(0, 10);
+    var requested = query.get("wbYear"), year = /^20\d\d$/.test(requested || "") ? requested : latest.slice(0, 4);
+    var months = wbMonthModel(year, ip), selectedKey = query.get("wbMonth");
+    var selected = months.filter(function (m) { return m.key === selectedKey; })[0] || months.filter(function (m) { return m.available; }).pop() || months[0];
+    var period = {from: year + "-01-01", to: year + "-12-31"}, sales = wbSelected(ip.sales, period), orders = wbSelected(ip.orders, period);
+    var sold = wbStats(sales, "sale"), returned = wbStats(sales, "return"), ordered = wbStats(orders, "order"), canceled = wbStats(orders, "cancel");
+    var allOrders = ordered && canceled ? {qty: ordered.qty + canceled.qty, amount: ordered.amount + canceled.amount, missing: ordered.missing + canceled.missing} : null;
+    var lastYear = Number(latest.slice(0, 4)), years = [lastYear - 2, lastYear - 1, lastYear];
+    if (years.indexOf(Number(year)) < 0) years.push(Number(year));
+    var metric = ["sales", "orders", "profit"].indexOf(query.get("wbMetric")) >= 0 ? query.get("wbMetric") : "sales", units = query.get("wbUnits") === "qty";
+    var loaded = months.filter(function (m) { return m.available; }).length;
+    var html = "<div class='wb-annual'><div class='wb-year-heading'><div><p class='market-eyebrow'>МАГАЗИН ИП / ОБЗОР ГОДА</p><h3>Бизнес в цифрах <span>" + year + "</span></h3><p>Продажи, заказы и возвраты — по месяцам и за год.</p></div><label class='wb-year-select'>Год обзора<select id='wb-year' aria-label='Год обзора'>"
+      + years.sort().reverse().map(function (v) { return "<option value='" + v + "'" + (String(v) === year ? " selected" : "") + ">" + v + "</option>"; }).join("") + "</select></label></div>";
+    html += "<div class='wb-coverage'><span class='wb-coverage-dot'></span><div><strong>" + (loaded ? "Загружено месяцев: " + loaded + " из 12" : "За этот год данных пока нет") + "</strong><span>Продажи: " + esc(wbSourceRanges(ip.sales, year)) + ". Итог ниже — только по полученным данным.</span></div><a href='#wb-data-source'>Откуда цифры ↗</a></div>";
+    if (store === "all") html += "<p class='wb-scope-note'>В обзоре только ИП. Магазин ООО ещё не подключён.</p>";
+    html += "<div class='wb-year-kpis'><article class='wb-year-kpi primary'><span>Продажи после возвратов</span><strong>" + esc(wbNet(sales) == null ? "—" : money(wbNet(sales))) + "</strong><small>До комиссий и расходов WB</small></article>"
+      + "<article class='wb-year-kpi'><span>Продано товаров</span><strong>" + esc(wbFigure(sold, true)) + "<em> шт.</em></strong><small>Продажи: " + esc(wbFigure(sold, false)) + "</small></article>"
+      + "<article class='wb-year-kpi'><span>Заказано товаров</span><strong>" + esc(wbFigure(allOrders, true)) + "<em> шт.</em></strong><small>На " + esc(wbFigure(allOrders, false)) + " · отменено " + esc(wbFigure(canceled, true)) + " шт.</small></article>"
+      + "<article class='wb-year-kpi'><span>Возвращено товаров</span><strong>" + esc(wbFigure(returned, true)) + "<em> шт.</em></strong><small>На " + esc(wbFigure(returned, false)) + "</small></article>"
+      + "<article class='wb-year-kpi profit'><span>Чистая прибыль</span><strong>—</strong><small>Следующий этап: учёт расходов</small></article></div>";
+    html += "<section class='wb-chart-panel' aria-label='График по месяцам'><div class='wb-panel-heading'><div><p class='market-eyebrow'>ДИНАМИКА ГОДА</p><h3>Как меняется результат</h3></div><div class='wb-chart-units'" + (metric === "profit" ? " hidden" : "") + ">"
+      + [["rub", "Рубли"], ["qty", "Штуки"]].map(function (v) { return "<button type='button' data-wb-units='" + v[0] + "' aria-pressed='" + ((units ? "qty" : "rub") === v[0]) + "'>" + v[1] + "</button>"; }).join("") + "</div></div><div class='wb-chart-tabs'>"
+      + [["sales", "Продажи после возвратов"], ["orders", "Заказы"], ["profit", "Прибыль"]].map(function (v) { return "<button type='button' data-wb-metric='" + v[0] + "' aria-pressed='" + (metric === v[0]) + "'>" + v[1] + (v[0] === "profit" ? " <span>скоро</span>" : "") + "</button>"; }).join("") + "</div>"
+      + wbTrendChart(months, metric, units) + "</section>";
+    html += "<section class='wb-months-section' aria-label='Месяцы года'><div class='wb-panel-heading'><div><p class='market-eyebrow'>МЕСЯЦ ЗА МЕСЯЦЕМ</p><h3>" + year + " год</h3></div><p>Нажмите на месяц, чтобы увидеть детали</p></div><div class='wb-months-grid'>";
+    html += months.map(function (m, index) {
+      var previous = months[index - 1], delta = m.complete && previous && previous.complete && m.net != null && previous.net > 0 ? (m.net - previous.net) / previous.net * 100 : null;
+      var badge = m.complete ? "complete" : m.available ? "partial" : "empty";
+      var amount = m.net != null ? wbShortMoney(m.net) : m.sales !== null ? "Сумма уточняется" : "—";
+      return "<button class='wb-month-card " + badge + (m.key === selected.key ? " selected" : "") + "' type='button' data-wb-month='" + m.key + "' aria-pressed='" + (m.key === selected.key) + "' aria-label='Открыть месяц: " + esc(m.label) + " " + year + "'><span class='wb-month-top'><strong>" + esc(m.label) + "</strong><span class='wb-month-badge'>" + m.status + "</span></span>"
+        + "<span class='wb-month-amount'>" + esc(amount) + "</span><span class='wb-month-amount-label'>" + (m.sales !== null ? "продажи после возвратов" : m.future ? "месяц ещё не наступил" : "продажи не загружены") + "</span>"
+        + "<span class='wb-month-stats'><span>Продано <b>" + esc(wbFigure(m.sold, true)) + "</b></span><span>Заказано <b>" + esc(wbFigure(m.allOrders, true)) + "</b></span><span>Возвраты <b>" + esc(wbFigure(m.returned, true)) + "</b></span><span>Отмены <b>" + esc(wbFigure(m.canceled, true)) + "</b></span></span>"
+        + "<span class='wb-month-bottom'>" + (delta == null ? m.available ? esc(dayText(m.visibleFrom) + "–" + dayText(m.visibleTo)) : m.future ? "Показатели появятся здесь" : "Нет выгрузки за этот месяц" : "<span class='" + (delta >= 0 ? "wb-up" : "wb-down") + "'>" + (delta >= 0 ? "↑ +" : "↓ ") + delta.toLocaleString("ru-RU", {maximumFractionDigits: 1}) + "% к прошлому месяцу</span>") + "<span aria-hidden='true'>↗</span></span></button>";
+    }).join("") + "</div><p class='wb-month-footnote'>Суммы на плашках округлены до рубля; точные суммы — в деталях месяца. Рост сравнивается только между полностью загруженными месяцами.</p></section>";
+    html += "<section class='wb-month-detail' id='wb-month-detail' tabindex='-1'><div class='wb-panel-heading'><div><p class='market-eyebrow'>ДЕТАЛИ МЕСЯЦА</p><h3>" + esc(selected.label) + " " + year + "</h3></div><span class='wb-month-badge'>" + selected.status + "</span></div>";
+    if (selected.available) {
+      html += "<p class='wb-detail-period'>Данные за " + esc(dayText(selected.visibleFrom) + "–" + dayText(selected.visibleTo)) + ". " + (selected.complete ? "Месяц загружен полностью." : "Месяц загружен не полностью или ещё обновляется.") + "</p><div class='wb-detail-metrics'>"
+        + wbCard("Продажи", wbFigure(selected.sold, false), wbFigure(selected.sold, true) + " шт.")
+        + wbCard("Возвраты", wbFigure(selected.returned, false), wbFigure(selected.returned, true) + " шт.")
+        + wbCard("Продажи после возвратов", selected.net == null ? null : money(selected.net), "До комиссий и расходов WB")
+        + wbCard("Заказы, включая отмены", wbFigure(selected.allOrders, false), wbFigure(selected.allOrders, true) + " шт. · отменено " + wbFigure(selected.canceled, true)) + "</div>";
+      var dayRows = (selected.sales || []).concat(selected.orders || []);
+      var days = Array.from(new Set(dayRows.map(function (r) { return r.date; }))).sort().reverse();
+      html += "<details class='wb-daily-fold'><summary>Операции по дням <span>" + days.length + " дней с операциями</span></summary>" + wbTable(["Дата", "Продано, шт.", "Возвраты, шт.", "Заказано, шт.", "Продажи после возвратов"], days.map(function (day) {
+        var ss = selected.sales === null ? null : selected.sales.filter(function (r) { return r.date === day; });
+        var oo = selected.orders === null ? null : selected.orders.filter(function (r) { return r.date === day; });
+        var s = wbStats(ss, "sale"), r = wbStats(ss, "return"), o = wbStats(oo, "order"), c = wbStats(oo, "cancel");
+        return [dayText(day), wbFigure(s, true), wbFigure(r, true), o && c ? qty(o.qty + c.qty) : "—", wbNet(ss) == null ? "—" : money(wbNet(ss))];
+      })) + "</details>";
+      if ((selected.sales || []).some(function (r) { return r.missingAmountQty || r.zeroAmountQty; })) html += "<p class='wb-scope-note'>В части операций цена отсутствует или равна нулю. Денежные суммы требуют уточнения.</p>";
+    } else html += "<p class='wb-detail-empty'>" + (selected.future ? "Этот месяц ещё впереди. Здесь появятся продажи, заказы и возвраты." : "Операции за этот месяц пока не загружены. Прочерк означает отсутствие данных.") + "</p>";
+    html += "</section><details class='wb-source-fold' id='wb-data-source'><summary>Откуда берутся цифры и что они означают</summary><div><h4>Источник — статистика Wildberries, кабинет ИП</h4><p>«Продано» — количество выкупов. Сумма продаж складывается из цен продавца после скидок. «Продажи после возвратов» — сумма продаж минус сумма возвратов. Комиссии, логистика, себестоимость, налоги и другие расходы пока не вычтены.</p><p>«Заказано» включает отменённые заказы. Заказы группируются по дате заказа, продажи и возвраты — по дате своей операции. Продажа может относиться к заказу из более раннего месяца.</p><p>Годовой итог включает только полученные операции. Нет данных за месяц — нет подтверждённого итога за весь год. Прибыль будет рассчитана отдельно после подключения расходов.</p><p>" + esc(wbSourceNote("Продажи и возвраты", ip.sales, period)) + "</p><p>" + esc(wbSourceNote("Заказы", ip.orders, period)) + "</p></div></details></div>";
+    return html;
+  }
+  function bindWBAnnual() {
+    function change(key, value, detail) {
+      var scroll = window.scrollY, query = new URLSearchParams(location.search);
+      query.set(key, value);
+      if (key === "wbYear") query.delete("wbMonth");
+      history.replaceState(null, "", location.pathname + "?" + query.toString() + location.hash);
+      render();
+      if (detail) { var panel = document.getElementById("wb-month-detail"); panel.focus({preventScroll: true}); panel.scrollIntoView({behavior: "instant", block: "start"}); }
+      else window.scrollTo({top: scroll, left: 0, behavior: "instant"});
+    }
+    var year = document.getElementById("wb-year");
+    if (!year) return;
+    year.addEventListener("change", function () { change("wbYear", year.value); });
+    document.querySelectorAll("[data-wb-month]").forEach(function (button) { button.addEventListener("click", function () { change("wbMonth", button.dataset.wbMonth, true); }); });
+    document.querySelectorAll("[data-wb-metric]").forEach(function (button) { button.addEventListener("click", function () { change("wbMetric", button.dataset.wbMetric); }); });
+    document.querySelectorAll("[data-wb-units]").forEach(function (button) { button.addEventListener("click", function () { change("wbUnits", button.dataset.wbUnits); }); });
+    var source = document.querySelector(".wb-coverage a");
+    source.addEventListener("click", function (event) { event.preventDefault(); var fold = document.getElementById("wb-data-source"); fold.open = true; fold.scrollIntoView({behavior: "instant"}); });
+  }
+
   function renderWBContent(section, store, state) {
+    if (section === "summary") return renderWBAnnual(store);
     var ip = wbStore(), sales = wbSelected(ip.sales, state), orders = wbSelected(ip.orders, state);
     var sold = wbStats(sales, "sale"), returned = wbStats(sales, "return"), ordered = wbStats(orders, "order"), canceled = wbStats(orders, "cancel");
     var html = "<section class='market-note'><h3>Оперативные данные · ИП</h3><p>" + (store === "all" ? "В этом обзоре только ИП. Кабинет ООО ещё не подключён. " : "")
@@ -2665,6 +2810,7 @@
     ];
     var active = sections.filter(function (item) { return item[0] === section; })[0] || sections[0];
     var hasWB = channel === "wb" && store !== "ooo" && !!wbStore();
+    var annualWB = hasWB && active[0] === "summary";
     var base = "#" + channel + "/";
     var stores = [["all", "Все магазины"], ["ip", "ИП"], ["ooo", "ООО"]].map(function (item) {
       return "<a href='" + base + item[0] + "/" + active[0] + "'" + (store === item[0] ? " class='selected' aria-current='page'" : "") + ">" + item[1] + "</a>";
@@ -2679,13 +2825,13 @@
       + [["ip", "ИП", "Отдельный кабинет индивидуального предпринимателя"], ["ooo", "ООО", "Отдельный кабинет юридического лица"]].map(function (item) {
         return "<a class='market-store-card' href='" + base + item[0] + "/summary'><div><h4>" + item[1] + "</h4><span class='market-status " + (channel === "wb" && item[0] === "ip" && wbStore() ? "connected" : "pending") + "'>" + (channel === "wb" && item[0] === "ip" && wbStore() ? "Оперативные данные" : "Не подключено") + "</span></div><p>" + item[2] + "</p><span class='market-open'>Открыть магазин ↗</span></a>";
       }).join("") + "</div></section>" : "";
-    return marketHeading("ПЛОЩАДКИ / " + name.toUpperCase(), name, "Два магазина. Общий обзор и отдельный результат каждого юридического лица.")
+    return marketHeading("ПЛОЩАДКИ / " + name.toUpperCase(), name, annualWB ? "Магазин ИП · продажи и результат по месяцам" : "Два магазина. Общий обзор и отдельный результат каждого юридического лица.")
       + "<div class='market-store-bar'><nav class='store-switch' aria-label='Магазины " + name + "'>" + stores + "</nav><span class='market-status " + (hasWB ? "connected" : "pending") + "'>" + (hasWB ? "ИП: оперативные данные" : "Данные ещё не подключены") + "</span></div>"
-      + marketPeriodForm(state)
+      + (annualWB ? "" : marketPeriodForm(state))
       + "<nav class='market-sections' aria-label='Разделы " + name + "'>" + tabs + "</nav>"
-      + "<div class='market-section-title'><h3>" + esc(active[1]) + "</h3><span>" + esc(storeName) + " · " + esc(dayText(state.from)) + "–" + esc(dayText(state.to)) + "</span></div>"
+      + (annualWB ? "" : "<div class='market-section-title'><h3>" + esc(active[1]) + "</h3><span>" + esc(storeName) + " · " + esc(dayText(state.from)) + "–" + esc(dayText(state.to)) + "</span></div>")
       + (active[0] === "summary" && !hasWB ? "<div class='market-empty-metrics'>" + metrics + "</div>" : "")
-      + comparison
+      + (annualWB ? "" : comparison)
       + (hasWB ? renderWBContent(active[0], store, state) : "<section class='market-empty-state'><span class='market-empty-icon' aria-hidden='true'>" + (channel === "wb" ? "WB" : "O") + "</span><div><span class='market-eyebrow'>" + esc(name) + " · " + esc(storeName) + "</span><h3>" + esc(active[2]) + "</h3><p>" + esc(active[3]) + "</p>"
       + "<p class='market-empty-caption'>Данные " + (store === "all" ? "кабинетов ИП и ООО" : "кабинета " + storeName) + " ещё не загружены. Показатели появятся после подключения API и проверки выгрузки.</p>"
       + (active[0] === "profit" ? "<a class='button secondary' href='#expenses'>Открыть общие расходы ИП / ООО</a>" : "") + "</div></section>");
@@ -2735,6 +2881,7 @@
     else if (hash === "expenses" || hash.indexOf("expenses/") === 0) screen.innerHTML = renderExpenses();
     else screen.innerHTML = renderHome(state);
     markNav(hash);
+    if (channel === "wb") bindWBAnnual();
     if (!hash || hash === "overview" || hash === "letu" || channel) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     if (hash === "unit") {
       bindUnitPage();
@@ -2804,5 +2951,6 @@
     render();
   }).catch(function () { /* No snapshot yet: the existing empty states remain visible. */ });
 })();
+
 
 

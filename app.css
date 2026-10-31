@@ -482,3 +482,131 @@ button:disabled { opacity: .5; cursor: default; }
 }
 
 
+
+
+/* Wildberries annual overview */
+.wb-annual { --wb-plum: #76506b; --wb-light: #f3eaf0; }
+.wb-year-heading, .wb-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.wb-year-heading { margin: 28px 0 22px; }
+.wb-year-heading .market-eyebrow, .wb-panel-heading .market-eyebrow { margin: 0 0 7px; }
+.wb-year-heading h3 { margin: 0; font-size: clamp(27px, 3vw, 35px); letter-spacing: -.04em; font-weight: 650; }
+.wb-year-heading h3 > span { color: #a18c99; font-weight: 450; margin-left: 7px; }
+.wb-year-heading p:last-child { color: var(--muted); margin: 8px 0 0; font-size: 14px; }
+.wb-year-select { display: grid; gap: 5px; font-size: 11px; color: var(--muted); }
+.wb-year-select select { min-width: 118px; padding: 10px 14px; font: inherit; font-size: 17px; font-weight: 600; background: white; color: var(--ink); border: 1px solid var(--line); border-radius: 11px; }
+.wb-coverage { display: flex; align-items: center; gap: 12px; padding: 14px 17px; background: #eee8e3; border: 1px solid #e5dad2; border-radius: 13px; margin-bottom: 20px; }
+.wb-coverage-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: #ac8667; }
+.wb-coverage > div { display: grid; gap: 3px; }
+.wb-coverage strong { font-size: 12px; font-weight: 650; }
+.wb-coverage > div > span { font-size: 12px; color: var(--muted); }
+.wb-coverage > a { margin-left: auto; font-size: 12px; white-space: nowrap; text-underline-offset: 3px; }
+.wb-scope-note { color: var(--warn); font-size: 13px; }
+.wb-year-kpis { display: grid; grid-template-columns: 1.65fr repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 25px; }
+.wb-year-kpi { min-width: 0; padding: 19px 17px; border: 1px solid var(--line); border-radius: 17px; background: white; }
+.wb-year-kpi > span { display: block; color: var(--muted); font-size: 12px; }
+.wb-year-kpi > strong { display: block; margin: 15px 0 11px; font-size: clamp(24px, 2.5vw, 32px); letter-spacing: -.04em; font-weight: 650; white-space: nowrap; }
+.wb-year-kpi em { font-size: 13px; font-style: normal; color: #998891; letter-spacing: 0; font-weight: 450; }
+.wb-year-kpi small { display: block; color: var(--muted); font-size: 10px; line-height: 1.65; }
+.wb-year-kpi.primary { background: linear-gradient(130deg, #624157, #805c72); border-color: transparent; color: white; }
+.wb-year-kpi.primary > span, .wb-year-kpi.primary small { color: #f3e7ef; }
+.wb-year-kpi.primary > strong { font-size: clamp(24px, 2.6vw, 33px); }
+.wb-year-kpi.profit { border-style: dashed; background: #f9f5f1; }
+.wb-year-kpi.profit strong { color: #a6979f; }
+.wb-chart-panel { padding: 24px 25px 16px; border: 1px solid var(--line); border-radius: 20px; background: white; box-shadow: var(--shadow); margin-bottom: 36px; }
+.wb-panel-heading h3 { margin: 0; font-size: 21px; letter-spacing: -.025em; font-weight: 650; }
+.wb-panel-heading > p { margin: 0; font-size: 12px; color: var(--muted); }
+.wb-chart-units { display: flex; background: #f2ece8; padding: 4px; border-radius: 10px; gap: 3px; }
+.wb-chart-units button { font: inherit; font-size: 12px; padding: 6px 13px; min-height: 30px; background: transparent; color: var(--muted); border-radius: 7px; border: 0; box-shadow: none; }
+.wb-chart-units button[aria-pressed='true'] { background: white; color: var(--accent); box-shadow: 0 1px 3px #302b3215; }
+.wb-chart-tabs { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 21px 0 12px; }
+.wb-chart-tabs button { font: inherit; font-size: 12px; font-weight: 550; padding: 8px 12px; min-height: 34px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--muted); box-shadow: none; }
+.wb-chart-tabs button[aria-pressed='true'] { background: var(--wb-light); border-color: #e7d5e0; color: var(--accent); }
+.wb-chart-tabs button > span { font-size: 9px; color: #a18c99; margin-left: 4px; }
+.wb-chart-scroll { overflow-x: auto; }
+.wb-year-svg { display: block; width: 100%; min-width: 660px; height: auto; }
+.wb-grid-line { stroke: #eee8e4; stroke-width: 1; }
+.wb-axis { fill: #887981; font: 12px system-ui, sans-serif; }
+.wb-axis.has-data { fill: #563a4c; font-weight: 650; }
+.wb-gap-mark { fill: #cfc4cb; font: 13px system-ui, sans-serif; }
+.wb-chart-area { fill: #bda1b5; opacity: .13; }
+.wb-chart-line { stroke: var(--wb-plum); stroke-width: 3; stroke-linecap: round; }
+.wb-chart-line.partial { stroke-dasharray: 5 5; }
+.wb-chart-point { fill: var(--wb-plum); stroke: white; stroke-width: 2.5; }
+.wb-chart-point.partial { fill: white; stroke: var(--wb-plum); stroke-width: 2.5; }
+.wb-chart-legend { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--muted); margin: 4px 0 0; }
+.wb-chart-legend i { display: inline-block; width: 8px; height: 8px; background: var(--wb-plum); border-radius: 50%; margin-right: 5px; }
+.wb-profit-empty { min-height: 270px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-radius: 13px; background: #faf7f9; padding: 24px; }
+.wb-profit-symbol { display: grid; place-items: center; width: 40px; height: 40px; background: #eee2eb; border-radius: 12px; color: var(--accent); font-size: 21px; }
+.wb-profit-empty h4 { margin: 14px 0 8px; font-size: 18px; font-weight: 600; }
+.wb-profit-empty p { max-width: 57ch; color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+.wb-profit-empty a { font-size: 12px; }
+.wb-months-section > .wb-panel-heading { margin-bottom: 18px; }
+.wb-months-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.wb-month-card { display: block; text-align: left; font: inherit; color: var(--ink); padding: 18px; width: 100%; min-width: 0; min-height: 238px; border: 1px solid var(--line); border-radius: 17px; background: white; box-shadow: none; cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s; }
+.wb-month-card:hover { background: #fffcfe; border-color: #baa0b0; transform: translateY(-2px); box-shadow: var(--shadow); }
+.wb-month-card.selected { border: 1px solid #8a627b; box-shadow: 0 0 0 2px #8a627b14; background: #fffcfe; }
+.wb-month-top { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+.wb-month-top > strong { font-size: 15px; font-weight: 650; }
+.wb-month-badge { display: inline-block; font-size: 9px; font-weight: 550; border-radius: 5px; padding: 4px 6px; background: #f1ece8; color: #887881; white-space: nowrap; }
+.wb-month-card.complete .wb-month-badge { color: #3c7863; background: #e8f2ec; }
+.wb-month-card.partial .wb-month-badge { color: #956946; background: #f8ede1; }
+.wb-month-amount { display: block; margin-top: 20px; font-size: clamp(23px, 2.3vw, 29px); font-weight: 650; letter-spacing: -.04em; line-height: 1.2; }
+.wb-month-amount-label { display: block; font-size: 10px; color: var(--muted); margin-top: 6px; }
+.wb-month-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 13px; margin: 18px 0 15px; font-size: 11px; }
+.wb-month-stats > span { display: flex; justify-content: space-between; gap: 5px; color: var(--muted); }
+.wb-month-stats b { color: var(--ink); font-weight: 600; }
+.wb-month-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 11px; font-size: 9px; color: var(--muted); min-height: 26px; }
+.wb-month-bottom > span:last-child { font-size: 14px; color: #9a7d90; }
+.wb-month-card.empty { background: #f8f5f1; border-style: dashed; }
+.wb-month-card.empty .wb-month-amount, .wb-month-card.empty .wb-month-stats b { color: #b3a5ad; }
+.wb-month-footnote { color: var(--muted); font-size: 11px; margin: 14px 0 27px; }
+.wb-up { color: var(--up); }
+.wb-down { color: var(--down); }
+.wb-month-detail { background: white; border: 1px solid var(--line); border-radius: 20px; padding: 24px; scroll-margin-top: 20px; }
+.wb-detail-period { color: var(--muted); font-size: 12px; margin: 10px 0 20px; }
+.wb-detail-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.wb-detail-metrics .market-empty-metric { background: #fbf8f5; padding: 16px; border-color: #eee5df; }
+.wb-detail-metrics .market-empty-metric strong { font-size: clamp(20px, 2vw, 27px); letter-spacing: -.03em; }
+.wb-daily-fold { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 15px; }
+.wb-daily-fold summary { cursor: pointer; font-size: 13px; font-weight: 600; }
+.wb-daily-fold summary > span { font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 7px; }
+.wb-daily-fold .table-wrap { margin-top: 16px; }
+.wb-detail-empty { color: var(--muted); padding: 12px 0; font-size: 14px; }
+.wb-source-fold { margin-top: 20px; border: 1px solid var(--line); border-radius: 13px; padding: 15px 18px; background: #f2ece7; scroll-margin-top: 20px; }
+.wb-source-fold summary { cursor: pointer; font-size: 12px; font-weight: 550; color: var(--accent); }
+.wb-source-fold > div { max-width: 90ch; padding: 8px 2px 0; font-size: 12px; color: var(--muted); }
+.wb-source-fold h4 { color: var(--ink); font-size: 14px; }
+@media (max-width: 1100px) {
+  .wb-year-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .wb-year-kpi.primary { grid-column: span 2; }
+  .wb-months-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .wb-detail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .wb-months-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wb-year-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wb-coverage { flex-wrap: wrap; }
+  .wb-coverage > div { flex: 1; min-width: 150px; }
+  .wb-coverage > a { margin-left: 19px; }
+  .wb-panel-heading { align-items: start; gap: 12px; }
+  .wb-panel-heading > p { max-width: 20ch; }
+  .wb-chart-panel { padding: 20px 16px 16px; }
+  .wb-chart-units button { padding: 5px 9px; }
+  .wb-chart-tabs { gap: 3px; }
+  .wb-chart-tabs button { padding: 8px; font-size: 11px; }
+  .wb-year-heading { gap: 12px; }
+  .wb-year-select select { min-width: 88px; padding: 9px; }
+  .wb-month-detail { padding: 20px 16px; }
+}
+@media (max-width: 480px) {
+  .wb-months-grid { grid-template-columns: 1fr; }
+  .wb-month-card { min-height: 220px; }
+  .wb-month-amount { font-size: 29px; }
+  .wb-month-top > strong { font-size: 17px; }
+  .wb-month-stats { font-size: 12px; }
+  .wb-year-heading h3 { font-size: 25px; }
+  .wb-year-heading h3 > span { display: block; margin-left: 0; }
+  .wb-detail-metrics { grid-template-columns: 1fr; }
+  .wb-months-section > .wb-panel-heading { flex-wrap: wrap; }
+  .wb-panel-heading > p { max-width: none; }
+}
