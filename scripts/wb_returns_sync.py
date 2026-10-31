@@ -49,6 +49,16 @@ def main():
     if not token:
         raise ReturnError('Repository secret WB_IP_API_TOKEN is missing')
     now=dt.datetime.now(dt.timezone(dt.timedelta(hours=3)))
+    previous=pathlib.Path('wb-returns.json')
+    if previous.exists():
+        try:
+            cached=json.loads(previous.read_text(encoding='utf-8'))
+            age=(now-dt.datetime.fromisoformat(cached['fetchedAt'])).total_seconds()
+            if cached.get('state')=='ready' and 0 <= age < 31*60:
+                print('Recent complete returns report retained to respect WB rate limit.')
+                return
+        except (ValueError,KeyError,TypeError):
+            pass
     start=f'{now.year}-01-01'; end=now.date().isoformat()
     query=urllib.parse.urlencode(dict(dateFrom=start,dateTo=end,limit=1000,offset=0))
     request=urllib.request.Request('https://seller-analytics-api.wildberries.ru/api/analytics/v1/item-returns?'+query,

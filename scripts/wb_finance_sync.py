@@ -115,13 +115,15 @@ def aggregate(rows, reports, start, end, fetched):
         audit_item['rows'] += 1
         if isinstance(row.get('quantity'), int):
             audit_item['quantity'] += row['quantity']
+        audit_reverse = row.get('returnAmount')
+        if isinstance(audit_reverse, int):
+            audit_item['reverseDeliveryQty'] += audit_reverse
         if operation == 'Логистика':
             date = day(row.get('rrDate'))
             if start <= date <= end:
                 reverse, forward = row.get('returnAmount'), row.get('deliveryAmount')
                 if not all(isinstance(n, int) and not isinstance(n, bool) and n >= 0 for n in [reverse, forward]):
                     raise SyncError('Invalid logistics quantity')
-                audit_item['reverseDeliveryQty'] += reverse
                 key = (date, str(row.get('bonusTypeName') or 'Без уточнения'))
                 item = logistics.setdefault(key, dict(date=date, type=key[1], reverseQty=0, forwardQty=0))
                 item['reverseQty'] += reverse

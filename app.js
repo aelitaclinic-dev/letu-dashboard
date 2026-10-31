@@ -2518,6 +2518,7 @@
   // WB files contain daily product aggregates only. Keys stay in GitHub Actions.
   var WB_SNAPSHOT = null;
   var WB_FINANCE_SNAPSHOT = null;
+  var WB_RETURNS_SNAPSHOT = null;
   function wbStore() {
     var ip = WB_SNAPSHOT && WB_SNAPSHOT.stores && WB_SNAPSHOT.stores.ip;
     return ip && [ip.orders, ip.sales].some(function (s) { return s && s.state === "ready"; }) ? ip : null;
@@ -2626,6 +2627,41 @@
     });
     return "<div class='wb-chart-scroll'>" + svg + "</svg></div><p class='wb-chart-legend'><span><i></i> " + (metric === "orders" ? "Все заказы, включая отменённые" : "Продажи за вычетом возвратов") + "</span><span>Пунктир — неполный месяц · — нет данных</span></p>";
   }
+  function wbReturnEvidence(from, to) {
+    var financial = WB_FINANCE_SNAPSHOT, seller = WB_RETURNS_SNAPSHOT;
+    var period = {from: from, to: to};
+    var refunds = financial ? wbStats(wbSelected(financial.sales, period), "return") : null;
+    var logistics = financial && financial.reverseLogistics;
+    var reverse = logistics && wbSelected(logistics, period);
+    var sellerAvailable = seller && seller.state === "ready" && seller.fromDate <= to && seller.toDate >= from;
+    var sellerRows = sellerAvailable ? seller.rows.filter(function (r) { return r.date >= from && r.date <= to; }) : null;
+    return {refunds: refunds, reverse: reverse, reverseQty: reverse ? reverse.reduce(function (sum, r) { return sum + r.reverseQty; }, 0) : null,
+      refusalQty: reverse ? reverse.reduce(function (sum, r) { return sum + (r.type === "От клиента при отмене" ? r.reverseQty : 0); }, 0) : null,
+      issuedQty: sellerRows ? sellerRows.reduce(function (sum, r) { return sum + (r.status === "Выдано" ? r.qty : 0); }, 0) : null,
+      sellerRows: sellerRows, sellerQty: sellerRows ? sellerRows.reduce(function (sum, r) { return sum + r.qty; }, 0) : null};
+  }
+  function wbReturnsPanel(from, to, detail) {
+    var evidence = wbReturnEvidence(from, to), financial = WB_FINANCE_SNAPSHOT;
+    var html = "<section class='wb-returns-panel' aria-label='Сверка возвратов'><div class='wb-panel-heading'><div><p class='market-eyebrow'>ОТКАЗЫ И ВОЗВРАТЫ</p><h3>" + (detail ? "Возвраты за месяц" : "Что вернулось и куда") + "</h3></div><span class='wb-month-badge'>По отдельным отчётам WB</span></div>"
+      + "<p class='wb-return-explanation'>Возврат покупки, обратная доставка и возврат товара продавцу — разные события. Они могут относиться к одному товару, поэтому эти числа не складываются.</p><div class='wb-return-cards'>"
+      + wbCard("После выкупа, шт.", evidence.refunds ? qty(evidence.refunds.qty) : null, "Покупатель вернул уже купленный товар. Уменьшает сумму продаж.")
+      + wbCard("После отказа, доставок", evidence.refusalQty == null ? null : qty(evidence.refusalQty), "Обратная доставка после отказа до выкупа. По виду логистики WB «От клиента при отмене».")
+      + wbCard("К возврату вам, оформлено", evidence.sellerQty == null ? null : qty(evidence.sellerQty), "Товаров в возвратных заказах WB. Включая выданные, отменённые и другие статусы; это не число полученных вами товаров.")
+      + wbCard("Из них выдано вам, шт.", evidence.issuedQty == null ? null : qty(evidence.issuedQty), "Со статусом WB «Выдано» на дату выгрузки. Месяц — по дате возвратного заказа, а не получения.") + "</div>";
+    if (financial) html += "<p class='wb-orders-coverage'>Финансовые возвраты и обратная доставка: " + esc(wbSourceRanges(financial.sales, from.slice(0, 4))) + ". Месяц выбран по дате учёта WB.</p>";
+    if (WB_RETURNS_SNAPSHOT) html += "<p class='wb-orders-coverage'>Отчёт «Возвраты и перемещения»: " + esc(dayText(WB_RETURNS_SNAPSHOT.fromDate) + "–" + dayText(WB_RETURNS_SNAPSHOT.toDate)) + ". Группировка по дате возвратного заказа WB.</p>";
+    if (evidence.sellerRows && evidence.sellerRows.length) {
+      var statuses = {};
+      evidence.sellerRows.forEach(function (r) { statuses[r.status] = (statuses[r.status] || 0) + r.qty; });
+      html += "<details class='wb-return-fold'><summary>Статусы возврата продавцу</summary>" + wbTable(["Статус WB на момент выгрузки", "Товаров, шт."], Object.keys(statuses).sort().map(function (status) { return [status, qty(statuses[status])]; })) + "</details>";
+    }
+    if (evidence.reverse && evidence.reverse.length) {
+      var kinds = {};
+      evidence.reverse.forEach(function (r) { if (r.reverseQty) kinds[r.type] = (kinds[r.type] || 0) + r.reverseQty; });
+      html += "<details class='wb-return-fold'><summary>Обратная доставка: " + qty(evidence.reverseQty) + " операций — расшифровка</summary>" + wbTable(["Вид логистики по отчёту WB", "Операций"], Object.keys(kinds).sort().map(function (kind) { return [kind, qty(kinds[kind])]; })) + "</details>";
+    }
+    return html + "</section>";
+  }
   function renderWBAnnual(store) {
     var operational = wbStore(), query = new URLSearchParams(location.search);
     var financeReady = !!(WB_FINANCE_SNAPSHOT && WB_FINANCE_SNAPSHOT.sales && WB_FINANCE_SNAPSHOT.sales.state === "ready");
@@ -2652,28 +2688,30 @@
     html += "<div class='wb-year-kpis'><article class='wb-year-kpi primary'><span>Продажи после возвратов</span><strong>" + esc(wbNet(sales) == null ? "—" : money(wbNet(sales))) + "</strong><small>До комиссий и расходов WB</small></article>"
       + "<article class='wb-year-kpi'><span>Продано товаров</span><strong>" + esc(wbFigure(sold, true)) + "<em> шт.</em></strong><small>Продажи: " + esc(wbFigure(sold, false)) + "</small></article>"
       + "<article class='wb-year-kpi'><span>Заказы · текущая история</span><strong>" + esc(wbFigure(allOrders, true)) + "<em> шт.</em></strong><small>На " + esc(wbFigure(allOrders, false)) + " · отменено " + esc(wbFigure(canceled, true)) + " шт.</small><small>" + esc(wbSourceRanges(ip.orders, year)) + "</small></article>"
-      + "<article class='wb-year-kpi'><span>Возвращено товаров</span><strong>" + esc(wbFigure(returned, true)) + "<em> шт.</em></strong><small>На " + esc(wbFigure(returned, false)) + "</small></article>"
+      + "<article class='wb-year-kpi'><span>Возвраты после выкупа</span><strong>" + esc(wbFigure(returned, true)) + "<em> шт.</em></strong><small>На " + esc(wbFigure(returned, false)) + " · без отказов</small></article>"
       + "<article class='wb-year-kpi profit'><span>Чистая прибыль</span><strong>—</strong><small>Следующий этап: учёт расходов</small></article></div>";
     html += "<p class='wb-orders-coverage'>Заказы и отмены доступны отдельно: " + esc(wbSourceRanges(ip.orders, year)) + ". За месяцы без истории заказов показан прочерк. Суммы двух источников не складываются.</p>";
+    html += wbReturnsPanel(period.from, period.to, false);
     html += "<section class='wb-chart-panel' aria-label='График по месяцам'><div class='wb-panel-heading'><div><p class='market-eyebrow'>ДИНАМИКА ГОДА</p><h3>Как меняется результат</h3></div><div class='wb-chart-units'" + (metric === "profit" ? " hidden" : "") + ">"
       + [["rub", "Рубли"], ["qty", "Штуки"]].map(function (v) { return "<button type='button' data-wb-units='" + v[0] + "' aria-pressed='" + ((units ? "qty" : "rub") === v[0]) + "'>" + v[1] + "</button>"; }).join("") + "</div></div><div class='wb-chart-tabs'>"
       + [["sales", "Продажи после возвратов"], ["orders", "Заказы"], ["profit", "Прибыль"]].map(function (v) { return "<button type='button' data-wb-metric='" + v[0] + "' aria-pressed='" + (metric === v[0]) + "'>" + v[1] + (v[0] === "profit" ? " <span>скоро</span>" : "") + "</button>"; }).join("") + "</div>"
       + wbTrendChart(months, metric, units) + "</section>";
     html += "<section class='wb-months-section' aria-label='Месяцы года'><div class='wb-panel-heading'><div><p class='market-eyebrow'>МЕСЯЦ ЗА МЕСЯЦЕМ</p><h3>" + year + " год</h3></div><p>Нажмите на месяц, чтобы увидеть детали</p></div><div class='wb-months-grid'>";
     html += months.map(function (m, index) {
+      var returnEvidence = wbReturnEvidence(m.from, m.to);
       var previous = months[index - 1], delta = m.complete && previous && previous.complete && m.net != null && previous.net > 0 ? (m.net - previous.net) / previous.net * 100 : null;
       var badge = m.complete ? "complete" : m.available ? "partial" : "empty";
       var amount = m.net != null ? wbShortMoney(m.net) : m.sales !== null ? "Сумма уточняется" : "—";
       return "<button class='wb-month-card " + badge + (m.key === selected.key ? " selected" : "") + "' type='button' data-wb-month='" + m.key + "' aria-pressed='" + (m.key === selected.key) + "' aria-label='Открыть месяц: " + esc(m.label) + " " + year + "'><span class='wb-month-top'><strong>" + esc(m.label) + "</strong><span class='wb-month-badge'>" + m.status + "</span></span>"
         + "<span class='wb-month-amount'>" + esc(amount) + "</span><span class='wb-month-amount-label'>" + (m.sales !== null ? "продажи после возвратов" : m.future ? "месяц ещё не наступил" : "продажи не загружены") + "</span>"
-        + "<span class='wb-month-stats'><span>Продано <b>" + esc(wbFigure(m.sold, true)) + "</b></span><span>Заказано <b>" + esc(wbFigure(m.allOrders, true)) + "</b></span><span>Возвраты <b>" + esc(wbFigure(m.returned, true)) + "</b></span><span>Отмены <b>" + esc(wbFigure(m.canceled, true)) + "</b></span></span>"
+        + "<span class='wb-month-stats'><span>Продано <b>" + esc(wbFigure(m.sold, true)) + "</b></span><span>Заказано <b>" + esc(wbFigure(m.allOrders, true)) + "</b></span><span>Возврат выкупа <b>" + esc(wbFigure(m.returned, true)) + "</b></span><span>Отмены <b>" + esc(wbFigure(m.canceled, true)) + "</b></span><span class='wb-return-month-stat'>К возврату вам · оформлено <b>" + esc(returnEvidence.sellerQty == null ? "—" : qty(returnEvidence.sellerQty)) + "</b></span></span>"
         + "<span class='wb-month-bottom'>" + (delta == null ? m.available ? esc(dayText(m.visibleFrom) + "–" + dayText(m.visibleTo)) : m.future ? "Показатели появятся здесь" : "Нет выгрузки за этот месяц" : "<span class='" + (delta >= 0 ? "wb-up" : "wb-down") + "'>" + (delta >= 0 ? "↑ +" : "↓ ") + delta.toLocaleString("ru-RU", {maximumFractionDigits: 1}) + "% к прошлому месяцу</span>") + "<span aria-hidden='true'>↗</span></span></button>";
-    }).join("") + "</div><p class='wb-month-footnote'>Суммы на плашках округлены до рубля; точные суммы — в деталях месяца. Рост сравнивается только между полностью загруженными месяцами.</p></section>";
+    }).join("") + "</div><p class='wb-month-footnote'>Суммы на плашках округлены до рубля; точные суммы — в деталях месяца. Рост сравнивается только между полностью загруженными месяцами. «К возврату вам» — по дате возвратного заказа, включая товары в пути.</p></section>";
     html += "<section class='wb-month-detail' id='wb-month-detail' tabindex='-1'><div class='wb-panel-heading'><div><p class='market-eyebrow'>ДЕТАЛИ МЕСЯЦА</p><h3>" + esc(selected.label) + " " + year + "</h3></div><span class='wb-month-badge'>" + selected.status + "</span></div>";
     if (selected.available) {
       html += "<p class='wb-detail-period'>Данные за " + esc(dayText(selected.visibleFrom) + "–" + dayText(selected.visibleTo)) + ". " + (selected.complete ? "Продажи и возвраты загружены за полный месяц." : "Продажи и возвраты за месяц загружены не полностью или ещё обновляются.") + "</p><div class='wb-detail-metrics'>"
         + wbCard("Продажи", wbFigure(selected.sold, false), wbFigure(selected.sold, true) + " шт.")
-        + wbCard("Возвраты", wbFigure(selected.returned, false), wbFigure(selected.returned, true) + " шт.")
+        + wbCard("Возвраты после выкупа", wbFigure(selected.returned, false), wbFigure(selected.returned, true) + " шт.")
         + wbCard("Продажи после возвратов", selected.net == null ? null : money(selected.net), "До комиссий и расходов WB")
         + wbCard("Заказы, включая отмены", wbFigure(selected.allOrders, false), wbFigure(selected.allOrders, true) + " шт. · отменено " + wbFigure(selected.canceled, true)) + "</div>";
       html += "<p class='wb-orders-coverage'>Заказы и отмены: " + esc(wbSourceRanges(ip.orders, year)) + ". " + (wbCovered(ip.orders, selected.from, selected.to) ? "За выбранный месяц история заказов полная." : "История заказов за выбранный месяц неполная или отсутствует.") + "</p>";
@@ -2687,6 +2725,7 @@
       })) + "</details>";
       if ((selected.sales || []).some(function (r) { return r.missingAmountQty || r.zeroAmountQty; })) html += "<p class='wb-scope-note'>В части операций цена отсутствует или равна нулю. Денежные суммы требуют уточнения.</p>";
     } else html += "<p class='wb-detail-empty'>" + (selected.future ? "Этот месяц ещё впереди. Здесь появятся продажи, заказы и возвраты." : "Операции за этот месяц пока не загружены. Прочерк означает отсутствие данных.") + "</p>";
+    html += wbReturnsPanel(selected.from, selected.to, true);
     html += "</section><details class='wb-source-fold' id='wb-data-source'><summary>Откуда берутся цифры и что они означают</summary><div><h4>Источник — " + (financeMode ? "финансовые отчёты" : "статистика") + " Wildberries, кабинет ИП</h4><p>" + (financeMode ? "«Продано» и «Возвраты» — операции продажи и возврата из недельных отчётов. Сумма — реализованная стоимость товаров по отчёту WB. Группировка по дате учёта операции WB; она может отличаться от даты заказа и покупки. Служебные операции, компенсации и корректировки не добавляются к обычным продажам." : "«Продано» — количество выкупов. Сумма продаж складывается из цен продавца после скидок.") + " «Продажи после возвратов» — сумма продаж минус сумма возвратов. Комиссии, логистика, себестоимость, налоги и другие расходы пока не вычтены.</p><p>«Заказано» включает отменённые заказы. Заказы группируются по дате заказа. Дата продаж и возвратов зависит от выбранного источника: дата учёта в отчёте WB или дата операции в текущей статистике. Продажа может относиться к заказу из более раннего месяца.</p><p>Годовой итог включает только полученные операции. Нет данных за месяц — нет подтверждённого итога за весь год. Прибыль будет рассчитана отдельно после подключения расходов.</p><p>" + esc(wbSourceNote("Продажи и возвраты", ip.sales, period)) + "</p><p>" + esc(wbSourceNote("Заказы", ip.orders, period)) + "</p></div></details></div>";
     return html;
   }
@@ -2721,7 +2760,7 @@
     if (section === "summary") {
       html += "<div class='market-empty-metrics'>"
         + wbCard("Продано, шт.", sold ? qty(sold.qty) : null, "Выкупы из оперативной статистики")
-        + wbCard("Возвращено, шт.", returned ? qty(returned.qty) : null, "Возвраты по дате операции")
+        + wbCard("Возвраты после выкупа, шт.", returned ? qty(returned.qty) : null, "Возвраты по дате операции")
         + wbCard("Заказы без отмен, шт.", ordered ? qty(ordered.qty) : null, "Статус на момент выгрузки")
         + wbCard("Отменённые заказы, шт.", canceled ? qty(canceled.qty) : null, "Не вычитаются из продаж повторно") + "</div>";
       html += "<div class='market-empty-metrics'>" + wbCard("Продажи, предварительно", wbAmount(sold), "Без комиссий и логистики")
@@ -2959,9 +2998,25 @@
       || !source.coverage.every(function (r) { return Array.isArray(r) && r.length === 2 && /^\d{4}-\d{2}-\d{2}$/.test(r[0]) && /^\d{4}-\d{2}-\d{2}$/.test(r[1]) && r[0] <= r[1]; })
       || !source.rows.every(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.date) && ["sale", "return"].indexOf(r.event) >= 0
         && [r.qty, r.knownAmountKop, r.missingAmountQty, r.zeroAmountQty].every(function (v) { return Number.isSafeInteger(v) && v >= 0; }); })) return;
+    var reverse = data.reverseLogistics;
+    if (reverse && (reverse.state !== "ready" || !Array.isArray(reverse.coverage) || !Array.isArray(reverse.rows)
+      || !reverse.rows.every(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.date) && typeof r.type === "string"
+        && Number.isSafeInteger(r.reverseQty) && r.reverseQty >= 0 && Number.isSafeInteger(r.forwardQty) && r.forwardQty >= 0; }))) return;
     WB_FINANCE_SNAPSHOT = data;
     if (wbStore()) render();
   }).catch(function () { /* Preserve operational view when finance is unavailable. */ });
+  var wbReturnsURL = location.hostname === "aelitaclinic-dev.github.io"
+    ? "https://raw.githubusercontent.com/aelitaclinic-dev/letu-dashboard/main/wb-returns.json" : "wb-returns.json";
+  fetch(wbReturnsURL, {cache: "no-store"}).then(function (response) {
+    return response.ok ? response.json() : null;
+  }).then(function (data) {
+    if (!data || data.schemaVersion !== 1 || data.state !== "ready" || data.dateBasis !== "returnOrderDt"
+      || !/^\d{4}-\d{2}-\d{2}$/.test(data.fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(data.toDate)
+      || !Array.isArray(data.rows) || !data.rows.every(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.date)
+        && typeof r.status === "string" && typeof r.type === "string" && Number.isSafeInteger(r.qty) && r.qty >= 0; })) return;
+    WB_RETURNS_SNAPSHOT = data;
+    if (wbStore()) render();
+  }).catch(function () { /* Missing report is shown as unavailable, never as zero. */ });
   fetch(wbDataURL, {cache: "no-store"}).then(function (response) {
     if (!response.ok) return null;
     return response.json();

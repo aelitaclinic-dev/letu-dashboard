@@ -619,3 +619,17 @@ button:disabled { opacity: .5; cursor: default; }
 .wb-basis-note,.wb-orders-coverage { font-size:12px; line-height:1.65; color:#7d727a; }
 .wb-basis-note { max-width:900px; margin:0 0 18px; }
 .wb-orders-coverage { margin:12px 2px 24px; }
+
+.wb-returns-panel { border:1px solid #e7dfe3; border-radius:18px; padding:25px; margin:22px 0; background:#faf8f9; }
+.wb-return-explanation { max-width:940px; font-size:13px; line-height:1.7; color:#786a73; }
+.wb-return-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:18px 0; }
+.wb-return-cards .market-empty-metric { background:white; }
+.wb-return-cards .market-empty-metric span { font-size:12px; }
+.wb-returns-panel .wb-orders-coverage { margin:10px 0; }
+.wb-return-fold { font-size:12px; margin-top:15px; }
+.wb-return-fold summary { cursor:pointer; font-weight:600; color:#62344e; padding:6px 0; }
+@media(max-width:760px) { .wb-return-cards { grid-template-columns:1fr; } .wb-returns-panel { padding:18px; } }
+
+.wb-month-stats .wb-return-month-stat { grid-column:1/-1; border-top:1px solid #eee5e9; padding-top:8px; margin-top:3px; color:#704c62; }
+
+@media(min-width:761px) and (max-width:1150px) { .wb-return-cards { grid-template-columns:repeat(2,minmax(0,1fr)); } }
