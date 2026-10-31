@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-01T00:37:57+03:00",
+  "generatedAt": "2026-11-01T00:44:09+03:00",
   "audit": [
     {
       "operation": "Возврат",
@@ -42,7 +42,7 @@
       "document": "",
       "rows": 574,
       "quantity": 0,
-      "reverseDeliveryQty": 0
+      "reverseDeliveryQty": 70
     },
     {
       "operation": "Компенсация скидки по программе лояльности",
@@ -138,7 +138,7 @@
   ],
   "reverseLogistics": {
     "state": "ready",
-    "fetchedAt": "2026-11-01T00:37:57+03:00",
+    "fetchedAt": "2026-11-01T00:44:09+03:00",
     "coverage": [
       [
         "2026-01-01",
@@ -4902,7 +4902,7 @@
   },
   "sales": {
     "state": "ready",
-    "fetchedAt": "2026-11-01T00:37:57+03:00",
+    "fetchedAt": "2026-11-01T00:44:09+03:00",
     "from": "2026-01-01",
     "to": "2026-11-01",
     "coverage": [
