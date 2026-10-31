@@ -1,0 +1,2431 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-31T23:55:47+03:00",
+  "sales": {
+    "state": "ready",
+    "fetchedAt": "2026-10-31T23:55:47+03:00",
+    "from": "2026-01-01",
+    "to": "2026-10-31",
+    "coverage": [
+      [
+        "2026-01-01",
+        "2026-10-25"
+      ]
+    ],
+    "rows": [
+      {
+        "date": "2026-01-02",
+        "event": "sale",
+        "qty": 4,
+        "knownAmountKop": 1519500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-03",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 1202800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-04",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 1755200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-05",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 1921400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-06",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 1631600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-07",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 1203400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-08",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1744100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-09",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 1505000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-10",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1541048,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-11",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1738251,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-12",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 1584200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-13",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 2371600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-14",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1182100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-15",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 3506400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-16",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 1940600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-17",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 1924900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-18",
+        "event": "sale",
+        "qty": 22,
+        "knownAmountKop": 3762500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-19",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1264200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-20",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 4440000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-21",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 1163209,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-22",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2327192,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-23",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2968900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-24",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 3018400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-25",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 3402100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-26",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 3545700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-27",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 2884000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-28",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 2834900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-29",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 1570911,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-30",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1287400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-01-31",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 1188700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-01",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 3479687,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-02",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 1677800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-03",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 1805900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-04",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1602100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-05",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2044300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-06",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 1958700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-07",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 1116300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-08",
+        "event": "sale",
+        "qty": 21,
+        "knownAmountKop": 3514700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-09",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 3103000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-10",
+        "event": "sale",
+        "qty": 21,
+        "knownAmountKop": 3663400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-11",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 1892100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-12",
+        "event": "sale",
+        "qty": 18,
+        "knownAmountKop": 3643300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-13",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 2086000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-14",
+        "event": "sale",
+        "qty": 19,
+        "knownAmountKop": 3080900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-15",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 3067327,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-16",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1100300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-17",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 1325800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-18",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 1041800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-19",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1018900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-20",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1566700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-21",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1544400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-22",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 1754648,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-23",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 3049500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-24",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 2395600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-25",
+        "event": "sale",
+        "qty": 20,
+        "knownAmountKop": 3712000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-26",
+        "event": "sale",
+        "qty": 26,
+        "knownAmountKop": 3163578,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-27",
+        "event": "sale",
+        "qty": 19,
+        "knownAmountKop": 4037300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-02-28",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 2280900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-01",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 2933600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-02",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 2687400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-03",
+        "event": "sale",
+        "qty": 23,
+        "knownAmountKop": 5698600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-04",
+        "event": "sale",
+        "qty": 23,
+        "knownAmountKop": 5248500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-05",
+        "event": "sale",
+        "qty": 27,
+        "knownAmountKop": 2222400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-06",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 2898966,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-07",
+        "event": "sale",
+        "qty": 21,
+        "knownAmountKop": 3389900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-08",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 4020720,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-09",
+        "event": "sale",
+        "qty": 30,
+        "knownAmountKop": 4269640,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-10",
+        "event": "sale",
+        "qty": 19,
+        "knownAmountKop": 3957500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-11",
+        "event": "sale",
+        "qty": 20,
+        "knownAmountKop": 5615805,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-12",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 2470100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-13",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2557900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-14",
+        "event": "sale",
+        "qty": 26,
+        "knownAmountKop": 5294000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-15",
+        "event": "sale",
+        "qty": 28,
+        "knownAmountKop": 5367400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-16",
+        "event": "sale",
+        "qty": 26,
+        "knownAmountKop": 4305634,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-17",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 4144600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-18",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 2458394,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-19",
+        "event": "sale",
+        "qty": 22,
+        "knownAmountKop": 3143900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-20",
+        "event": "sale",
+        "qty": 20,
+        "knownAmountKop": 2395409,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-21",
+        "event": "sale",
+        "qty": 19,
+        "knownAmountKop": 2995500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-22",
+        "event": "sale",
+        "qty": 24,
+        "knownAmountKop": 3609500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-23",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 3180700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-24",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2241200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-25",
+        "event": "sale",
+        "qty": 27,
+        "knownAmountKop": 5037100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-26",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2483800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-27",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 2455900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-28",
+        "event": "sale",
+        "qty": 20,
+        "knownAmountKop": 3318863,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-29",
+        "event": "sale",
+        "qty": 25,
+        "knownAmountKop": 2798377,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-30",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 2795721,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-03-31",
+        "event": "sale",
+        "qty": 21,
+        "knownAmountKop": 4038996,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-01",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 2050082,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-02",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2072700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-03",
+        "event": "sale",
+        "qty": 18,
+        "knownAmountKop": 3050200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-04",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1328000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-05",
+        "event": "sale",
+        "qty": 19,
+        "knownAmountKop": 3529900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-06",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 1504010,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-07",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 1741014,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-08",
+        "event": "sale",
+        "qty": 18,
+        "knownAmountKop": 2802700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-09",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 1958200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-10",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 1752400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-11",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 1530273,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-12",
+        "event": "sale",
+        "qty": 20,
+        "knownAmountKop": 1839200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-13",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 2316500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-14",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2527000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-15",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 3632800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-16",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 2189000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-17",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1873100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-18",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1364100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-19",
+        "event": "sale",
+        "qty": 18,
+        "knownAmountKop": 4060000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-20",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 884400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-21",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 3417100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-22",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 1846825,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-23",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 1854400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-24",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 1890100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-25",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1997603,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-26",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 2430599,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-27",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 2661500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-28",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 1222900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-29",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 2455400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-04-30",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 2911600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-01",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 1924800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-02",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 2582800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-03",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 1776900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-04",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1686510,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-05",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 1832286,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-06",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1776529,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-07",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 3160171,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-08",
+        "event": "sale",
+        "qty": 19,
+        "knownAmountKop": 4112500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-09",
+        "event": "sale",
+        "qty": 19,
+        "knownAmountKop": 3985018,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-10",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 2818600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-11",
+        "event": "sale",
+        "qty": 24,
+        "knownAmountKop": 3574300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-12",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 2845700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-13",
+        "event": "sale",
+        "qty": 18,
+        "knownAmountKop": 3770000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-14",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1878500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-15",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 3297800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-16",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 3267884,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-17",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 2314300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-18",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 2930900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-19",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 2296400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-20",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 3426200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-21",
+        "event": "sale",
+        "qty": 18,
+        "knownAmountKop": 3349163,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-22",
+        "event": "sale",
+        "qty": 18,
+        "knownAmountKop": 4143800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-23",
+        "event": "sale",
+        "qty": 23,
+        "knownAmountKop": 5449500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-24",
+        "event": "sale",
+        "qty": 24,
+        "knownAmountKop": 5007600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-25",
+        "event": "sale",
+        "qty": 20,
+        "knownAmountKop": 2967500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-26",
+        "event": "return",
+        "qty": 1,
+        "knownAmountKop": 150000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-26",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 2557600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-27",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1470700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-28",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 2770600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-29",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 2149200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-30",
+        "event": "sale",
+        "qty": 24,
+        "knownAmountKop": 3326300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-31",
+        "event": "return",
+        "qty": 3,
+        "knownAmountKop": 894100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-05-31",
+        "event": "sale",
+        "qty": 23,
+        "knownAmountKop": 3573500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-01",
+        "event": "sale",
+        "qty": 20,
+        "knownAmountKop": 2565100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-02",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2587800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-03",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 3021695,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-04",
+        "event": "sale",
+        "qty": 20,
+        "knownAmountKop": 2527450,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-05",
+        "event": "sale",
+        "qty": 18,
+        "knownAmountKop": 3372400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-06",
+        "event": "sale",
+        "qty": 25,
+        "knownAmountKop": 3688600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-07",
+        "event": "sale",
+        "qty": 28,
+        "knownAmountKop": 4248873,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-08",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 2889200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-09",
+        "event": "sale",
+        "qty": 25,
+        "knownAmountKop": 4965900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-10",
+        "event": "sale",
+        "qty": 24,
+        "knownAmountKop": 3490000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-11",
+        "event": "return",
+        "qty": 1,
+        "knownAmountKop": 193900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-11",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 2101000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-12",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 1935700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-13",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 2854100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-14",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 2368891,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-15",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 3636000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-16",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 2073200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-17",
+        "event": "sale",
+        "qty": 31,
+        "knownAmountKop": 5846718,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-18",
+        "event": "sale",
+        "qty": 18,
+        "knownAmountKop": 2425630,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-19",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 1525100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-20",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 2357100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-21",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2628719,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-22",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 4701900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-23",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 1939300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-24",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1657700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-25",
+        "event": "sale",
+        "qty": 18,
+        "knownAmountKop": 3180900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-26",
+        "event": "sale",
+        "qty": 4,
+        "knownAmountKop": 427800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-27",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 1091500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-28",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 3065500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-29",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 3572474,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-06-30",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 2271452,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-01",
+        "event": "return",
+        "qty": 1,
+        "knownAmountKop": 111900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-01",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 2730500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-02",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 2101300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-03",
+        "event": "sale",
+        "qty": 19,
+        "knownAmountKop": 4048200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-04",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 2230350,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-05",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 3344900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-06",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 1823300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-07",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 4359100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-08",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 2726908,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-09",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 2440712,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-10",
+        "event": "sale",
+        "qty": 25,
+        "knownAmountKop": 5287700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-11",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2747200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-12",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 3585793,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-13",
+        "event": "sale",
+        "qty": 22,
+        "knownAmountKop": 3508700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-14",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 2698400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-15",
+        "event": "sale",
+        "qty": 18,
+        "knownAmountKop": 3133604,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-16",
+        "event": "sale",
+        "qty": 20,
+        "knownAmountKop": 3686500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-17",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 2918800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-18",
+        "event": "sale",
+        "qty": 19,
+        "knownAmountKop": 3485000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-19",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 2308000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-20",
+        "event": "sale",
+        "qty": 19,
+        "knownAmountKop": 3367300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-21",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 3088700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-22",
+        "event": "return",
+        "qty": 1,
+        "knownAmountKop": 108300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-22",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 3128450,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-23",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2783500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-24",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2318300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-25",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 2313236,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-26",
+        "event": "sale",
+        "qty": 22,
+        "knownAmountKop": 3660262,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-27",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 3303700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-28",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1777800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-29",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 758200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-30",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 2771800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-07-31",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 1899800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-01",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 2406800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-02",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 3035600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-03",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 2910004,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-04",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 2751700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-05",
+        "event": "sale",
+        "qty": 19,
+        "knownAmountKop": 4016400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-06",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 2922741,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-07",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 1096900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-08",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 2079900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-09",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 1238900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-10",
+        "event": "sale",
+        "qty": 15,
+        "knownAmountKop": 2963200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-11",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1805274,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-12",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1611400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-13",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 2588200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-14",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 1871900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-15",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 1221200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-16",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 1049400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-17",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 1082046,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-18",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 788600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-19",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 1165800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-20",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 1732700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-21",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1464400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-22",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 604300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-23",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 1355100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-24",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 1296300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-25",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 1345600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-26",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 1267900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-27",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 1718500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-28",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 901200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-29",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 564800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-30",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 3617700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-08-31",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 1913100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-01",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 2215800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-02",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 2133000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-03",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 1683900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-04",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 1548200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-05",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 612100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-06",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 1223900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-07",
+        "event": "sale",
+        "qty": 17,
+        "knownAmountKop": 3029100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-08",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 925500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-09",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 1202253,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-10",
+        "event": "sale",
+        "qty": 2,
+        "knownAmountKop": 1065200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-11",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 801200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-12",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 1296297,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-13",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 1361700,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-14",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 517000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-15",
+        "event": "sale",
+        "qty": 14,
+        "knownAmountKop": 2935395,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-16",
+        "event": "sale",
+        "qty": 16,
+        "knownAmountKop": 2599500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-17",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 2069078,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-18",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 1856000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-19",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 2411900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-20",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 1196000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-21",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 608200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-22",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 1002260,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-23",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 909900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-24",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 953042,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-25",
+        "event": "sale",
+        "qty": 13,
+        "knownAmountKop": 1835224,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-26",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 1135517,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-27",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 1247400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-28",
+        "event": "sale",
+        "qty": 11,
+        "knownAmountKop": 1459600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-29",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 486924,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-09-30",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 439100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-01",
+        "event": "sale",
+        "qty": 2,
+        "knownAmountKop": 181400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-02",
+        "event": "sale",
+        "qty": 4,
+        "knownAmountKop": 296400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-04",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 764800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-05",
+        "event": "sale",
+        "qty": 3,
+        "knownAmountKop": 331800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-06",
+        "event": "sale",
+        "qty": 1,
+        "knownAmountKop": 427200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-07",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 637100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-08",
+        "event": "sale",
+        "qty": 12,
+        "knownAmountKop": 1823000,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-09",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 930900,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-10",
+        "event": "sale",
+        "qty": 9,
+        "knownAmountKop": 3000300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-11",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 447800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-12",
+        "event": "sale",
+        "qty": 6,
+        "knownAmountKop": 839100,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-13",
+        "event": "sale",
+        "qty": 4,
+        "knownAmountKop": 556511,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-14",
+        "event": "sale",
+        "qty": 3,
+        "knownAmountKop": 715500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-15",
+        "event": "sale",
+        "qty": 7,
+        "knownAmountKop": 971974,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-16",
+        "event": "sale",
+        "qty": 10,
+        "knownAmountKop": 1317189,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-17",
+        "event": "sale",
+        "qty": 5,
+        "knownAmountKop": 1049400,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-18",
+        "event": "sale",
+        "qty": 1,
+        "knownAmountKop": 125800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-19",
+        "event": "sale",
+        "qty": 8,
+        "knownAmountKop": 1544500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-20",
+        "event": "sale",
+        "qty": 3,
+        "knownAmountKop": 815300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-21",
+        "event": "sale",
+        "qty": 3,
+        "knownAmountKop": 220500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-22",
+        "event": "sale",
+        "qty": 3,
+        "knownAmountKop": 843500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-23",
+        "event": "sale",
+        "qty": 3,
+        "knownAmountKop": 314600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-24",
+        "event": "sale",
+        "qty": 4,
+        "knownAmountKop": 569300,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-25",
+        "event": "sale",
+        "qty": 2,
+        "knownAmountKop": 123800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      }
+    ],
+    "basis": "retailAmount",
+    "dateBasis": "rrDate",
+    "period": "weekly",
+    "reportCount": 80,
+    "excludedOtherOperationRows": 26592
+  }
+}
