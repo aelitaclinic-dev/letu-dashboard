@@ -4,6 +4,9 @@ API docs: https://dev.wildberries.ru/docs/openapi/documents-and-accounting
 No raw response, credentials, report identifiers or customer information is saved.
 """
 import datetime as dt
+import gzip
+import http.client
+import io
 import decimal
 import json
 import os
@@ -38,14 +41,28 @@ class Client:
             self.last = time.monotonic()
             request = urllib.request.Request(BASE + endpoint,
                 data=json.dumps(body).encode(), method='POST',
-                headers={'Authorization': self.token, 'Content-Type': 'application/json'})
+                headers={'Authorization': self.token, 'Content-Type': 'application/json', 'Accept-Encoding': 'gzip'})
             try:
-                with self.opener.open(request, timeout=120) as response:
+                with self.opener.open(request, timeout=30) as response:
                     if response.status == 204:
                         return None
-                    payload = response.read(100_000_001)
-                    if len(payload) > 100_000_000:
-                        raise SyncError('WB response exceeds safety limit')
+                    chunks, size, deadline = [], 0, time.monotonic() + 90
+                    while True:
+                        if time.monotonic() > deadline:
+                            raise TimeoutError()
+                        chunk = response.read1(65536)
+                        if not chunk:
+                            break
+                        size += len(chunk)
+                        if size > 100_000_000:
+                            raise SyncError('WB response exceeds safety limit')
+                        chunks.append(chunk)
+                    payload = b''.join(chunks)
+                    if response.headers.get('Content-Encoding', '').lower() == 'gzip':
+                        with gzip.GzipFile(fileobj=io.BytesIO(payload)) as compressed:
+                            payload = compressed.read(100_000_001)
+                        if len(payload) > 100_000_000:
+                            raise SyncError('WB response exceeds safety limit')
                     result = json.loads(payload)
                     if not isinstance(result, list):
                         raise SyncError('Unexpected WB response format')
@@ -55,9 +72,10 @@ class Client:
                 if error.code in (429, 500, 502, 503, 504) and attempt < 3:
                     continue
                 raise SyncError('WB HTTP ' + str(error.code)) from None
-            except (urllib.error.URLError, TimeoutError):
+            except (urllib.error.URLError, TimeoutError, http.client.IncompleteRead, ConnectionError, EOFError):
+                print('WB transfer interrupted; retrying bounded page.' if attempt < 3 else 'WB transfer interrupted.', flush=True)
                 if attempt == 3:
-                    raise SyncError('WB network timeout') from None
+                    raise SyncError('WB network transfer incomplete') from None
         raise SyncError('WB request failed')
 
 def day(value):
@@ -173,7 +191,8 @@ def sync(client, start, end, fetched):
             raise SyncError('Report pagination limit exceeded')
     rows, cursor = [], 0
     while True:
-        page = client.post('detailed', dict(dateFrom=start, dateTo=end, limit=100000,
+        print('Loading next bounded finance page.', flush=True)
+        page = client.post('detailed', dict(dateFrom=start, dateTo=end, limit=10000,
                                            rrdId=cursor, period='weekly', fields=FIELDS))
         if not page:
             break

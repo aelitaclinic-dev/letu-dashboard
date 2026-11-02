@@ -1,5 +1,9 @@
 import importlib.util
 import unittest
+import gzip
+import json
+import http.client
+from unittest.mock import patch
 spec=importlib.util.spec_from_file_location('sync','scripts/wb_finance_sync.py')
 sync=importlib.util.module_from_spec(spec); spec.loader.exec_module(sync)
 
@@ -46,6 +50,26 @@ class FinanceTests(unittest.TestCase):
             def post(self,endpoint,body): calls.append((endpoint,body)); return next(pages)
         sync.sync(Fake(),'2026-01-01','2026-10-31','2026-10-31')
         self.assertEqual(calls[-1][1]['rrdId'],1); self.assertEqual(calls[1][1]['period'],'weekly')
+    def test_gzip_and_interrupted_transfer_retry(self):
+        body=gzip.compress(json.dumps([{'rrdId':123}]).encode())
+        class Response:
+            status=200
+            headers={'Content-Encoding':'gzip'}
+            def __init__(self): self.parts=iter([body[:5],body[5:],b''])
+            def read1(self,n): return next(self.parts)
+            def __enter__(self): return self
+            def __exit__(self,*args): pass
+        class Opener:
+            def __init__(self): self.calls=0
+            def open(self,request,timeout):
+                self.calls+=1
+                if self.calls==1: raise http.client.IncompleteRead(b'partial')
+                return Response()
+        client=sync.Client('test-secret');client.opener=Opener()
+        with patch.object(sync.time,'sleep'):
+            result=client.post('detailed',{})
+        self.assertEqual(result,[{'rrdId':123}])
+        self.assertEqual(client.opener.calls,2)
     def test_amount_precision(self):
         self.assertEqual(sync.kopecks('0.01'),1)
         for value in ['-1','NaN','0.001']:
