@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "orders": [
+    {
+      "id": "invoice-PI0220261008-20261005",
+      "entity": "unknown",
+      "reference": "SINKO STYLING · поставка 05.10.2026",
+      "supplier": "YOGI Enterprise Co., Ltd.",
+      "date": "2026-10-05",
+      "invoiceDate": "2026-10-08",
+      "invoiceNumber": "PI0220261008-Regina",
+      "status": "unconfirmed",
+      "receivedDate": "",
+      "expectedDate": "",
+      "warehouse": "",
+      "currency": "CNY",
+      "rateUnits": null,
+      "deliveryCurrency": "CNY",
+      "deliveryMinor": 18000,
+      "deliveryKop": null,
+      "allocation": "value",
+      "sourceGoodsMinor": 318550,
+      "sourceTotalMinor": 336550,
+      "note": "Дата поставки 05.10.2026 указана пользователем. Инвойс PI0220261008-Regina датирован 08.10.2026. Товары 3 185,50 CNY; доставка грузовиком по инвойсу 180,00 CNY; итого 3 365,50 CNY. Условия EXW, T/T in advance. Курс фактической оплаты, владелец ИП/ООО, склад и факт приёмки требуют уточнения. Прочая логистика в документе не указана. Вид дорожного продукта C151613 в инвойсе не уточнён. Распределение доставки по стоимости товаров — правило журнала, его можно изменить.",
+      "lines": [
+        {
+          "sku": "SKUK501",
+          "name": "Brazilian Keratin Purifying Shampoo, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 5,
+          "priceMinor": 1354
+        },
+        {
+          "sku": "SKUK5022",
+          "name": "Brazilian Keratin Treatment FM 4%, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 2495
+        },
+        {
+          "sku": "SKUK502",
+          "name": "Brazilian Keratin Treatment FM Free, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 20,
+          "priceMinor": 6168
+        },
+        {
+          "sku": "SKUK503",
+          "name": "Brazilian Keratin Daily Shampoo №3, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1730
+        },
+        {
+          "sku": "SKUK504",
+          "name": "Brazilian Keratin Daily Conditioner №4, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1730
+        },
+        {
+          "sku": "C151609",
+          "name": "Argan Oil Nourishing Shampoo, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 20,
+          "priceMinor": 1120
+        },
+        {
+          "sku": "C151610",
+          "name": "Argan Oil Nourishing Conditioner, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 20,
+          "priceMinor": 1840
+        },
+        {
+          "sku": "C151611",
+          "name": "Moringa Deep Cleanse Shampoo, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 20,
+          "priceMinor": 1136
+        },
+        {
+          "sku": "C151613",
+          "name": "Travel size — дорожный формат, 80 мл",
+          "brand": "SINKO STYLING",
+          "qty": 20,
+          "priceMinor": 1350
+        },
+        {
+          "sku": "C151621",
+          "name": "Tea Tree Rejuvenating Hair Mask, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 6,
+          "priceMinor": 1575
+        },
+        {
+          "sku": "SKLC200",
+          "name": "Leave-in Cream Protection and Hair Treatment, 200 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1050
+        }
+      ],
+      "sourceRevision": 1
+    }
+  ]
+}
