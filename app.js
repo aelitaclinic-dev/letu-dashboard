@@ -2846,6 +2846,7 @@
       + "<div class='market-overview-meta'><span><i class='live-dot'></i> " + (wbStore() ? "2" : "1") + " из 3 площадок с данными</span><span>ИП и ООО — раздельный учёт</span></div>"
       + "<section class='market-tiles' aria-label='Маркетплейсы'>" + tile("letu", "Л’Этуаль", "Л’", true, "ИП · Барская Регина Александровна")
       + tile("wb", "Wildberries", "WB", false, "2 магазина · ИП и ООО") + tile("ozon", "Ozon", "O", false, "2 магазина · ИП и ООО") + "</section>"
+      + (window.PurchaseBook ? window.PurchaseBook.homeCard() : "")
       + "<section class='market-overview-bottom'><div class='market-note'><span class='market-eyebrow'>ПОЛНОТА ОБЗОРА</span><h3>Л’Этуаль и подключение площадок</h3>"
       + "<p>" + (wbStore() ? "Данные Wildberries ИП доступны отдельно. В сводке ИП указаны подключённые источники. Кабинет ООО и Ozon ещё не подключены." : "Данные Wildberries и Ozon ещё не загружены.") + " Общий итог бизнеса появится после проверки сопоставимости данных. Отсутствующие данные не считаются нулевыми продажами.</p></div>"
       + "<a class='market-expense-link' href='#expenses'><span class='market-eyebrow'>ОБЩИЙ УЧЁТ</span><h3>Расходы ИП / ООО <span aria-hidden='true'>↗</span></h3>"
@@ -2893,21 +2894,26 @@
 
   function updateMarketNavigation(hash, channel) {
     var expensePage = hash === "expenses" || hash.indexOf("expenses/") === 0;
+    var purchasePage = hash === "purchases" || hash.indexOf("purchases/") === 0;
     var overview = !hash || hash === "overview";
-    var isLetu = !overview && !channel && !expensePage;
+    var isLetu = !overview && !channel && !expensePage && !purchasePage;
     document.querySelector("nav.menu").hidden = !isLetu;
     document.getElementById("freshness").hidden = !isLetu;
     document.getElementById("page-context").textContent = overview ? "Все площадки · единый обзор бизнеса"
+      : purchasePage ? "Закупки, поставки и собственные склады · ИП и ООО"
       : expensePage ? "Общие расходы бизнеса · раздельный учёт ИП и ООО"
       : channel ? (channel === "wb" ? "Wildberries" : "Ozon") + " · кабинеты ИП и ООО"
       : "Л’Этуаль · ИП Барская Регина Александровна";
-    var current = overview ? "#overview" : expensePage ? "#expenses" : channel ? "#" + channel + "/all/summary" : "#letu";
+    var current = overview ? "#overview" : purchasePage ? "#purchases" : expensePage ? "#expenses" : channel ? "#" + channel + "/all/summary" : "#letu";
     document.querySelectorAll(".market-nav a").forEach(function (link) {
       var on = link.getAttribute("href") === current;
       link.classList.toggle("on", on);
       if (on) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
     });
-    document.title = "MA Distribution — " + (overview ? "обзор бизнеса" : expensePage ? "расходы ИП / ООО" : channel ? (channel === "wb" ? "Wildberries" : "Ozon") : "Л’Этуаль");
+    var footer = document.querySelector(".foot");
+    if (!footer.dataset.originalText) footer.dataset.originalText = footer.textContent;
+    footer.textContent = purchasePage ? "Личный журнал закупок и складских движений. Записи сохраняются в текущем браузере. Сохраните резервную копию для переноса на другое устройство." : footer.dataset.originalText;
+    document.title = "MA Distribution — " + (overview ? "обзор бизнеса" : purchasePage ? "закупки и склад" : expensePage ? "расходы ИП / ООО" : channel ? (channel === "wb" ? "Wildberries" : "Ozon") : "Л’Этуаль");
   }
 
   function render() {
@@ -2928,6 +2934,14 @@
     const channel = route[0] === "wb" || route[0] === "ozon" ? route[0] : null;
     updateMarketNavigation(hash, channel);
     if (!hash || hash === "overview") screen.innerHTML = renderOverview(state);
+    else if (route[0] === "purchases" && window.PurchaseBook) {
+      var purchaseView = route[1] || "orders";
+      if (!screen.querySelector("#pb-root") || screen.dataset.purchaseView !== purchaseView) {
+        window.PurchaseBook.mount(screen, purchaseView);
+        screen.dataset.purchaseView = purchaseView;
+        window.scrollTo({top: 0, left: 0, behavior: "instant"});
+      }
+    }
     else if (channel) screen.innerHTML = renderMarketplace(channel, ["all", "ip", "ooo"].indexOf(route[1]) >= 0 ? route[1] : "all", route[2] || "summary", state);
     else if (hash.indexOf("m/") === 0) screen.innerHTML = renderMonth(hash.slice(2), state);
     else if (hash === "unit") screen.innerHTML = renderUnitPage(state);
@@ -3037,6 +3051,3 @@
     render();
   }).catch(function () { /* No snapshot yet: the existing empty states remain visible. */ });
 })();
-
-
-
