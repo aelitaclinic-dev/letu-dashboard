@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
-const c={window:{},Intl,Date,BigInt,Number,Map,Set,structuredClone,crypto:require('crypto').webcrypto,console};vm.createContext(c);vm.runInContext(fs.readFileSync(require('path').join(__dirname,'..','purchases.js'),'utf8'),c);const api=c.window.PurchaseBook.core;
+const c={window:{},Intl,Date,BigInt,Number,Map,Set,structuredClone,fetch:()=>Promise.resolve({ok:false}),crypto:require('crypto').webcrypto,console};vm.createContext(c);vm.runInContext(fs.readFileSync(require('path').join(__dirname,'..','purchases.js'),'utf8'),c);const api=c.window.PurchaseBook.core;
 function order(id,entity,qty,price,shipping=0,date='2026-01-01'){return{id,entity,reference:id,supplier:'Supplier',date,receivedDate:date,status:'received',expectedDate:'',warehouse:'Main',currency:'RUB',rateUnits:10000,deliveryKop:shipping,allocation:'value',note:'',lines:[{sku:'SKU-X',name:'Product',brand:'Brand',qty,priceMinor:price}]};}
 const a=order('a','ip',2,10000,5000),b=order('b','ip',3,20000,0,'2026-01-02');
 assert.equal(api.cost(a).total,25000);assert.equal(api.cost(a).lines[0].unitKop,12500);
@@ -18,3 +18,16 @@ let full={schemaVersion:1,orders:[a],movements:[{...move,qty:2}]};assert.equal(a
 let voided={...full,movements:[{...move,qty:2,voided:true}]};assert.equal(api.ledger(voided).stock[0].qty,2);
 let csv=api.stockCSV([{sku:'=1+1',name:'"Product"',brand:'b',entity:'ip',warehouse:'Main',qty:1,unitKop:100,valueKop:100}]);assert(csv.includes("'=1+1"));assert(csv.includes('""Product""'));
 console.log('Passed: exact delivery allocation; currency conversion; weighted inventory; separate entities; planned/received/archive; same-day transfers; issues and cancellations; no negative stock or broken edits; backup validation; CSV safety.');
+
+
+const draft={...order('draft','unknown',3,2000),status:'unconfirmed',warehouse:'',currency:'CNY',rateUnits:null,deliveryCurrency:'CNY',deliveryMinor:600,deliveryKop:null,sourceRevision:1};
+api.validate({schemaVersion:1,orders:[draft],movements:[]});let unpriced=api.cost(draft);
+assert.equal(unpriced.nativeGoodsMinor,6000);assert.equal(unpriced.nativeTotalMinor,6600);assert.equal(unpriced.total,null);assert.equal(unpriced.delivery,null);
+assert.equal(api.ledger({orders:[draft],movements:[]}).stock.length,0);
+assert.throws(()=>api.validate({schemaVersion:1,orders:[{...draft,status:'received'}],movements:[]}),/владельца/);
+const initial=api.mergeShared(null,draft);assert(initial.changed);assert.equal(api.mergeShared(initial.record,draft).changed,false);
+const edited=structuredClone(initial.record);edited.note='My note';edited.entity='ooo';
+const changed={...draft,sourceRevision:2,entity:'ip',rateUnits:140000};const merged=api.mergeShared(edited,changed);
+assert.equal(merged.record.entity,'ooo');assert.equal(merged.record.note,'My note');assert.equal(merged.record.rateUnits,140000);assert.equal(merged.conflicts,1);
+assert.equal(api.mergeShared(merged.record,draft).changed,false);
+console.log('Passed: foreign-currency delivery without invented FX, owner or receipt; source revisions and preserved local edits.');
