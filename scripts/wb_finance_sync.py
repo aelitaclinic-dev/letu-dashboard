@@ -118,7 +118,7 @@ def aggregate(rows, reports, start, end, fetched):
         audit_reverse = row.get('returnAmount')
         if isinstance(audit_reverse, int):
             audit_item['reverseDeliveryQty'] += audit_reverse
-        if operation == 'Логистика':
+        if operation in ('Логистика', 'Доставка'):
             date = day(row.get('rrDate'))
             if start <= date <= end:
                 reverse, forward = row.get('returnAmount'), row.get('deliveryAmount')

@@ -22,6 +22,14 @@ class FinanceTests(unittest.TestCase):
         self.assertEqual(result['sales']['excludedOtherOperationRows'],1)
         self.assertEqual(result['reverseLogistics']['rows'][0]['reverseQty'],1)
         self.assertEqual(result['sales']['rows'][0]['qty'],2)
+    def test_delivery_and_logistics_both_count_without_refund_deduction(self):
+        logistic=self.row(); logistic.update(rrdId=2,sellerOperName='Логистика',returnAmount=3,deliveryAmount=0,bonusTypeName='От клиента при отмене')
+        delivery=dict(logistic,rrdId=3,sellerOperName='Доставка',returnAmount=2)
+        result=self.calc([self.row(),logistic,delivery])
+        self.assertEqual(sum(r['reverseQty'] for r in result['reverseLogistics']['rows']),5)
+        self.assertEqual(sum(r['qty'] for r in result['sales']['rows']),2)
+        self.assertEqual(sum(r['knownAmountKop'] for r in result['sales']['rows']),15001)
+        self.assertEqual(sum(r['reverseDeliveryQty'] for r in result['audit']),5)
     def test_conflicting_duplicates_fail(self):
         other=self.row(); other['quantity']=3
         with self.assertRaises(sync.SyncError): self.calc([self.row(),other])
