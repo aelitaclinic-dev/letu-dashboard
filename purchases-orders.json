@@ -1,0 +1,496 @@
+{
+  "schemaVersion": 1,
+  "orders": [
+    {
+      "id": "invoice-PI0220260916-20260915",
+      "sourceRevision": 1,
+      "entity": "unknown",
+      "reference": "SINKO STYLING · заказ 15.09.2026",
+      "supplier": "YOGI Enterprise Co., Ltd.",
+      "date": "2026-09-15",
+      "invoiceDate": "2026-09-16",
+      "invoiceNumber": "PI0220260916-Regina Barskaa",
+      "status": "transit",
+      "receivedDate": "",
+      "expectedDate": "",
+      "warehouse": "",
+      "currency": "CNY",
+      "rateUnits": 140000,
+      "deliveryCurrency": "CNY",
+      "deliveryMinor": 20000,
+      "deliveryKop": 280000,
+      "allocation": "value",
+      "sourceGoodsMinor": 362224,
+      "sourceTotalMinor": 382224,
+      "lines": [
+        {
+          "sku": "C102246",
+          "name": "Advanced natural style & straightening cream, resistant hair, S1+S2, 800 мл × 2",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 2650,
+          "sourceLine": 1
+        },
+        {
+          "sku": "C102247",
+          "name": "Advanced natural style & straightening cream, damaged hair, DS1+S2, 800 мл × 2",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 2650,
+          "sourceLine": 2
+        },
+        {
+          "sku": "C102258",
+          "name": "Natural styling cream, resistant hair, S1+S2, 800 мл × 2",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 2650,
+          "sourceLine": 3
+        },
+        {
+          "sku": "C102259",
+          "name": "Natural styling cream, damaged hair, DS1+S2, 800 мл × 2",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 2650,
+          "sourceLine": 4
+        },
+        {
+          "sku": "SKDV-3",
+          "name": "Oxidant Developer 3%, 1000 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 920,
+          "sourceLine": 5
+        },
+        {
+          "sku": "SKDV-6",
+          "name": "Oxidant Developer 6%, 1000 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 920,
+          "sourceLine": 6
+        },
+        {
+          "sku": "SKDV-9",
+          "name": "Oxidant Developer 9%, 1000 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 920,
+          "sourceLine": 7
+        },
+        {
+          "sku": "SKDV-12",
+          "name": "Oxidant Developer 12%, 1000 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 920,
+          "sourceLine": 8
+        },
+        {
+          "sku": "SKUK501",
+          "name": "Brazilian Keratin Purifying Shampoo, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 5,
+          "priceMinor": 1354,
+          "sourceLine": 9
+        },
+        {
+          "sku": "SKUK5022",
+          "name": "Brazilian Keratin Treatment FM 4%, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 6,
+          "priceMinor": 2495,
+          "sourceLine": 10
+        },
+        {
+          "sku": "SKUK502",
+          "name": "Brazilian Keratin Treatment FM Free, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 6,
+          "priceMinor": 6168,
+          "sourceLine": 11
+        },
+        {
+          "sku": "SKUK502B",
+          "name": "Brazilian Keratin Treatment FM Free Blue, 500 мл — название по инвойсу",
+          "brand": "SINKO STYLING",
+          "qty": 6,
+          "priceMinor": 6168,
+          "sourceLine": 12
+        },
+        {
+          "sku": "SKBP500",
+          "name": "Hair Lightener Dust Free Bleaching Powder, 500 г",
+          "brand": "SINKO STYLING",
+          "qty": 4,
+          "priceMinor": 1619,
+          "sourceLine": 13
+        },
+        {
+          "sku": "C151605",
+          "name": "Splex No.0 Collagen, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 1553,
+          "sourceLine": 14
+        },
+        {
+          "sku": "C151604",
+          "name": "Splex No.2 Fixer, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 599,
+          "sourceLine": 15
+        },
+        {
+          "sku": "C151603",
+          "name": "Splex No.1 Treatment for Damaged Hair, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 1972,
+          "sourceLine": 16
+        },
+        {
+          "sku": "C151607",
+          "name": "Splex No.1 Treatment for Healthy Hair, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 1972,
+          "sourceLine": 17
+        },
+        {
+          "sku": "SK9T250",
+          "name": "18 Amino Acid, 250 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1356,
+          "sourceLine": 18
+        },
+        {
+          "sku": "C151609",
+          "name": "Argan Oil Nourishing Shampoo, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1120,
+          "sourceLine": 19
+        },
+        {
+          "sku": "C151610",
+          "name": "Argan Oil Nourishing Conditioner, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1840,
+          "sourceLine": 20
+        },
+        {
+          "sku": "C151611",
+          "name": "Moringa Deep Cleanse Shampoo, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1136,
+          "sourceLine": 21
+        },
+        {
+          "sku": "D200106",
+          "name": "9 in 1 Straightening Cream — One Step Rebonding, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 1200,
+          "sourceLine": 22
+        },
+        {
+          "sku": "D200115",
+          "name": "Crystallizing Hair Straightening Cream for Damaged Hair No.1, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 850,
+          "sourceLine": 23
+        },
+        {
+          "sku": "D200116",
+          "name": "Crystallizing Hair Straightening Cream No.2, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 500,
+          "sourceLine": 24
+        },
+        {
+          "sku": "D200128",
+          "name": "Neutralizer for Curly Hair No.2, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 500,
+          "sourceLine": 25
+        },
+        {
+          "sku": "SKHC050",
+          "name": "Sculpting Clay, 80 г",
+          "brand": "SINKO STYLING",
+          "qty": 5,
+          "priceMinor": 957,
+          "sourceLine": 26
+        },
+        {
+          "sku": "SKHW050",
+          "name": "Professional Styling Wax, 100 г",
+          "brand": "SINKO STYLING",
+          "qty": 5,
+          "priceMinor": 957,
+          "sourceLine": 27
+        },
+        {
+          "sku": "C152501",
+          "name": "Fast Perm Lotion S1+S2, healthy hair, 260 мл × 2",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 1250,
+          "sourceLine": 28
+        },
+        {
+          "sku": "C152502",
+          "name": "Fast Perm Lotion DS1+S2, damaged hair, 260 мл × 2",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 1250,
+          "sourceLine": 29
+        },
+        {
+          "sku": "SK04",
+          "name": "Hair Dyeing Bowl — миска для окрашивания",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 350,
+          "sourceLine": 30
+        },
+        {
+          "sku": "SK05",
+          "name": "Hair Dyeing Brush — кисть для окрашивания",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 350,
+          "sourceLine": 31
+        },
+        {
+          "sku": "SK 3 · 3.0",
+          "name": "Professional Color Cream 3.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 32
+        },
+        {
+          "sku": "SK 3 · 4.0",
+          "name": "Professional Color Cream 4.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 33
+        },
+        {
+          "sku": "SK 3 · 5.0",
+          "name": "Professional Color Cream 5.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 34
+        },
+        {
+          "sku": "SK 3 · 6.0",
+          "name": "Professional Color Cream 6.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 35
+        },
+        {
+          "sku": "SK 3 · 7.0",
+          "name": "Professional Color Cream 7.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 36
+        },
+        {
+          "sku": "SK 3 · 8.0",
+          "name": "Professional Color Cream 8.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 37
+        },
+        {
+          "sku": "SK 3 · 5.17",
+          "name": "Professional Color Cream 5.17, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 38
+        },
+        {
+          "sku": "SK 3 · 6.17",
+          "name": "Professional Color Cream 6.17, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 39
+        },
+        {
+          "sku": "SK 3 · 8.17",
+          "name": "Professional Color Cream 8.17, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 40
+        },
+        {
+          "sku": "SK 3 · 9.17",
+          "name": "Professional Color Cream 9.17, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 41
+        },
+        {
+          "sku": "SK 3 · 6.31",
+          "name": "Professional Color Cream 6.31, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 42
+        },
+        {
+          "sku": "SK 3 · 8.31",
+          "name": "Professional Color Cream 8.31, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 43
+        },
+        {
+          "sku": "SK 3 · 10.31",
+          "name": "Professional Color Cream 10.31, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 44
+        },
+        {
+          "sku": "SK 3 · 4.11",
+          "name": "Professional Color Cream 4.11, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 45
+        },
+        {
+          "sku": "SK 3 · 6.11",
+          "name": "Professional Color Cream 6.11, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 46
+        },
+        {
+          "sku": "SK 3 · 9.11",
+          "name": "Professional Color Cream 9.11, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 47
+        },
+        {
+          "sku": "SK 3 · 6.01",
+          "name": "Professional Color Cream 6.01, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 48
+        },
+        {
+          "sku": "SK 3 · 9.01",
+          "name": "Professional Color Cream 9.01, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 49
+        },
+        {
+          "sku": "SK 3 · 12.01",
+          "name": "Professional Color Cream 12.01, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 50
+        },
+        {
+          "sku": "SK 3 · 6.31",
+          "name": "Professional Color Cream 6.31, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 51
+        },
+        {
+          "sku": "SK 3 · 8.31",
+          "name": "Professional Color Cream 8.31, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 52
+        },
+        {
+          "sku": "SK 3 · 10.31",
+          "name": "Professional Color Cream 10.31, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 53
+        },
+        {
+          "sku": "SK 3 · 5.75",
+          "name": "Professional Color Cream 5.75, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 54
+        },
+        {
+          "sku": "SK 3 · 7.75",
+          "name": "Professional Color Cream 7.75, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 55
+        },
+        {
+          "sku": "SK 3 · 10.66",
+          "name": "Professional Color Cream 10.66, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 56
+        },
+        {
+          "sku": "SK 3 · 0.66",
+          "name": "Professional Color Cream 0.66, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 550,
+          "sourceLine": 57
+        },
+        {
+          "sku": "SK-colorchart",
+          "name": "Professional Color Chart — палитра, подарок",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 0,
+          "sourceLine": 58,
+          "gift": true,
+          "sourceListPriceMinor": 4800
+        }
+      ],
+      "note": "Заказ от 15.09.2026 по указанию пользователя; инвойс PI0220260916-Regina Barskaa от 16.09.2026. Поставка в пути, не прибыла; дату приёмки и склад не назначали. Товары 3 622,24 CNY, доставка грузовиком по инвойсу 200 CNY, итого 3 822,24 CNY. Для рублёвой оценки применён установленный курс 14 RUB/CNY; отдельный фактический курс оплаты этого заказа не подтверждён. Доставка до Москвы, хранение, разгрузка и прочая фактическая логистика не указаны и в эти 200 CNY не подставлены. 58 строк, 377 учётных единиц: 376 платных и 1 бесплатная палитра (в инвойсе цена палитры 48 CNY, сумма 0). Наборы 800 мл × 2 и 260 мл × 2 учтены как наборы, не как отдельные флаконы. Оттенки 6.31, 8.31 и 10.31 повторены в исходнике по 10 шт. дважды, строки сохранены без удаления: требуется сверка у поставщика. Для красок идентификатор строки состоит из модели SK 3 и оттенка. Наименование SKUK502B сохранено по инвойсу; применение требует уточнения. Подготовка к продаже — только расчётная модель, не факт расхода."
+    }
+  ]
+}

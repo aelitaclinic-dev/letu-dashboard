@@ -134,5 +134,5 @@
     save(next);notice(conflicts?'Поставка обновлена из документа. Поля с вашими отличающимися правками сохранены — проверьте карточку.':'Поставка из документа добавлена или обновлена. Проверьте карточку: владелец, склад, курс и приёмка сохраняются по указанным данным.');show();return true;
   }
   window.PurchaseBook={mount,homeCard:()=>'<a class="pb-home-card" href="#purchases"><span class="pb-home-icon" aria-hidden="true">▦</span><div><p class="market-eyebrow">ТОВАРНЫЙ УЧЁТ</p><h3>Закупки и склад</h3><p>Поставки, доставка, остатки и себестоимость каждого товара.</p></div><span class="pb-home-button">Открыть закупки ↗</span></a>', core:{cost,preparationFor,fullCost,allocate,ledger,validate,normalOrder,stockCSV,fixed,key,appendShared,mergeShared}};
-  fetch('purchases-data.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(appendShared).catch(e=>{state.error='Поставки из документов не загружены: '+e.message;show();});
+  ['purchases-data.json','purchases-orders.json'].forEach(path=>fetch(path,{cache:'no-store'}).then(r=>r.ok?r.json():null).then(appendShared).catch(e=>{state.error='Поставки из документов не загружены: '+e.message;show();}));
 })();
