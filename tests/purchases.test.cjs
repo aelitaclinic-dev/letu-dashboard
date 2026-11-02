@@ -38,3 +38,17 @@ const pendingStock=api.ledger({orders:[pendingOwner],movements:[]}).stock[0];
 assert.equal(pendingStock.qty,3);assert.equal(pendingStock.entity,'unknown');assert.equal(pendingStock.valueKop,159000);
 assert.throws(()=>api.validate({schemaVersion:1,orders:[{...pendingOwner,expenses:[{date:'2026-01-01',label:'Mismatch',amountKop:1}]}],movements:[]}),/Сумма расходов/);
 console.log('Passed: actual receipt with unassigned owner; itemised expenses reconcile and are counted once.');
+
+const prep={brand:'Test Brand',productLabelRub:6,boxLabelRub:6,boxRub:30,packerRub:50,filmRub:5,materialsRub:null,items:[{article:'SKU-X'}]};
+c.window.DASHBOARD={unitEconomics:{groups:[prep]}};
+const priced={...a,lines:[{...a.lines[0],brand:'Test Brand'}]};
+let withPrep=api.fullCost(priced);
+assert.equal(withPrep.purchaseKop,20000);assert.equal(withPrep.receivedKop,25000);assert.equal(withPrep.knownTotalKop,44400);
+assert.equal(withPrep.lines[0].purchaseUnitKop,10000);assert.equal(withPrep.lines[0].fullUnitKop,22200);
+assert(withPrep.lines[0].preparation.missing.includes('Прочие расходные материалы'));
+assert.equal(api.cost(priced).total,25000); // Estimated preparation does not change the received stock cost.
+assert.equal(api.preparationFor({brand:'Test Brand',sku:'NEW'}).knownKop,9700);
+c.window.DASHBOARD.unitEconomics.groups.push({...prep,boxRub:31,items:[{article:'OTHER'}]});
+assert.equal(api.preparationFor({brand:'Test Brand',sku:'NEW'}),null); // Ambiguous brand models are never guessed.
+assert.equal(api.fullCost({...priced,lines:[{...priced.lines[0],brand:'Unknown'}]}).knownTotalKop,null);
+console.log('Passed: purchase versus prepared unit costs; no double freight; unknown and ambiguous costs stay unfilled.');

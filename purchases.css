@@ -4,3 +4,5 @@
 
 @media(min-width:1051px){.pb-price-settings{grid-template-columns:repeat(3,minmax(0,1fr));}}
 .pb-badge.unconfirmed{background:#fff1df;color:#9b713a;}
+
+.pb-cost-comparison{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0 10px}.pb-cost-comparison>div{padding:18px;border:1px solid #e5dfe2;border-radius:12px;background:#faf7f9;min-width:0}.pb-cost-comparison>div:last-child{background:#eee5ec;border-color:#d6bfd0}.pb-cost-comparison span,.pb-cost-comparison small{display:block;color:#82747c;font-size:12px;line-height:1.6}.pb-cost-comparison strong{display:block;font-size:25px;color:#68445d;margin:8px 0;overflow-wrap:anywhere}@media(max-width:620px){.pb-cost-comparison{grid-template-columns:1fr}.pb-cost-comparison strong{font-size:23px}}
