@@ -24,10 +24,17 @@ const draft={...order('draft','unknown',3,2000),status:'unconfirmed',warehouse:'
 api.validate({schemaVersion:1,orders:[draft],movements:[]});let unpriced=api.cost(draft);
 assert.equal(unpriced.nativeGoodsMinor,6000);assert.equal(unpriced.nativeTotalMinor,6600);assert.equal(unpriced.total,null);assert.equal(unpriced.delivery,null);
 assert.equal(api.ledger({orders:[draft],movements:[]}).stock.length,0);
-assert.throws(()=>api.validate({schemaVersion:1,orders:[{...draft,status:'received'}],movements:[]}),/владельца/);
+assert.throws(()=>api.validate({schemaVersion:1,orders:[{...draft,status:'received'}],movements:[]}),/курс/);
 const initial=api.mergeShared(null,draft);assert(initial.changed);assert.equal(api.mergeShared(initial.record,draft).changed,false);
 const edited=structuredClone(initial.record);edited.note='My note';edited.entity='ooo';
 const changed={...draft,sourceRevision:2,entity:'ip',rateUnits:140000};const merged=api.mergeShared(edited,changed);
 assert.equal(merged.record.entity,'ooo');assert.equal(merged.record.note,'My note');assert.equal(merged.record.rateUnits,140000);assert.equal(merged.conflicts,1);
 assert.equal(api.mergeShared(merged.record,draft).changed,false);
 console.log('Passed: foreign-currency delivery without invented FX, owner or receipt; source revisions and preserved local edits.');
+
+const pendingOwner={...draft,status:'received',rateUnits:140000,deliveryCurrency:'RUB',deliveryMinor:75000,expenses:[{date:'2026-01-01',label:'Freight',amountKop:70000},{date:'2026-01-01',label:'Handling',amountKop:5000}]};
+api.validate({schemaVersion:1,orders:[pendingOwner],movements:[]});
+const pendingStock=api.ledger({orders:[pendingOwner],movements:[]}).stock[0];
+assert.equal(pendingStock.qty,3);assert.equal(pendingStock.entity,'unknown');assert.equal(pendingStock.valueKop,159000);
+assert.throws(()=>api.validate({schemaVersion:1,orders:[{...pendingOwner,expenses:[{date:'2026-01-01',label:'Mismatch',amountKop:1}]}],movements:[]}),/Сумма расходов/);
+console.log('Passed: actual receipt with unassigned owner; itemised expenses reconcile and are counted once.');
