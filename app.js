@@ -2633,9 +2633,13 @@
     var refunds = financial ? wbStats(wbSelected(financial.sales, period), "return") : null;
     var logistics = financial && financial.reverseLogistics;
     var reverse = logistics && wbSelected(logistics, period);
+    var auditReverse = financial && Array.isArray(financial.audit) ? financial.audit.reduce(function (sum, r) { return sum + (r.reverseDeliveryQty || 0); }, 0) : null;
+    var detailedReverse = logistics && Array.isArray(logistics.rows) ? logistics.rows.reduce(function (sum, r) { return sum + r.reverseQty; }, 0) : null;
+    var reverseVerified = auditReverse == null || detailedReverse === auditReverse;
+    if (!reverseVerified) reverse = null;
     var sellerAvailable = seller && seller.state === "ready" && seller.fromDate <= to && seller.toDate >= from;
     var sellerRows = sellerAvailable ? seller.rows.filter(function (r) { return r.date >= from && r.date <= to; }) : null;
-    return {refunds: refunds, reverse: reverse, reverseQty: reverse ? reverse.reduce(function (sum, r) { return sum + r.reverseQty; }, 0) : null,
+    return {needsReconciliation: !reverseVerified, refunds: refunds, reverse: reverse, reverseQty: reverse ? reverse.reduce(function (sum, r) { return sum + r.reverseQty; }, 0) : null,
       refusalQty: reverse ? reverse.reduce(function (sum, r) { return sum + (r.type === "От клиента при отмене" ? r.reverseQty : 0); }, 0) : null,
       issuedQty: sellerRows ? sellerRows.reduce(function (sum, r) { return sum + (r.status === "Выдано" ? r.qty : 0); }, 0) : null,
       sellerRows: sellerRows, sellerQty: sellerRows ? sellerRows.reduce(function (sum, r) { return sum + r.qty; }, 0) : null};
@@ -2648,6 +2652,7 @@
       + wbCard("После отказа, доставок", evidence.refusalQty == null ? null : qty(evidence.refusalQty), "Обратная доставка после отказа до выкупа. По виду логистики WB «От клиента при отмене».")
       + wbCard("К возврату вам, оформлено", evidence.sellerQty == null ? null : qty(evidence.sellerQty), "Товаров в возвратных заказах WB. Включая выданные, отменённые и другие статусы; это не число полученных вами товаров.")
       + wbCard("Из них выдано вам, шт.", evidence.issuedQty == null ? null : qty(evidence.issuedQty), "Со статусом WB «Выдано» на дату выгрузки. Месяц — по дате возвратного заказа, а не получения.") + "</div>";
+    if (evidence.needsReconciliation) html += "<p class='wb-scope-note'><strong>Обратная доставка требует сверки.</strong> Разбивка по операциям WB пока не согласована с детализацией. Итог доставки после отказов появится после завершения сверки.</p>";
     if (financial) html += "<p class='wb-orders-coverage'>Финансовые возвраты и обратная доставка: " + esc(wbSourceRanges(financial.sales, from.slice(0, 4))) + ". Месяц выбран по дате учёта WB.</p>";
     if (WB_RETURNS_SNAPSHOT) html += "<p class='wb-orders-coverage'>Отчёт «Возвраты и перемещения»: " + esc(dayText(WB_RETURNS_SNAPSHOT.fromDate) + "–" + dayText(WB_RETURNS_SNAPSHOT.toDate)) + ". Группировка по дате возвратного заказа WB.</p>";
     if (evidence.sellerRows && evidence.sellerRows.length) {
