@@ -38,7 +38,7 @@
     const exact=brand.filter(r=>norm(r.article)===norm(line.sku));
     const fields=[['productLabelRub','Этикетка товара'],['boxLabelRub','Этикетка коробки','boxLabelExcluded'],['boxRub','Коробочка','boxExcluded'],['packerRub','Упаковщик'],['filmRub','Плёнка','filmExcluded'],['materialsRub','Прочие расходные материалы']];
     function model(r){let total=0,missing=[],parts=[];for(const [key,label,flag] of fields){if(flag&&r[flag]){parts.push({label,amountKop:0,excluded:true});continue;}const v=r[key];if(v==null||v===''||!Number.isFinite(Number(v))||Number(v)<0){missing.push(label);continue;}const amountKop=Math.round(Number(v)*100);total=safe(total+amountKop);parts.push({label,amountKop});}return {knownKop:total,missing,parts};}
-    const candidates=exact.length?exact:brand;if(!candidates.length)return null;
+    const candidates=exact.length?exact:brand.filter(r=>r.purchaseModel!==false);if(!candidates.length)return null;
     const models=candidates.map(model),signatures=new Set(models.map(m=>JSON.stringify(m)));
     if(signatures.size!==1)return null;
     return {...models[0],source:exact.length?'Модель артикула':'Единая модель бренда',estimated:true};

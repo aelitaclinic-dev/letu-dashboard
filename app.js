@@ -940,6 +940,8 @@
 
   function freightFrom(source) {
     if (source.freightExcluded) return null;
+    // Доля расходов уже принятой партии. Вес и тариф 400 ₽/кг здесь повторно не считаются.
+    if (source.allocatedFreightRub != null && source.allocatedFreightRub !== "") return knownAmount(source.allocatedFreightRub);
     var weight = knownAmount(source.weightKg);
     var tariff = knownAmount(source.tariffRub);
     if (weight == null || tariff == null) return null;
@@ -1008,7 +1010,7 @@
           article: item.article || "",
           name: item.name || "",
           productType: group.productType || "",
-          volume: group.volume || "",
+          volume: item.volume || group.volume || "",
           category: item.category || "",
           cnyPrice: storedAmount(item, group, "cnyPrice"),
           rate: storedAmount(item, group, "rate"),
@@ -1028,6 +1030,14 @@
           boxExcluded: item.boxExcluded === true || group.boxExcluded === true,
           boxLabelExcluded: item.boxLabelExcluded === true || group.boxLabelExcluded === true,
           status: group.status || "",
+          alcorArticle: Object.prototype.hasOwnProperty.call(item, "alcorArticle") ? item.alcorArticle : null,
+          batchId: item.batchId || group.batchId || "",
+          batchQty: item.batchQty == null || item.batchQty === "" ? null : item.batchQty,
+          allocatedFreightRub: storedAmount(item, group, "allocatedFreightRub"),
+          saleVolumeConfirmed: item.saleVolumeConfirmed === true || group.saleVolumeConfirmed === true,
+          priceAsOf: item.priceAsOf || group.priceAsOf || "",
+          priceNote: item.priceNote || group.priceNote || "",
+          cardNote: item.cardNote || group.cardNote || "",
           listPriceRub: item.listPriceRub == null || item.listPriceRub === "" ? null : item.listPriceRub,
           salePriceRub: item.salePriceRub == null || item.salePriceRub === "" ? null : item.salePriceRub,
           commissionRate: item.commissionRate == null || item.commissionRate === "" ? null : item.commissionRate,
@@ -1071,6 +1081,13 @@
     var number = Number(row.weightKg);
     if (!isFinite(number)) return MISSING;
     return (Math.round(number * 100) / 100).toFixed(2).replace(".", ",") + " кг";
+  }
+
+  function rateLabel(value) {
+    if (value == null || value === "") return MISSING;
+    var number = Number(value);
+    if (!isFinite(number)) return MISSING;
+    return number.toFixed(2).replace(".", ",");
   }
 
   function tariffText(row) {
@@ -1150,7 +1167,7 @@
     if (econ.taxRate == null) missing.push("настройка налога");
     var checks = [];
     var ml = Number(String(row.volume).replace(/[^0-9.]/g, ""));
-    if (/мл/.test(row.volume) && ml >= 200 && row.weightKg != null && row.weightKg < ml / 2000) {
+    if (!row.saleVolumeConfirmed && /мл/.test(row.volume) && ml >= 200 && row.weightKg != null && row.weightKg < ml / 2000) {
       checks.push("Сверить объём и вес: для " + row.volume + " указан вес " + weightText(row) + ". Возможна ошибка сопоставления варианта; себестоимость требует проверки.");
     }
     if (row.commissionRateSource === "brand" || row.commissionRateSource === "tariff") {
@@ -1194,7 +1211,9 @@
     var commissionSource = row.commissionRateNote || "Источник ставки не указан.";
     var purchaseNote = row.freightExcluded
       ? "Закупка задана в рублях. Доставки до Москвы в этой сумме нет, вес и тариф в расчёт не входят."
-      : qty(row.cnyPrice) + " ¥ × " + qty(row.rate) + " ₽/¥; доставка: " + weightText(row) + " × " + tariffText(row) + ".";
+      : row.allocatedFreightRub != null
+        ? qty(row.cnyPrice) + " ¥ × " + rateLabel(row.rate) + " ₽/¥. Расходы поставки партии " + (row.batchId || "") + " уже разнесены по количеству и входят в себестоимость один раз: " + rub(row.allocatedFreightRub) + " на штуку. Для этой поставки используется доля партии, без веса и тарифа 400 ₽/кг."
+        : qty(row.cnyPrice) + " ¥ × " + qty(row.rate) + " ₽/¥; доставка: " + weightText(row) + " × " + tariffText(row) + ".";
     var freightText = row.freightExcluded ? "не считается" : rub(row.freightRub);
     var baseLabel = row.freightExcluded ? "Закупка без доставки до Москвы" : "Закупка с доставкой";
     var accountedLabel = row.freightExcluded ? "Товар и подготовка — учтено, без доставки до Москвы" : "Товар с доставкой и подготовкой — учтено";
@@ -1207,6 +1226,7 @@
       + "<h4>3. Продажа одной штуки</h4>"
       + unitFacts([["Витринная цена", rub(econ.list)], ["Цена покупателю после скидки", rub(econ.sale), true], ["Комиссия по модели, " + percentText(econ.rate), rub(econ.commission)], ["Налог по настройке, " + percentText(econ.taxRate), rub(econ.tax)], ["Прочие учтённые расходы продажи", rub(econ.other)], ["Остаток после учтённых затрат", rub(econ.profit), true], ["Доля остатка в цене продажи", percentText(econ.margin)]])
       + "<p class='note'>Скидка второй раз не вычитается. Остаток — предварительная оценка на одну продажу по текущей выгрузке цен, а не чистая прибыль и не прибыль за год.</p>"
+      + (row.priceNote ? "<p class='note'>" + esc(row.priceNote) + "</p>" : "")
       + "<h4>Что ещё нужно проверить</h4><ul class='unit-check-list'>"
       + (audit.missing.length ? "<li>Для расчёта не хватает: " + esc(audit.missing.join(", ")) + ".</li>" : "")
       + audit.checks.map(function (message) { return "<li>" + esc(message) + "</li>"; }).join("")
@@ -1221,16 +1241,28 @@
   function unitCard(row, index) {
     var audit = unitAudit(row), econ = audit.econ;
     var signal = econ.profit != null && econ.profit < 0 ? " unit-loss" : "";
+    var articleShown = row.article ? row.article : "Нет данных";
+    var linkLine = "";
+    if (row.batchId || row.alcorArticle != null) {
+      var alcorShown = row.alcorArticle ? row.alcorArticle : "Нет данных";
+      linkLine = "<p class='unit-article'>Алькор: <b>" + esc(alcorShown) + "</b>"
+        + (row.batchId ? " · Партия " + esc(row.batchId) : "")
+        + (row.batchQty != null ? " · " + esc(String(row.batchQty)) + " шт." : "")
+        + "</p>";
+    }
     return "<article class='unit-product" + signal + "' data-unit-index='" + index + "' data-unit-key='" + audit.key + "'>"
       + "<header class='unit-product-head'><span class='unit-brand-label'>" + esc(row.brand) + " · " + esc(row.volume || "объём в названии не указан") + "</span>"
       + "<span class='unit-badge " + audit.key + "'>" + esc(unitStatus(audit)) + "</span></header>"
-      + "<h3>" + esc(row.name) + "</h3><p class='unit-article'>Артикул: <b>" + esc(row.article) + "</b> · " + esc(row.productType) + "</p>"
-      + "<div class='unit-metrics'><div><span>Цена продажи</span><strong>" + esc(rub(econ.sale)) + "</strong><small>после скидки, по выгрузке</small></div>"
+      + "<h3>" + esc(row.name) + "</h3><p class='unit-article'>Артикул: <b>" + esc(articleShown) + "</b> · " + esc(row.productType) + "</p>"
+      + linkLine
+      + "<div class='unit-metrics'><div><span>Цена продажи</span><strong>" + esc(rub(econ.sale)) + "</strong><small>после скидки, по выгрузке" + (row.priceAsOf ? " " + esc(dayText(row.priceAsOf)) : "") + "</small></div>"
       + "<div><span>Товар и подготовка</span><strong>" + esc(rub(row.accountedRub)) + "</strong><small>" + (row.freightExcluded ? "закупка без доставки до Москвы, этикетка на товар, упаковщик" : "закупка, доставка, упаковка") + (row.filmExcluded ? "" : ", плёнка") + "</small></div>"
       + "<div class='unit-result'><span>Остаток с продажи · оценка</span><strong>" + esc(rub(econ.profit)) + "</strong><small>" + (econ.margin == null ? "нужны исходные данные" : esc(percentText(econ.margin)) + " от цены · до неучтённых расходов") + "</small></div></div>"
       + "<p class='unit-deductions'>Комиссия: " + esc(percentText(econ.rate)) + (row.commissionObservedFrom ? " с " + esc(dayText(row.commissionObservedFrom)) : "") + " / " + esc(rub(econ.commission)) + " · Налог: " + esc(percentText(econ.taxRate)) + " / " + esc(rub(econ.tax)) + "</p>"
       + "<p class='unit-deductions'>Плёнка для упаковки: " + esc(filmFact(row)) + "</p>"
       + (row.freightExcluded ? "<p class='unit-notice'>Доставка до Москвы не входит в закупку и не считается. Индивидуальная коробочка и этикетка на коробку не применяются.</p>" : "")
+      + (row.allocatedFreightRub != null ? "<p class='unit-notice'>Доля расходов поставки уже разнесена по количеству и входит в себестоимость один раз. Тариф 400 ₽/кг для этой поставки повторно не добавляется.</p>" : "")
+      + (row.cardNote ? "<p class='unit-notice'>" + esc(row.cardNote) + "</p>" : "")
       + (audit.missing.length ? "<p class='unit-notice'>Заполнить: " + esc(audit.missing.join(", ")) + ".</p>" : "")
       + (audit.checks.length ? "<p class='unit-notice'>" + esc(audit.checks[0]) + "</p>" : "")
       + unitDetail(row) + "</article>";
@@ -1299,7 +1331,7 @@
         var row = catalog[Number(card.dataset.unitIndex)], audit = unitAudit(row);
         var visible = (!brand.value || row.brand === brand.value) && (!type.value || row.productType === type.value)
           && (!volume.value || row.volume === volume.value)
-          && (!text || normal(row.article + " " + row.brand + " " + row.name).indexOf(text) !== -1)
+          && (!text || normal([row.article, row.brand, row.name, row.volume, row.alcorArticle, row.batchId].join(" ")).indexOf(text) !== -1)
           && (!status.value || (status.value === "calculated" ? audit.econ.profit != null
             : status.value === "loss" ? audit.econ.profit != null && audit.econ.profit < 0 : audit.key === status.value));
         card.hidden = !visible;
