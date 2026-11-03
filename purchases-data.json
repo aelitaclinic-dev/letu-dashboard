@@ -119,6 +119,173 @@
           "amountKop": 70000
         }
       ]
+    },
+    {
+      "id": "kerastase-taobao-2026-11-04",
+      "sourceRevision": 1,
+      "entity": "ip",
+      "reference": "L’Oréal / Kérastase · поставка Taobao",
+      "supplier": "Taobao",
+      "date": "2026-11-03",
+      "receivedDate": "2026-11-04",
+      "status": "received",
+      "expectedDate": "",
+      "warehouse": "",
+      "currency": "RUB",
+      "rateUnits": 10000,
+      "deliveryCurrency": "RUB",
+      "deliveryMinor": 1342427,
+      "deliveryKop": 1342427,
+      "allocation": "quantity",
+      "expenses": [
+        {
+          "label": "Доставка до Москвы",
+          "amountKop": 1230000,
+          "date": "2026-11-04"
+        },
+        {
+          "label": "Бензин",
+          "amountKop": 30000,
+          "date": "2026-11-04"
+        },
+        {
+          "label": "Стоянка",
+          "amountKop": 50000,
+          "date": "2026-11-04"
+        },
+        {
+          "label": "Доставка по Китаю",
+          "amountKop": 32400,
+          "date": "2026-11-04"
+        },
+        {
+          "label": "Разница сверки Taobao",
+          "amountKop": 27,
+          "date": "2026-11-04"
+        }
+      ],
+      "note": "15 строк закупки, 167 шт. Taobao: товар 5 654,77 ¥, курс 13,50 ₽/¥. Бензин 300 ₽ выведен из ранее сверенного итога расходов по Москве 13 100 ₽. Строки с разницей в копейку разделены для точного учёта. Для Anti-Pelliculaire 250 мл использован временный складской код, карточки Алькора пока нет. Проверить объём Densifique: в закупке 80 мл, внутренний артикул карточки указывает 500 мл. Проверить объём мини Lumière: в закупке 80 мл, внутренний артикул карточки указывает 75 мл. Для двух позиций с расхождением объёма применены временные складские коды, чтобы не прибавить остатки к карточкам другого объёма.",
+      "lines": [
+        {
+          "sku": "KER-DENSIFIQUE-80-PENDING",
+          "name": "KERASTASE Шампунь-ванна уплотняющий для густоты волос Densifique Densite · 80 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 24,
+          "priceMinor": 30798
+        },
+        {
+          "sku": "MPL221625",
+          "name": "KERASTASE Молочко для восстановления осветленных волос Blond Absolu Cicaflash Treatment · 75 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 18,
+          "priceMinor": 36297
+        },
+        {
+          "sku": "MPL649448",
+          "name": "KERASTASE Шампунь-ванна Genesis Nutri-Fortifiant против выпадения волос · 80 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 15,
+          "priceMinor": 36297
+        },
+        {
+          "sku": "MPL580758",
+          "name": "KERASTASE Кондиционер для блеска и гладкости волос Insta Glaze Gloss Absolu · 75 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 9,
+          "priceMinor": 49671
+        },
+        {
+          "sku": "MPL580760",
+          "name": "KERASTASE Шампунь для блеска и гладкости волос Bain Hydra-Glaze Gloss Absolu · 80 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 4,
+          "priceMinor": 38209
+        },
+        {
+          "sku": "MPL580760",
+          "name": "KERASTASE Шампунь для блеска и гладкости волос Bain Hydra-Glaze Gloss Absolu · 80 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 5,
+          "priceMinor": 38210
+        },
+        {
+          "sku": "KER-LUMIERE-MINI-PENDING",
+          "name": "KERASTASE Шампунь-ванна для светлых и окрашенных волос Blond Absolu Lumiere · 80 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 18,
+          "priceMinor": 30033
+        },
+        {
+          "sku": "MPL221612",
+          "name": "KERASTASE Шампунь-ванна для жирных у корней волос и сухих по длине Specifique Divalent · 80 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 12,
+          "priceMinor": 30798
+        },
+        {
+          "sku": "MPL220537",
+          "name": "KERASTASE Шампунь-ванна для волос, склонных к выпадению Genesis Hydra-Fortifiant · 80 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 6,
+          "priceMinor": 30798
+        },
+        {
+          "sku": "MPL220219",
+          "name": "KERASTASE Флюид-молочко для очень сухих волос Lait Vital · 75 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 2,
+          "priceMinor": 23436
+        },
+        {
+          "sku": "MPL220537",
+          "name": "KERASTASE Шампунь-ванна для волос, склонных к выпадению Genesis Hydra-Fortifiant · 80 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 9,
+          "priceMinor": 26559
+        },
+        {
+          "sku": "KER-ANTI-PELLICULAIRE-250-PENDING",
+          "name": "KERASTASE Очищающий шампунь для жирной кожи головы Bain Puret Anti-Pelliculaire · 250 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 5,
+          "priceMinor": 99900
+        },
+        {
+          "sku": "MPL273611",
+          "name": "KERASTASE DERMO-CALM BAIN VITAL шампунь-ванна для чувствительной кожи и нормальных волос · 1000 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 3,
+          "priceMinor": 243000
+        },
+        {
+          "sku": "MPL221609",
+          "name": "KERASTASE Шампунь-ванна для жирных у корней волос и сухих по длине Specifique Divalent · 1000 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 2,
+          "priceMinor": 490563
+        },
+        {
+          "sku": "MPL221623",
+          "name": "KERASTASE Шампунь-ванна для светлых и окрашенных волос Blond Absolu Lumiere · 250 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 5,
+          "priceMinor": 99900
+        },
+        {
+          "sku": "MPL220219",
+          "name": "KERASTASE Флюид-молочко для очень сухих волос Lait Vital · 75 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 15,
+          "priceMinor": 27202
+        },
+        {
+          "sku": "MPL220219",
+          "name": "KERASTASE Флюид-молочко для очень сухих волос Lait Vital · 75 мл",
+          "brand": "L’Oréal / Kérastase",
+          "qty": 15,
+          "priceMinor": 27203
+        }
+      ]
     }
   ]
 }
