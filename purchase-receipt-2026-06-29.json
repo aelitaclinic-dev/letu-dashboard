@@ -1,0 +1,364 @@
+{
+  "schemaVersion": 1,
+  "orders": [
+    {
+      "id": "invoice-PI0220260629-20260629",
+      "sourceRevision": 3,
+      "entity": "unknown",
+      "reference": "SINKO STYLING · инвойс 29.06.2026",
+      "supplier": "YOGI Enterprise Co., Ltd.",
+      "date": "2026-06-29",
+      "invoiceDate": "2026-06-29",
+      "invoiceNumber": "PI0220260629",
+      "status": "received",
+      "receivedDate": "2026-08-02",
+      "expectedDate": "",
+      "warehouse": "",
+      "currency": "CNY",
+      "rateUnits": 140000,
+      "deliveryCurrency": "RUB",
+      "deliveryMinor": 3556700,
+      "deliveryKop": 3556700,
+      "allocation": "value",
+      "sourceGoodsMinor": 450766,
+      "sourceTotalMinor": 470766,
+      "lines": [
+        {
+          "sku": "C151615",
+          "name": "Natural Energy Boost Cream, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 2061,
+          "sourceLine": 1
+        },
+        {
+          "sku": "C104703",
+          "name": "Macadamia Smooth Perfection Hair Serum, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 20,
+          "priceMinor": 1987,
+          "sourceLine": 2
+        },
+        {
+          "sku": "SKTS100",
+          "name": "Tea Tree Nourishing Spray, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 20,
+          "priceMinor": 626,
+          "sourceLine": 3
+        },
+        {
+          "sku": "SKTC300",
+          "name": "Tea Tree Curly Defining Cream, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 16,
+          "priceMinor": 1340,
+          "sourceLine": 4
+        },
+        {
+          "sku": "SKUK501",
+          "name": "Brazilian Keratin Purifying Shampoo, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 5,
+          "priceMinor": 1354,
+          "sourceLine": 5
+        },
+        {
+          "sku": "SKUK5022",
+          "name": "Brazilian Keratin Treatment FM 4%, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 5,
+          "priceMinor": 2495,
+          "sourceLine": 6
+        },
+        {
+          "sku": "SKUK502B",
+          "name": "Brazilian Keratin Treatment (FM Free) Blue, 500 мл — название по инвойсу",
+          "brand": "SINKO STYLING",
+          "qty": 5,
+          "priceMinor": 6168,
+          "sourceLine": 7
+        },
+        {
+          "sku": "SKUK503",
+          "name": "Brazilian Keratin Daily Shampoo №3, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 5,
+          "priceMinor": 1730,
+          "sourceLine": 8
+        },
+        {
+          "sku": "SKUK504",
+          "name": "Brazilian Keratin Daily Conditioner №4, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 5,
+          "priceMinor": 1730,
+          "sourceLine": 9
+        },
+        {
+          "sku": "SKBR500",
+          "name": "Bond Repair Complex and Collagen, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1899,
+          "sourceLine": 10
+        },
+        {
+          "sku": "SKPS220",
+          "name": "Scalp Exfoliating with Tea Tree Oil, 220 мл",
+          "brand": "SINKO STYLING",
+          "qty": 5,
+          "priceMinor": 1350,
+          "sourceLine": 11
+        },
+        {
+          "sku": "C151609",
+          "name": "Argan Oil Nourishing Shampoo, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1120,
+          "sourceLine": 12
+        },
+        {
+          "sku": "C151610",
+          "name": "Argan Oil Nourishing Conditioner, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1840,
+          "sourceLine": 13
+        },
+        {
+          "sku": "C151611",
+          "name": "Moringa Deep Cleanse Shampoo, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1136,
+          "sourceLine": 14
+        },
+        {
+          "sku": "C151616",
+          "name": "Argan Oil Nourishing Shampoo, 250 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 900,
+          "sourceLine": 15
+        },
+        {
+          "sku": "C151617",
+          "name": "Argan Oil Nourishing Conditioner, 250 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1280,
+          "sourceLine": 16
+        },
+        {
+          "sku": "C151618",
+          "name": "Moringa Deep Cleanse Shampoo, 250 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 950,
+          "sourceLine": 17
+        },
+        {
+          "sku": "C151612",
+          "name": "Keratin Repair Serum, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1450,
+          "sourceLine": 18
+        },
+        {
+          "sku": "SKSM300",
+          "name": "Scalp Moisturizing Masque, 250 мл — объём по инвойсу",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1150,
+          "sourceLine": 19
+        },
+        {
+          "sku": "C151619",
+          "name": "Tea Tree Rejuvenating Shampoo, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1250,
+          "sourceLine": 20
+        },
+        {
+          "sku": "C151620",
+          "name": "Tea Tree Rejuvenating Conditioner, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1300,
+          "sourceLine": 21
+        },
+        {
+          "sku": "C151621",
+          "name": "Tea Tree Rejuvenating Hair Mask, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1575,
+          "sourceLine": 22
+        },
+        {
+          "sku": "SKLC200",
+          "name": "Leave-in Cream Protection and Hair Treatment, 200 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1050,
+          "sourceLine": 23
+        },
+        {
+          "sku": "C151623",
+          "name": "Organic Ginger Shampoo, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 950,
+          "sourceLine": 24
+        },
+        {
+          "sku": "C151622",
+          "name": "Organic Ginger Hair Mask, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1800,
+          "sourceLine": 25
+        },
+        {
+          "sku": "SKAS300",
+          "name": "Moringa Anti-Dandruff Shampoo, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1050,
+          "sourceLine": 26
+        },
+        {
+          "sku": "SKMS300",
+          "name": "Macadamia Oil Hydrating Nourishing Shampoo, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1000,
+          "sourceLine": 27
+        },
+        {
+          "sku": "SKDS300",
+          "name": "Mint Deep Cleansing Shampoo, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 1000,
+          "sourceLine": 28
+        },
+        {
+          "sku": "SKPS300",
+          "name": "Silver Shampoo, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 3,
+          "priceMinor": 1117,
+          "sourceLine": 29
+        },
+        {
+          "sku": "C151058",
+          "name": "Glycoprotein Luxury Salon Hair Treatment, 300 мл",
+          "brand": "SINKO STYLING",
+          "qty": 10,
+          "priceMinor": 4000,
+          "sourceLine": 30
+        },
+        {
+          "sku": "C151624",
+          "name": "Ginger Hair Strengthen Shampoo, 200 мл",
+          "brand": "SINKO STYLING",
+          "qty": 5,
+          "priceMinor": 590,
+          "sourceLine": 31
+        },
+        {
+          "sku": "SK-colorchart",
+          "name": "Professional Color Chart — палитра",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 4800,
+          "sourceLine": 32
+        },
+        {
+          "sku": "SK 3 · 2.0",
+          "name": "Professional Color Cream 2.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 550,
+          "sourceLine": 33
+        },
+        {
+          "sku": "SK 3 · 3.0",
+          "name": "Professional Color Cream 3.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 550,
+          "sourceLine": 34
+        },
+        {
+          "sku": "SK 3 · 5.0",
+          "name": "Professional Color Cream 5.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 550,
+          "sourceLine": 35
+        },
+        {
+          "sku": "SK 3 · 6.0",
+          "name": "Professional Color Cream 6.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 550,
+          "sourceLine": 36
+        },
+        {
+          "sku": "SK 3 · 7.0",
+          "name": "Professional Color Cream 7.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 550,
+          "sourceLine": 37
+        },
+        {
+          "sku": "SK 3 · 8.0",
+          "name": "Professional Color Cream 8.0, 100 мл",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 550,
+          "sourceLine": 38
+        },
+        {
+          "sku": "SKDV-3",
+          "name": "Oxidant Developer 3%, 1000 мл",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 920,
+          "sourceLine": 39
+        }
+      ],
+      "note": "Поставка принята 02.08.2026. Расходы отнесены на дату приёмки. Доставка по инвойсу 200 CNY пересчитана по курсу 14 ₽ и учтена отдельно от доставки до Москвы. Юрлицо и склад не указаны.",
+      "expenses": [
+        {
+          "date": "2026-08-02",
+          "label": "Доставка по инвойсу",
+          "amountKop": 280000
+        },
+        {
+          "date": "2026-08-02",
+          "label": "Доставка до Москвы",
+          "amountKop": 3126700
+        },
+        {
+          "date": "2026-08-02",
+          "label": "Паркинг",
+          "amountKop": 50000
+        },
+        {
+          "date": "2026-08-02",
+          "label": "Грузчик",
+          "amountKop": 100000
+        }
+      ]
+    }
+  ]
+}
