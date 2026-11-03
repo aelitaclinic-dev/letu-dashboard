@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "state": "ready",
-  "fetchedAt": "2026-11-01T00:37:55+03:00",
+  "fetchedAt": "2026-11-04T00:59:38+03:00",
   "fromDate": "2026-01-01",
-  "toDate": "2026-11-01",
+  "toDate": "2026-11-04",
   "dateBasis": "returnOrderDt",
   "recordsReceived": 649,
   "uniqueItems": 649,

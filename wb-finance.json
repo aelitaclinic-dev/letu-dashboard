@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-01T00:44:09+03:00",
+  "generatedAt": "2026-11-04T00:59:42+03:00",
   "audit": [
     {
       "operation": "Возврат",
       "document": "Возврат",
-      "rows": 7,
-      "quantity": 7,
+      "rows": 8,
+      "quantity": 8,
       "reverseDeliveryQty": 0
     },
     {
       "operation": "Возмещение за выдачу и возврат товаров на ПВЗ",
       "document": "Продажа",
-      "rows": 2038,
+      "rows": 2049,
       "quantity": 0,
       "reverseDeliveryQty": 0
     },
@@ -26,8 +26,8 @@
     {
       "operation": "Возмещение издержек по перемещению и операционной обработке товара",
       "document": "",
-      "rows": 783,
-      "quantity": 1215,
+      "rows": 809,
+      "quantity": 1241,
       "reverseDeliveryQty": 0
     },
     {
@@ -40,9 +40,9 @@
     {
       "operation": "Доставка",
       "document": "",
-      "rows": 574,
+      "rows": 597,
       "quantity": 0,
-      "reverseDeliveryQty": 70
+      "reverseDeliveryQty": 75
     },
     {
       "operation": "Компенсация скидки по программе лояльности",
@@ -96,8 +96,8 @@
     {
       "operation": "Продажа",
       "document": "Продажа",
-      "rows": 3833,
-      "quantity": 3833,
+      "rows": 3845,
+      "quantity": 3845,
       "reverseDeliveryQty": 0
     },
     {
@@ -117,32 +117,32 @@
     {
       "operation": "Услуга по обработке Товара",
       "document": "",
-      "rows": 119,
+      "rows": 126,
       "quantity": 0,
       "reverseDeliveryQty": 0
     },
     {
       "operation": "Хранение",
       "document": "",
-      "rows": 284,
+      "rows": 291,
       "quantity": 0,
       "reverseDeliveryQty": 0
     },
     {
       "operation": "Штраф",
       "document": "",
-      "rows": 164,
+      "rows": 167,
       "quantity": 0,
       "reverseDeliveryQty": 0
     }
   ],
   "reverseLogistics": {
     "state": "ready",
-    "fetchedAt": "2026-11-01T00:44:09+03:00",
+    "fetchedAt": "2026-11-04T00:59:42+03:00",
     "coverage": [
       [
         "2026-01-01",
-        "2026-10-25"
+        "2026-11-01"
       ]
     ],
     "rows": [
@@ -4897,18 +4897,966 @@
         "type": "От клиента при отмене",
         "reverseQty": 1,
         "forwardQty": 0
+      },
+      {
+        "date": "2026-09-01",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-09-01",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 14
+      },
+      {
+        "date": "2026-09-01",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-02",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-09-02",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 11
+      },
+      {
+        "date": "2026-09-02",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-03",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-09-03",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 7
+      },
+      {
+        "date": "2026-09-03",
+        "type": "От клиента при отмене",
+        "reverseQty": 3,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-04",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 7
+      },
+      {
+        "date": "2026-09-05",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-09-05",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 7
+      },
+      {
+        "date": "2026-09-05",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-06",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 8
+      },
+      {
+        "date": "2026-09-06",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-09-06",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 6
+      },
+      {
+        "date": "2026-09-06",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-07",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-09-07",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 17
+      },
+      {
+        "date": "2026-09-07",
+        "type": "От клиента при отмене",
+        "reverseQty": 3,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-08",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 5
+      },
+      {
+        "date": "2026-09-09",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-09-09",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 9
+      },
+      {
+        "date": "2026-09-09",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-10",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 4
+      },
+      {
+        "date": "2026-09-10",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-09-11",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 5
+      },
+      {
+        "date": "2026-09-12",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-09-12",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 8
+      },
+      {
+        "date": "2026-09-12",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-13",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 7
+      },
+      {
+        "date": "2026-09-13",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 4
+      },
+      {
+        "date": "2026-09-13",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 6
+      },
+      {
+        "date": "2026-09-13",
+        "type": "От клиента при отмене",
+        "reverseQty": 4,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-14",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-09-14",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 5
+      },
+      {
+        "date": "2026-09-14",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-15",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-09-15",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 14
+      },
+      {
+        "date": "2026-09-15",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-16",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-09-16",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-09-16",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 16
+      },
+      {
+        "date": "2026-09-16",
+        "type": "От клиента при отмене",
+        "reverseQty": 3,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-17",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-09-17",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 8
+      },
+      {
+        "date": "2026-09-17",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-18",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-09-18",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 13
+      },
+      {
+        "date": "2026-09-18",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-19",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 9
+      },
+      {
+        "date": "2026-09-20",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-09-20",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 8
+      },
+      {
+        "date": "2026-09-20",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-21",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 7
+      },
+      {
+        "date": "2026-09-21",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 7
+      },
+      {
+        "date": "2026-09-22",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 4
+      },
+      {
+        "date": "2026-09-22",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 5
+      },
+      {
+        "date": "2026-09-22",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 5
+      },
+      {
+        "date": "2026-09-22",
+        "type": "От клиента при отмене",
+        "reverseQty": 5,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-23",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-09-23",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 5
+      },
+      {
+        "date": "2026-09-23",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-24",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-09-24",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-09-24",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 8
+      },
+      {
+        "date": "2026-09-24",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-25",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-09-25",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 13
+      },
+      {
+        "date": "2026-09-25",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-26",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 8
+      },
+      {
+        "date": "2026-09-27",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-09-27",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 8
+      },
+      {
+        "date": "2026-09-28",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 6
+      },
+      {
+        "date": "2026-09-28",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 11
+      },
+      {
+        "date": "2026-09-28",
+        "type": "От клиента при отмене",
+        "reverseQty": 6,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-29",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-09-29",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 5
+      },
+      {
+        "date": "2026-09-29",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-09-30",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-09-30",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 5
+      },
+      {
+        "date": "2026-09-30",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-01",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-01",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-10-01",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-02",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-10-02",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 4
+      },
+      {
+        "date": "2026-10-02",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-03",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 7
+      },
+      {
+        "date": "2026-10-04",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-04",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 6
+      },
+      {
+        "date": "2026-10-04",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-05",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-10-06",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-07",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 4
+      },
+      {
+        "date": "2026-10-07",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-07",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 6
+      },
+      {
+        "date": "2026-10-07",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-08",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-10-08",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 12
+      },
+      {
+        "date": "2026-10-08",
+        "type": "От клиента при отмене",
+        "reverseQty": 3,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-09",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-10-09",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 7
+      },
+      {
+        "date": "2026-10-09",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-10",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-10",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-10",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 9
+      },
+      {
+        "date": "2026-10-10",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-11",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-11",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 5
+      },
+      {
+        "date": "2026-10-11",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-12",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-12",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 6
+      },
+      {
+        "date": "2026-10-12",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-13",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 4
+      },
+      {
+        "date": "2026-10-14",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-10-15",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 7
+      },
+      {
+        "date": "2026-10-15",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-10-15",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 7
+      },
+      {
+        "date": "2026-10-15",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-16",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 10
+      },
+      {
+        "date": "2026-10-17",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-17",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 5
+      },
+      {
+        "date": "2026-10-17",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-18",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 4
+      },
+      {
+        "date": "2026-10-18",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-10-18",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-18",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-19",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 8
+      },
+      {
+        "date": "2026-10-20",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-20",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-10-20",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-21",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-10-22",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-10-23",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-23",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 3
+      },
+      {
+        "date": "2026-10-23",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-24",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 4
+      },
+      {
+        "date": "2026-10-24",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-10-24",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 4
+      },
+      {
+        "date": "2026-10-24",
+        "type": "От клиента при отмене",
+        "reverseQty": 2,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-25",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-25",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-10-25",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-27",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-10-28",
+        "type": "Возврат товара, который приехал по МП, продавцу (К продавцу)",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-10-28",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-28",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 4
+      },
+      {
+        "date": "2026-10-28",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-29",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 4
+      },
+      {
+        "date": "2026-10-30",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-30",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-10-31",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-10-31",
+        "type": "К клиенту при продаже",
+        "reverseQty": 0,
+        "forwardQty": 2
+      },
+      {
+        "date": "2026-10-31",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-11-01",
+        "type": "К клиенту при отмене",
+        "reverseQty": 0,
+        "forwardQty": 1
+      },
+      {
+        "date": "2026-11-01",
+        "type": "От клиента при возврате",
+        "reverseQty": 1,
+        "forwardQty": 0
+      },
+      {
+        "date": "2026-11-01",
+        "type": "От клиента при отмене",
+        "reverseQty": 1,
+        "forwardQty": 0
       }
     ]
   },
   "sales": {
     "state": "ready",
-    "fetchedAt": "2026-11-01T00:44:09+03:00",
+    "fetchedAt": "2026-11-04T00:59:42+03:00",
     "from": "2026-01-01",
-    "to": "2026-11-01",
+    "to": "2026-11-04",
     "coverage": [
       [
         "2026-01-01",
-        "2026-10-25"
+        "2026-11-01"
       ]
     ],
     "rows": [
@@ -7319,12 +8267,52 @@
         "knownAmountKop": 123800,
         "missingAmountQty": 0,
         "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-27",
+        "event": "sale",
+        "qty": 2,
+        "knownAmountKop": 161200,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-28",
+        "event": "sale",
+        "qty": 4,
+        "knownAmountKop": 532600,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-29",
+        "event": "sale",
+        "qty": 4,
+        "knownAmountKop": 819500,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-10-31",
+        "event": "sale",
+        "qty": 2,
+        "knownAmountKop": 329800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
+      },
+      {
+        "date": "2026-11-01",
+        "event": "return",
+        "qty": 1,
+        "knownAmountKop": 125800,
+        "missingAmountQty": 0,
+        "zeroAmountQty": 0
       }
     ],
     "basis": "retailAmount",
     "dateBasis": "rrDate",
     "period": "weekly",
-    "reportCount": 80,
-    "excludedOtherOperationRows": 26592
+    "reportCount": 82,
+    "excludedOtherOperationRows": 26669
   }
 }
