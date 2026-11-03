@@ -494,22 +494,22 @@
     },
     {
       "id": "invoice-PI0220260629-20260629",
-      "sourceRevision": 1,
+      "sourceRevision": 2,
       "entity": "unknown",
       "reference": "SINKO STYLING · инвойс 29.06.2026",
       "supplier": "YOGI Enterprise Co., Ltd.",
       "date": "2026-06-29",
       "invoiceDate": "2026-06-29",
       "invoiceNumber": "PI0220260629",
-      "status": "unconfirmed",
+      "status": "transit",
       "receivedDate": "",
       "expectedDate": "",
       "warehouse": "",
       "currency": "CNY",
-      "rateUnits": null,
+      "rateUnits": 140000,
       "deliveryCurrency": "CNY",
       "deliveryMinor": 20000,
-      "deliveryKop": null,
+      "deliveryKop": 280000,
       "allocation": "value",
       "sourceGoodsMinor": 450766,
       "sourceTotalMinor": 470766,
@@ -827,7 +827,7 @@
           "sourceLine": 39
         }
       ],
-      "note": "Проформа от 29.06.2026: 39 позиций, 302 единицы. Товары 4 507,66 CNY, доставка по инвойсу 200 CNY, всего 4 707,66 CNY. Юрлицо, курс оплаты, склад и приёмка не подтверждены. В остатки не включено."
+      "note": "Проформа от 29.06.2026: 39 позиций, 302 единицы. Поставка в пути. Курс оплаты подтверждён: 14 RUB/CNY. Товары 4 507,66 CNY, доставка по инвойсу 200 CNY, всего 4 707,66 CNY (65 907,24 RUB). Юрлицо, склад и дата приёмки не указаны."
     }
   ]
 }
