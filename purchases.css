@@ -27,3 +27,8 @@
 .pb-compact-details .pb-cost-comparison{grid-template-columns:1fr}
 .pb-compact-order .pb-order-actions{margin-top:8px;gap:6px}
 .pb-compact-order .pb-order-actions button{padding:6px 9px}
+
+.pb-brand-switch{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 18px}
+.pb-brand-switch button{display:grid;gap:4px;text-align:left;min-width:145px;padding:10px 14px}
+.pb-brand-switch button[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff;color:#1e3a8a}
+.pb-brand-switch small{font-size:.78rem}
