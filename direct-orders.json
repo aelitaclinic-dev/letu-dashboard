@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "orders": [
+    {
+      "id": "direct-valery-romanovskiy-23000",
+      "sourceRevision": 1,
+      "number": "",
+      "date": "",
+      "client": "Валерий Романовский",
+      "channel": "прямой заказ",
+      "lines": [],
+      "compositionStatus": "needs-clarification",
+      "compositionNote": "Состав заказа требует уточнения",
+      "totalKop": 2300000,
+      "paymentStatus": "unknown",
+      "paidKop": null,
+      "fulfillmentStatus": "unknown",
+      "delivery": "",
+      "comment": ""
+    }
+  ]
+}

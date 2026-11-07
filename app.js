@@ -2926,12 +2926,14 @@
 
   function updateMarketNavigation(hash, channel) {
     var expensePage = hash === "expenses" || hash.indexOf("expenses/") === 0;
-    var purchasePage = hash === "purchases" || hash.indexOf("purchases/") === 0;
+    var directPage = hash === "direct-orders";
+    var purchasePage = hash === "purchases" || hash.indexOf("purchases/") === 0 || directPage;
     var overview = !hash || hash === "overview";
     var isLetu = !overview && !channel && !expensePage && !purchasePage;
     document.querySelector("nav.menu").hidden = !isLetu;
     document.getElementById("freshness").hidden = !isLetu;
     document.getElementById("page-context").textContent = overview ? "Все площадки · единый обзор бизнеса"
+      : directPage ? "Прямые заказы сторонних клиентов · лично или через переписку"
       : purchasePage ? "Закупки, поставки и собственные склады · ИП и ООО"
       : expensePage ? "Общие расходы бизнеса · раздельный учёт ИП и ООО"
       : channel ? (channel === "wb" ? "Wildberries" : "Ozon") + " · кабинеты ИП и ООО"
@@ -2944,8 +2946,10 @@
     });
     var footer = document.querySelector(".foot");
     if (!footer.dataset.originalText) footer.dataset.originalText = footer.textContent;
-    footer.textContent = purchasePage ? "Личный журнал закупок и складских движений. Записи сохраняются в текущем браузере. Сохраните резервную копию для переноса на другое устройство." : footer.dataset.originalText;
-    document.title = "MA Distribution — " + (overview ? "обзор бизнеса" : purchasePage ? "закупки и склад" : expensePage ? "расходы ИП / ООО" : channel ? (channel === "wb" ? "Wildberries" : "Ozon") : "Л’Этуаль");
+    footer.textContent = directPage
+      ? "Журнал прямых заказов. Общий файл открывается на любом устройстве. Правки этой страницы сохраняются в браузере и остаются после обновления."
+      : purchasePage ? "Личный журнал закупок и складских движений. Записи сохраняются в текущем браузере. Сохраните резервную копию для переноса на другое устройство." : footer.dataset.originalText;
+    document.title = "MA Distribution — " + (overview ? "обзор бизнеса" : directPage ? "прямые заказы клиентов" : purchasePage ? "закупки и склад" : expensePage ? "расходы ИП / ООО" : channel ? (channel === "wb" ? "Wildberries" : "Ozon") : "Л’Этуаль");
   }
 
   function render() {
@@ -2966,6 +2970,13 @@
     const channel = route[0] === "wb" || route[0] === "ozon" ? route[0] : null;
     updateMarketNavigation(hash, channel);
     if (!hash || hash === "overview") screen.innerHTML = renderOverview(state);
+    else if (hash === "direct-orders" && window.DirectOrders) {
+      screen.dataset.purchaseView = "";
+      if (!screen.querySelector("#do-root")) {
+        window.DirectOrders.mount(screen);
+        window.scrollTo({top: 0, left: 0, behavior: "instant"});
+      }
+    }
     else if (route[0] === "purchases" && window.PurchaseBook) {
       var purchaseView = route[1] || "orders";
       if (!screen.querySelector("#pb-root") || screen.dataset.purchaseView !== purchaseView) {
@@ -3082,4 +3093,18 @@
     WB_SNAPSHOT = data;
     render();
   }).catch(function () { /* No snapshot yet: the existing empty states remain visible. */ });
+  window.UnitCost = {
+    knownAmount: knownAmount,
+    accountedUnitCost: accountedUnitCost,
+    find: function (article) {
+      var key = String(article || "").trim().toLocaleLowerCase("ru");
+      if (!key) return null;
+      var matches = unitCatalog().filter(function (row) {
+        return String(row.article || "").trim().toLocaleLowerCase("ru") === key;
+      });
+      if (!matches.length) return null;
+      if (matches.length > 1) return {ambiguous: true};
+      return matches[0];
+    }
+  };
 })();
