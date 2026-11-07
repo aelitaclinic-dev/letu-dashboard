@@ -86,17 +86,11 @@
     if (order.compositionStatus === 'needs-clarification') {
       if (!Array.isArray(order.lines) || order.lines.length) fail('Пока состав не уточнён, строки товаров не сохраняются.');
       if (order.compositionNote !== CLARIFY) fail('Отметка о составе заказа повреждена.');
-    } else if (order.compositionStatus === 'known') {
-      if (!Array.isArray(order.lines) || !order.lines.length || order.lines.length > 200) fail('Добавьте товары заказа.');
-      let sum = 0;
-      order.lines.forEach(line => {
-        if (!text(line.sku || '', 240) || !text(line.name || '', 240)) fail('Укажите артикул и название каждого товара.');
-        text(line.brand || '', 240);
-        const qty = integer(line.qty, 'Количество');
-        if (!Number.isSafeInteger(line.priceMinor) || line.priceMinor < 0) fail('Проверьте цену продажи.');
-        sum = safe(sum + safe(qty * line.priceMinor));
-      });
-      if (sum !== order.totalKop) fail('Общая сумма заказа не совпадает с суммой цен продажи.');
+    } else if (order.compositionStatus === 'known' || order.compositionStatus === 'mismatch') {
+      const sum = lineTotal(order.lines);
+      if (order.compositionStatus === 'known' && sum !== order.totalKop) fail('Общая сумма заказа не совпадает с суммой цен продажи.');
+      if (order.compositionStatus === 'mismatch' && sum === order.totalKop) fail('Сумма строк совпадает с заказом. Отметка о расхождении не нужна.');
+      if (order.compositionStatus === 'mismatch' && !text(order.compositionNote || '', 2000)) fail('Опишите, почему сумма строк не совпадает с суммой заказа.');
     } else fail('Укажите, известен ли состав заказа.');
     return order;
   }
@@ -142,6 +136,17 @@
       sumCount: withTotal.length
     };
   }
+  function lineTotal(lines) {
+    if (!Array.isArray(lines) || !lines.length || lines.length > 200) fail('Добавьте товары заказа.');
+    return lines.reduce((sum, line) => {
+      if (!text(line.sku || '', 240) || !text(line.name || '', 240)) fail('Укажите артикул и название каждого товара.');
+      text(line.brand || '', 240);
+      text(line.unit || '', 40);
+      const qty = integer(line.qty, 'Количество');
+      if (!Number.isSafeInteger(line.priceMinor) || line.priceMinor < 0) fail('Проверьте цену продажи.');
+      return safe(sum + safe(qty * line.priceMinor));
+    }, 0);
+  }
   function lineEconomy(line) {
     const api = window.UnitCost;
     if (!api) return {state: 'needs-clarification', reason: PROFIT_GAP};
@@ -160,11 +165,11 @@
     };
   }
   function orderProfit(order) {
-    if (!order || order.compositionStatus !== 'known' || !order.lines || !order.lines.length) {
+    if (!order || order.compositionStatus === 'needs-clarification' || !order.lines || !order.lines.length) {
       return {state: 'needs-clarification', reason: PROFIT_GAP, lines: []};
     }
     const lines = order.lines.map(lineEconomy);
-    if (lines.some(line => line.state !== 'known')) return {state: 'needs-clarification', reason: PROFIT_GAP, lines};
+    if (order.compositionStatus !== 'known' || lines.some(line => line.state !== 'known')) return {state: 'needs-clarification', reason: PROFIT_GAP, lines};
     return {
       state: 'known',
       reason: '',
@@ -256,15 +261,27 @@
       order.compositionStatus = 'needs-clarification';
       order.compositionNote = CLARIFY;
     } else {
-      order.compositionStatus = 'known';
-      order.compositionNote = '';
-      order.lines = (draft.lines || []).map(line => ({
-        sku: text(String(line.sku || ''), 240),
-        name: text(String(line.name || ''), 240),
-        brand: text(String(line.brand || ''), 240),
-        qty: integer(line.qty, 'Количество'),
-        priceMinor: moneyInput(line.priceText, 'Цена продажи', false)
-      }));
+      order.lines = (draft.lines || []).map(line => {
+        const row = {
+          sku: text(String(line.sku || ''), 240),
+          name: text(String(line.name || ''), 240),
+          brand: text(String(line.brand || ''), 240),
+          qty: integer(line.qty, 'Количество'),
+          priceMinor: moneyInput(line.priceText, 'Цена продажи', false)
+        };
+        const unit = text(String(line.unit || ''), 40);
+        if (unit) row.unit = unit;
+        return row;
+      });
+      const sum = lineTotal(order.lines);
+      if (sum === order.totalKop) {
+        order.compositionStatus = 'known';
+        order.compositionNote = '';
+      } else {
+        order.compositionStatus = 'mismatch';
+        const same = Number(draft.notedLineTotal) === sum && Number(draft.notedOrderTotal) === order.totalKop && draft.compositionNote;
+        order.compositionNote = same ? text(String(draft.compositionNote), 2000) : ('Сумма строк ' + money(sum) + ', общая сумма заказа ' + money(order.totalKop) + '. Разница требует уточнения.');
+      }
     }
     if (draft._sharedBase) order._sharedBase = draft._sharedBase;
     return validateOrder(order);
@@ -308,18 +325,20 @@
     const paid = knownPaid(order);
     const debt = paymentFacts(order);
     const open = state.openedId === order.id;
-    const lines = order.compositionStatus === 'known' ? order.lines.map((line, index) => {
+    const goods = order.lines && order.lines.length ? lineTotal(order.lines) : null;
+    const lines = order.lines && order.lines.length ? order.lines.map((line, index) => {
       const economy = profit.lines[index] || lineEconomy(line);
-      return '<tr><td><strong>' + esc(line.name) + '</strong><small>' + esc(line.sku) + (line.brand ? ' · ' + esc(line.brand) : '') + '</small></td><td>' + esc(line.qty) + '</td><td>' + money(line.priceMinor) + '</td><td>' + (economy.state === 'known' ? money(economy.unitCostKop) : missing()) + '</td><td>' + (economy.state === 'known' ? money(economy.profitKop) : '<span class="do-missing">' + esc(PROFIT_GAP) + '</span>') + '</td></tr>';
+      const amount = safe(line.qty * line.priceMinor);
+      return '<tr><td><strong>' + esc(line.name) + '</strong><small>' + esc(line.sku) + (line.brand ? ' · ' + esc(line.brand) : '') + '</small></td><td>' + esc(line.qty) + (line.unit ? ' ' + esc(line.unit) : '') + '</td><td>' + money(line.priceMinor) + '</td><td>' + money(amount) + '</td><td>' + (economy.state === 'known' ? money(economy.unitCostKop) : '<span class="do-missing">' + esc(PROFIT_GAP) + '</span>') + '</td><td>' + (economy.state === 'known' ? money(economy.profitKop) : '<span class="do-missing">' + esc(PROFIT_GAP) + '</span>') + '</td></tr>';
     }).join('') : '';
-    return '<article class="pb-order do-order" id="order-' + esc(order.id) + '"><div class="do-order-top"><div><p class="market-eyebrow">' + esc(order.channel || 'прямой заказ') + '</p><h4>' + esc(order.client) + '</h4><p>Номер: ' + shown(order.number) + ' · Дата: ' + (order.date ? day(order.date) : missing()) + '</p></div><div class="pb-order-total"><small>Сумма заказа</small><strong>' + money(order.totalKop) + '</strong><span>Оплачено: ' + (paid == null ? missing() : money(paid)) + '</span></div></div><div class="do-facts"><span>Оплата <b>' + esc(payments[order.paymentStatus]) + '</b></span><span>Выполнение <b>' + esc(fulfillment[order.fulfillmentStatus]) + '</b></span><span>Доставка <b>' + shown(order.delivery) + '</b></span><span>Задолженность <b>' + (debt.known ? money(debt.debtKop) : missing()) + '</b></span></div>' + (order.compositionStatus === 'needs-clarification' ? '<p class="do-clarify">' + esc(CLARIFY) + '</p>' : '') + '<p class="do-profit">Прибыль: ' + profitText(profit) + '</p><div class="pb-order-actions"><button type="button" class="pb-outline" data-open="' + esc(order.id) + '" aria-expanded="' + open + '">' + (open ? 'Скрыть заказ' : 'Просмотр') + '</button><button type="button" class="pb-outline" data-edit="' + esc(order.id) + '">Редактировать</button></div>' + (open ? '<div class="do-detail"><dl><div><dt>Номер заказа</dt><dd>' + shown(order.number) + '</dd></div><div><dt>Дата заказа</dt><dd>' + (order.date ? day(order.date) : missing()) + '</dd></div><div><dt>Имя клиента</dt><dd>' + esc(order.client) + '</dd></div><div><dt>Канал</dt><dd>' + esc(order.channel) + '</dd></div><div><dt>Общая сумма</dt><dd>' + money(order.totalKop) + '</dd></div><div><dt>Статус оплаты</dt><dd>' + esc(payments[order.paymentStatus]) + '</dd></div><div><dt>Фактически оплачено</dt><dd>' + (paid == null ? missing() : money(paid)) + '</dd></div><div><dt>Статус выполнения</dt><dd>' + esc(fulfillment[order.fulfillmentStatus]) + '</dd></div><div><dt>Доставка</dt><dd>' + shown(order.delivery) + '</dd></div><div><dt>Комментарий</dt><dd>' + shown(order.comment) + '</dd></div></dl>' + (lines ? '<div class="pb-table-wrap"><table><thead><tr><th>Товар / артикул</th><th>Количество</th><th>Цена продажи</th><th>Себестоимость</th><th>Прибыль строки</th></tr></thead><tbody>' + lines + '</tbody></table></div>' : '') + '<p class="pb-help">Себестоимость берётся из карточки артикула: закупка, доставка и подготовка, как на странице юнит-экономики. Пустая статья нулём не заменяется. Прибыль строки — цена продажи минус эта себестоимость. Комиссия площадки к прямому заказу не относится. Налог не вычитается: режим в проекте не задан.</p></div>' : '') + '</article>';
+    return '<article class="pb-order do-order" id="order-' + esc(order.id) + '"><div class="do-order-top"><div><p class="market-eyebrow">' + esc(order.channel || 'прямой заказ') + '</p><h4>' + esc(order.client) + '</h4><p>Номер: ' + shown(order.number) + ' · Дата: ' + (order.date ? day(order.date) : missing()) + '</p></div><div class="pb-order-total"><small>Сумма заказа</small><strong>' + money(order.totalKop) + '</strong><span>Оплачено: ' + (paid == null ? missing() : money(paid)) + '</span></div></div><div class="do-facts"><span>Оплата <b>' + esc(payments[order.paymentStatus]) + '</b></span><span>Выполнение <b>' + esc(fulfillment[order.fulfillmentStatus]) + '</b></span><span>Доставка <b>' + shown(order.delivery) + '</b></span><span>Задолженность <b>' + (debt.known ? money(debt.debtKop) : missing()) + '</b></span></div>' + (order.compositionStatus === 'needs-clarification' ? '<p class="do-clarify">' + esc(CLARIFY) + '</p>' : '') + (order.compositionStatus === 'mismatch' ? '<p class="do-mismatch">' + esc(order.compositionNote) + '</p><p class="do-line-total"><span>Сумма строк</span><b>' + money(goods) + '</b></p>' : '') + (lines ? '<div class="pb-table-wrap"><table><thead><tr><th>Товар / артикул</th><th>Количество</th><th>Цена продажи</th><th>Сумма строки</th><th>Себестоимость</th><th>Прибыль строки</th></tr></thead><tbody>' + lines + '</tbody></table></div><p class="pb-help">Себестоимость берётся из карточки артикула в юнит-экономике. Этих артикулов в карточках нет: в закупках они есть, но полная себестоимость из закупки, доставки и подготовки не собрана. ' + esc(PROFIT_GAP) + '.</p>' : '') + '<p class="do-profit">Прибыль: ' + profitText(profit) + '</p><div class="pb-order-actions"><button type="button" class="pb-outline" data-open="' + esc(order.id) + '" aria-expanded="' + open + '">' + (open ? 'Скрыть заказ' : 'Просмотр') + '</button><button type="button" class="pb-outline" data-edit="' + esc(order.id) + '">Редактировать</button></div>' + (open ? '<div class="do-detail"><dl><div><dt>Номер заказа</dt><dd>' + shown(order.number) + '</dd></div><div><dt>Дата заказа</dt><dd>' + (order.date ? day(order.date) : missing()) + '</dd></div><div><dt>Имя клиента</dt><dd>' + esc(order.client) + '</dd></div><div><dt>Канал</dt><dd>' + esc(order.channel) + '</dd></div><div><dt>Общая сумма</dt><dd>' + money(order.totalKop) + '</dd></div><div><dt>Статус оплаты</dt><dd>' + esc(payments[order.paymentStatus]) + '</dd></div><div><dt>Фактически оплачено</dt><dd>' + (paid == null ? missing() : money(paid)) + '</dd></div><div><dt>Статус выполнения</dt><dd>' + esc(fulfillment[order.fulfillmentStatus]) + '</dd></div><div><dt>Доставка</dt><dd>' + shown(order.delivery) + '</dd></div><div><dt>Комментарий</dt><dd>' + shown(order.comment) + '</dd></div></dl>' + '<p class="pb-help">Прибыль строки — цена продажи минус учтённая себестоимость. Комиссия площадки к прямому заказу не относится. Налог не вычитается: режим в проекте не задан. Пустая статья нулём не заменяется.</p></div>' : '') + '</article>';
   }
   function editor() {
     const order = state.editor;
     if (!order) return '';
     const editing = state.db.orders.some(item => item.id === order.id);
     const rows = order.lines.length ? order.lines : [];
-    return '<section class="pb-editor" id="do-editor" tabindex="-1"><div class="pb-panel-title"><div><p class="market-eyebrow">КАРТОЧКА ЗАКАЗА</p><h3>' + (editing ? 'Редактировать заказ' : 'Новый прямой заказ') + '</h3></div><button type="button" class="pb-quiet" data-action="close-editor">Закрыть ✕</button></div><form id="do-form"><div class="pb-form-grid">' + field('Номер заказа', 'number', order.number, 'text', 'maxlength="80" placeholder="Не указано"') + field('Дата заказа', 'date', order.date, 'date', '') + field('Имя клиента', 'client', order.client, 'text', 'required maxlength="240" list="do-clients" placeholder="Имя клиента"') + field('Канал', 'channel', order.channel, 'text', 'required maxlength="80"') + field('Общая сумма, ₽', 'total', order.totalText, 'text', 'required inputmode="decimal" placeholder="0"') + '<label>Статус оплаты<select name="payment">' + options(Object.entries(payments), order.paymentStatus) + '</select></label>' + field('Фактически оплачено, ₽', 'paid', order.paidText, 'text', 'inputmode="decimal" placeholder="Не указано"') + '<label>Статус выполнения<select name="fulfillment">' + options(Object.entries(fulfillment), order.fulfillmentStatus) + '</select></label>' + field('Доставка', 'delivery', order.delivery, 'text', 'maxlength="2000" placeholder="Не указано"') + '</div><p class="pb-help">Пустая дата, номер, доставка и сумма оплаты сохраняются как «Не указано». Ноль в оплате записывается только если его ввести. Сумма заказа не означает, что деньги получены.</p><label class="do-check"><input type="checkbox" name="clarify"' + (order.clarify ? ' checked' : '') + '> Состав заказа требует уточнения</label>' + (order.clarify ? '<p class="do-clarify">' + esc(CLARIFY) + '</p><button type="button" class="pb-outline" data-action="add-line">Указать товары</button>' : '<div class="pb-table-wrap"><table class="pb-lines do-lines"><thead><tr><th>Артикул</th><th>Товар</th><th>Бренд</th><th>Количество</th><th>Цена продажи, ₽</th><th></th></tr></thead><tbody>' + rows.map((line, index) => '<tr data-line="' + index + '"><td><input aria-label="Артикул товара ' + (index + 1) + '" name="sku" list="do-catalog" value="' + esc(line.sku) + '" required maxlength="240"></td><td><input aria-label="Название товара ' + (index + 1) + '" name="name" value="' + esc(line.name) + '" required maxlength="240"></td><td><input aria-label="Бренд товара ' + (index + 1) + '" name="brand" value="' + esc(line.brand || '') + '" maxlength="240"></td><td><input aria-label="Количество товара ' + (index + 1) + '" name="qty" type="number" min="1" step="1" value="' + esc(line.qty) + '" required></td><td><input aria-label="Цена продажи товара ' + (index + 1) + '" name="price" inputmode="decimal" value="' + esc(line.priceText == null ? '' : line.priceText) + '" required></td><td><button class="pb-remove" type="button" data-remove-line="' + index + '" aria-label="Убрать товар ' + (index + 1) + '"' + (rows.length === 1 ? ' disabled' : '') + '>✕</button></td></tr>').join('') + '</tbody></table></div><p class="pb-help">Артикул выбирается из справочника товаров. Себестоимость подставляется из карточки, цена продажи вводится по этому заказу. На узком экране таблицу можно сдвинуть вбок.</p><button type="button" class="pb-outline" data-action="add-line">＋ Ещё товар</button>') + '<div id="do-preview" aria-live="polite"></div><label class="pb-note-field">Комментарий<textarea name="comment" maxlength="2000" placeholder="Не указано">' + esc(order.comment || '') + '</textarea></label><p id="do-form-error" class="pb-error" role="alert"></p><div class="pb-editor-actions"><span>Запись останется в этом браузере после обновления. Общий файл сайта виден с другого устройства.</span><button class="pb-primary" type="submit">Сохранить заказ</button></div></form></section>';
+    return '<section class="pb-editor" id="do-editor" tabindex="-1"><div class="pb-panel-title"><div><p class="market-eyebrow">КАРТОЧКА ЗАКАЗА</p><h3>' + (editing ? 'Редактировать заказ' : 'Новый прямой заказ') + '</h3></div><button type="button" class="pb-quiet" data-action="close-editor">Закрыть ✕</button></div><form id="do-form"><div class="pb-form-grid">' + field('Номер заказа', 'number', order.number, 'text', 'maxlength="80" placeholder="Не указано"') + field('Дата заказа', 'date', order.date, 'date', '') + field('Имя клиента', 'client', order.client, 'text', 'required maxlength="240" list="do-clients" placeholder="Имя клиента"') + field('Канал', 'channel', order.channel, 'text', 'required maxlength="80"') + field('Общая сумма, ₽', 'total', order.totalText, 'text', 'required inputmode="decimal" placeholder="0"') + '<label>Статус оплаты<select name="payment">' + options(Object.entries(payments), order.paymentStatus) + '</select></label>' + field('Фактически оплачено, ₽', 'paid', order.paidText, 'text', 'inputmode="decimal" placeholder="Не указано"') + '<label>Статус выполнения<select name="fulfillment">' + options(Object.entries(fulfillment), order.fulfillmentStatus) + '</select></label>' + field('Доставка', 'delivery', order.delivery, 'text', 'maxlength="2000" placeholder="Не указано"') + '</div><p class="pb-help">Пустая дата, номер, доставка и сумма оплаты сохраняются как «Не указано». Ноль в оплате записывается только если его ввести. Сумма заказа не означает, что деньги получены. Если сумма строк не равна сумме заказа, обе цифры сохраняются, разница не затирается.</p><input type="hidden" name="compositionNote" value="' + esc(order.compositionNote || '') + '"><input type="hidden" name="notedLineTotal" value="' + esc(order.notedLineTotal == null ? '' : order.notedLineTotal) + '"><input type="hidden" name="notedOrderTotal" value="' + esc(order.notedOrderTotal == null ? '' : order.notedOrderTotal) + '"><label class="do-check"><input type="checkbox" name="clarify"' + (order.clarify ? ' checked' : '') + '> Состав заказа требует уточнения</label>' + (order.clarify ? '<p class="do-clarify">' + esc(CLARIFY) + '</p><button type="button" class="pb-outline" data-action="add-line">Указать товары</button>' : '<div class="pb-table-wrap"><table class="pb-lines do-lines"><thead><tr><th>Артикул</th><th>Товар</th><th>Бренд</th><th>Количество</th><th>Цена продажи, ₽</th><th></th></tr></thead><tbody>' + rows.map((line, index) => '<tr data-line="' + index + '"><td><input aria-label="Артикул товара ' + (index + 1) + '" name="sku" list="do-catalog" value="' + esc(line.sku) + '" required maxlength="240"><input type="hidden" name="unit" value="' + esc(line.unit || '') + '"></td><td><input aria-label="Название товара ' + (index + 1) + '" name="name" value="' + esc(line.name) + '" required maxlength="240"></td><td><input aria-label="Бренд товара ' + (index + 1) + '" name="brand" value="' + esc(line.brand || '') + '" maxlength="240"></td><td><input aria-label="Количество товара ' + (index + 1) + '" name="qty" type="number" min="1" step="1" value="' + esc(line.qty) + '" required></td><td><input aria-label="Цена продажи товара ' + (index + 1) + '" name="price" inputmode="decimal" value="' + esc(line.priceText == null ? '' : line.priceText) + '" required></td><td><button class="pb-remove" type="button" data-remove-line="' + index + '" aria-label="Убрать товар ' + (index + 1) + '"' + (rows.length === 1 ? ' disabled' : '') + '>✕</button></td></tr>').join('') + '</tbody></table></div><p class="pb-help">Артикул выбирается из справочника товаров. Себестоимость подставляется из карточки, цена продажи вводится по этому заказу. На узком экране таблицу можно сдвинуть вбок.</p><button type="button" class="pb-outline" data-action="add-line">＋ Ещё товар</button>') + '<div id="do-preview" aria-live="polite"></div><label class="pb-note-field">Комментарий<textarea name="comment" maxlength="2000" placeholder="Не указано">' + esc(order.comment || '') + '</textarea></label><p id="do-form-error" class="pb-error" role="alert"></p><div class="pb-editor-actions"><span>Запись останется в этом браузере после обновления. Общий файл сайта виден с другого устройства.</span><button class="pb-primary" type="submit">Сохранить заказ</button></div></form></section>';
   }
   function kpi(label, value, note) {
     return '<article><span>' + esc(label) + '</span>' + value + '<p>' + note + '</p></article>';
@@ -374,6 +393,9 @@
     order.fulfillmentStatus = form.elements.fulfillment.value;
     order.delivery = form.elements.delivery.value;
     order.comment = form.elements.comment.value;
+    order.compositionNote = form.elements.compositionNote.value;
+    order.notedLineTotal = form.elements.notedLineTotal.value;
+    order.notedOrderTotal = form.elements.notedOrderTotal.value;
     order.clarify = form.elements.clarify.checked;
     if (!order.clarify) {
       order.lines = [...form.querySelectorAll('[data-line]')].map(row => ({
@@ -381,7 +403,8 @@
         name: row.querySelector('[name=name]').value,
         brand: row.querySelector('[name=brand]').value,
         qty: row.querySelector('[name=qty]').value,
-        priceText: row.querySelector('[name=price]').value
+        priceText: row.querySelector('[name=price]').value,
+        unit: row.querySelector('[name=unit]') ? row.querySelector('[name=unit]').value : ''
       }));
     }
     return order;
@@ -394,7 +417,7 @@
       const order = normalOrder(structuredClone(collect(form)));
       const profit = orderProfit(order);
       const lineSum = order.lines.reduce((sum, line) => sum + line.qty * line.priceMinor, 0);
-      target.innerHTML = '<div class="pb-cost-preview"><span>Сумма заказа <strong>' + money(order.totalKop) + '</strong></span><span>Товары <b>' + (order.lines.length ? money(lineSum) : 'состав не внесён') + '</b></span><span>Прибыль <b>' + (profit.state === 'known' ? money(profit.profitKop) : PROFIT_GAP) + '</b></span></div>';
+      target.innerHTML = '<div class="pb-cost-preview"><span>Сумма заказа <strong>' + money(order.totalKop) + '</strong></span><span>Товары <b>' + (order.lines.length ? money(lineSum) : 'состав не внесён') + '</b></span><span>Прибыль <b>' + (profit.state === 'known' ? money(profit.profitKop) : PROFIT_GAP) + '</b></span></div>' + (order.lines.length && lineSum !== order.totalKop ? '<p class="do-mismatch">Сумма строк ' + money(lineSum) + ' не равна сумме заказа ' + money(order.totalKop) + '.</p>' : '');
     } catch (error) {
       target.innerHTML = '<p class="pb-help">Итог появится, когда сумма и обязательные поля будут заполнены.</p>';
     }
@@ -402,9 +425,11 @@
   function toDraft(order) {
     return {
       ...structuredClone(order),
-      clarify: order.compositionStatus !== 'known',
+      clarify: order.compositionStatus === 'needs-clarification',
       totalText: rubInput(order.totalKop),
       paidText: rubInput(order.paidKop),
+      notedLineTotal: order.lines && order.lines.length ? lineTotal(order.lines) : '',
+      notedOrderTotal: order.totalKop,
       lines: (order.lines || []).map(line => ({...line, priceText: rubInput(line.priceMinor)}))
     };
   }
