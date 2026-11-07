@@ -3,14 +3,79 @@
   "orders": [
     {
       "id": "direct-valery-romanovskiy-23000",
-      "sourceRevision": 1,
+      "sourceRevision": 2,
       "number": "",
       "date": "",
       "client": "Валерий Романовский",
       "channel": "прямой заказ",
-      "lines": [],
-      "compositionStatus": "needs-clarification",
-      "compositionNote": "Состав заказа требует уточнения",
+      "lines": [
+        {
+          "sku": "SKUK502",
+          "name": "Состав для кератинового выпрямления без формальдегида FM Free, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 3,
+          "priceMinor": 187000
+        },
+        {
+          "sku": "SKUK5022",
+          "name": "Состав для кератинового выпрямления F 4%, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 3,
+          "priceMinor": 112000
+        },
+        {
+          "sku": "SKUK502B",
+          "name": "Ботокс для волос без формальдегида FM Free Blue, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 3,
+          "priceMinor": 190000
+        },
+        {
+          "sku": "C151605",
+          "name": "Коллагеновый комплекс СПЛЕКС №0, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 82000
+        },
+        {
+          "sku": "C151603",
+          "name": "Состав СПЛЕКС №1 для повреждённых волос, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 91000
+        },
+        {
+          "sku": "C151607",
+          "name": "Состав СПЛЕКС №1 для здоровых волос, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 91000
+        },
+        {
+          "sku": "C151604",
+          "name": "Фиксатор СПЛЕКС №2, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 63000
+        },
+        {
+          "sku": "C102247",
+          "name": "Система выпрямления для повреждённых волос DS1 + S2, 2 × 800 мл",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "unit": "компл.",
+          "priceMinor": 186000
+        },
+        {
+          "sku": "D200115",
+          "name": "Кристаллизующий крем для выпрямления повреждённых волос №1, 450 мл",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 68000
+        }
+      ],
+      "compositionStatus": "mismatch",
+      "compositionNote": "Состав и цены взяты из документа «Оптовый заказ SINKO STYLING». Цены — оптовый прайс от 5 ноября 2026. Сумма строк 23 120 ₽, названная сумма заказа 23 000 ₽. Разница 120 ₽ в документе не объяснена.",
       "totalKop": 2300000,
       "paymentStatus": "unknown",
       "paidKop": null,

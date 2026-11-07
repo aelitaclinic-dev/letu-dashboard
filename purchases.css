@@ -48,7 +48,10 @@
 .do-order-top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start}
 .do-facts{display:flex;flex-wrap:wrap;gap:10px 18px;background:#f8f5f7;border-radius:10px;padding:12px 15px;margin:16px 0;font-size:12px;color:#7d6a76}
 .do-facts b{color:#4e3346;font-weight:600}
-.do-clarify{margin:12px 0;padding:12px 14px;border-radius:10px;background:#f8efe6;color:#8a4e32;font-size:13px;font-weight:600}
+.do-clarify,.do-mismatch{margin:12px 0;padding:12px 14px;border-radius:10px;background:#f8efe6;color:#8a4e32;font-size:13px;line-height:1.55}
+.do-clarify{font-weight:600}
+.do-line-total{display:flex;justify-content:space-between;gap:12px;margin:0 0 12px;font-size:13px;color:#5c4a55}
+.do-line-total b{color:#4e3346}
 .do-profit{font-size:13px;color:#5c4a55}
 .do-profit small{display:block;color:#93808d;font-size:11px;margin-top:4px}
 .do-missing{display:inline-block;color:#8a4e32;background:#f8efe6;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:600}
