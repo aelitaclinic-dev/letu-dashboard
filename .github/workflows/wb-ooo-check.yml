@@ -1,0 +1,82 @@
+name: WB ООО — проверка подключения
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: wb-ooo-connection-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Проверить кабинет и доступ к ценам
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Проверить доступ к WB без вывода токена
+        env:
+          WB_OOO_API_TOKEN: ${{ secrets.WB_OOO_API_TOKEN }}
+        shell: python
+        run: |
+          import base64
+          import json
+          import os
+          import re
+          import sys
+          import urllib.error
+          import urllib.request
+
+          def report(message, success=False):
+              print(message)
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+                  summary.write(f"## Wildberries ООО «КЛМ»\n\n{message}\n")
+              sys.exit(0 if success else 1)
+
+          token = os.environ.get("WB_OOO_API_TOKEN", "").strip()
+          if not token:
+              report("Добавьте секрет WB_OOO_API_TOKEN в настройках GitHub Actions.")
+          try:
+              _, payload, _ = token.split(".")
+              claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+              if not isinstance(claims, dict) or claims.get("acc") != 1:
+                  report("Для этой проверки нужен базовый токен Wildberries.")
+          except (ValueError, UnicodeError):
+              report("Секрет WB_OOO_API_TOKEN не похож на токен Wildberries.")
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, request, file, code, message, headers, new_url):
+                  return None
+
+          opener = urllib.request.build_opener(NoRedirect)
+
+          def get_json(url, label):
+              request = urllib.request.Request(
+                  url, headers={"Authorization": token, "Accept": "application/json"}, method="GET"
+              )
+              try:
+                  with opener.open(request, timeout=25) as response:
+                      data = json.load(response)
+              except urllib.error.HTTPError as error:
+                  report(f"{label} — WB вернул HTTP {error.code}.")
+              except (OSError, ValueError):
+                  report(f"{label} — ошибка сети или ответа WB.")
+              if not isinstance(data, dict):
+                  report(f"{label} — неожиданный формат ответа WB.")
+              return data
+
+          seller = get_json("https://common-api.wildberries.ru/api/v1/seller-info", "Проверка продавца")
+          seller_name = re.sub(r"[\s«»„“”\"]+", "", str(seller.get("name", "")).upper())
+          if seller_name not in {"ОООКЛМ", "ОБЩЕСТВОСОГРАНИЧЕННОЙОТВЕТСТВЕННОСТЬЮКЛМ"}:
+              report("Название продавца в WB отличается от ООО «КЛМ». Проверьте кабинет, в котором создан токен.")
+
+          prices = get_json(
+              "https://discounts-prices-api.wildberries.ru/api/v2/list/goods/filter?limit=1",
+              "Проверка доступа к ценам",
+          )
+          data = prices.get("data")
+          if prices.get("error") or not isinstance(data, dict) or not isinstance(data.get("listGoods"), list):
+              report("WB не вернул ожидаемый список товаров с ценами.")
+
+          report("ООО «КЛМ» подтверждено. Чтение цен через WB API работает.", success=True)
