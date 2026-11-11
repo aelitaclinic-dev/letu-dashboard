@@ -36,6 +36,7 @@ api.validate({schemaVersion: 1, orders: seedFile.orders});
 const paidOrder = seedFile.orders[0];
 const pack = seedFile.orders[1];
 assert.equal(paidOrder.client, 'Валерий Романовский');
+assert.equal(paidOrder.number, '1');
 assert.equal(paidOrder.date, '2026-11-06');
 assert.equal(paidOrder.totalKop, 2312000);
 assert.equal(paidOrder.paidKop, 2312000);
@@ -43,6 +44,7 @@ assert.equal(paidOrder.paymentStatus, 'paid');
 assert.equal(paidOrder.lines.length, 9);
 assert.equal(paidOrder.lines[0].sku, 'SKUK502');
 assert.equal(pack.client, 'Валерий Романовский');
+assert.equal(pack.number, '2');
 assert.equal(pack.date, '2026-11-12');
 assert.equal(pack.paymentStatus, 'unpaid');
 assert.equal(pack.paidKop, null);
@@ -77,7 +79,11 @@ assert.equal(packProfit.taxKop, 0);
 assert.equal(packProfit.outboundKop, 0);
 assert.equal(packProfit.boxKop, 0);
 assert.equal(packProfit.saleKop, 3160000);
+assert.equal(packProfit.costKop, 1395332);
 assert.equal(packProfit.profitKop, 1764668);
+assert.equal(packProfit.marginPermille, 558);
+assert.equal(api.nextOrderNumber(seedFile.orders, '2026-11-20'), '3');
+assert.equal(api.nextOrderNumber(seedFile.orders, '2026-12-01'), '1');
 assert.ok(packProfit.lines.every(line => line.state === 'known' && line.profitKop > 0 && line.moscowFreight === 'included'));
 const paidProfit = api.orderProfit(paidOrder);
 assert.equal(paidProfit.state, 'known');
@@ -147,7 +153,7 @@ assert.equal(api.orderProfit({...priced, lines: [{...priced.lines[0], sku: 'miss
 assert.equal(api.orderProfit({...priced, lines: [{...priced.lines[0], sku: 'ambiguous'}]}).state, 'needs-clarification');
 
 const draft = api.normalOrder({
-  id: 'draft', number: '', date: '2026-11-12', client: 'Валерий Романовский', channel: 'прямой заказ',
+  id: 'draft', number: '2', date: '2026-11-12', client: 'Валерий Романовский', channel: 'прямой заказ',
   clarify: true, totalText: '31 600', paymentStatus: 'unknown', paidText: '',
   fulfillmentStatus: 'unknown', delivery: '', comment: ''
 });
