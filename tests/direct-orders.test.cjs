@@ -12,7 +12,22 @@ const context = {
   localStorage: {getItem: () => null, setItem() {}}
 };
 vm.createContext(context);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'data.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'purchases.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'direct-orders.js'), 'utf8'), context);
+const purchases = context.window.PurchaseBook.core;
+let ledger = {schemaVersion: 1, orders: [], movements: []};
+['purchases-data.json', 'purchases-orders.json', 'purchase-receipt-2026-06-29.json', 'purchase-receipt-2026-05-18.json'].forEach(name => {
+  const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', name), 'utf8'));
+  data.orders.forEach(order => {
+    const index = ledger.orders.findIndex(item => item.id === order.id);
+    const merged = purchases.mergeShared(index < 0 ? null : ledger.orders[index], order);
+    if (!merged.changed) return;
+    if (index < 0) ledger.orders.push(merged.record);
+    else ledger.orders[index] = merged.record;
+  });
+});
+purchases.database = () => ledger;
 const api = context.window.DirectOrders.core;
 
 const seedFile = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'direct-orders.json'), 'utf8'));
@@ -35,8 +50,8 @@ assert.equal(seed.paidKop, null);
 assert.equal(seed.date, '');
 assert.equal(seed.number, '');
 assert.equal(seed.fulfillmentStatus, 'unknown');
-assert.equal(seed.delivery, '');
-assert.equal(seed.comment, '');
+assert.equal(seed.delivery, 'Оплачена клиентом, 0 ₽ в расходе заказа');
+assert.match(seed.comment, /личную карту/);
 
 const totals = api.totals([seed]);
 assert.equal(totals.count, 1);
@@ -44,9 +59,22 @@ assert.equal(totals.sumKop, 2300000);
 assert.equal(totals.paidKop, null);
 assert.equal(totals.debtKop, null);
 const seedProfit = api.orderProfit(seed);
-assert.equal(seedProfit.state, 'needs-clarification');
+assert.equal(seedProfit.state, 'known');
+assert.equal(seedProfit.freightGap, true);
+assert.equal(seedProfit.taxKop, 0);
+assert.equal(seedProfit.outboundKop, 0);
+assert.equal(seedProfit.boxKop, 0);
+assert.equal(seedProfit.packingKop, 5500);
+assert.equal(seedProfit.saleKop, 2312000);
+assert.equal(seedProfit.profitKop, 980913);
 assert.equal(seedProfit.lines.length, 9);
-assert.ok(seedProfit.lines.every(line => line.state === 'needs-clarification'));
+assert.ok(seedProfit.lines.every(line => line.state === 'known'));
+assert.equal(seedProfit.lines.find((_, i) => seed.lines[i].sku === 'SKUK502').moscowFreight, 'included');
+assert.equal(seedProfit.lines.find((_, i) => seed.lines[i].sku === 'C151604').moscowFreight, 'not-in-batch');
+const freeLine = seedProfit.lines[seed.lines.findIndex(line => line.sku === 'SKUK502')];
+const fourLine = seedProfit.lines[seed.lines.findIndex(line => line.sku === 'SKUK5022')];
+assert.ok(fourLine.profitKop > freeLine.profitKop);
+assert.ok(freeLine.unitFreightKop > 60000);
 
 const again = api.appendOrders({schemaVersion: 1, orders: [], updatedAt: null}, [seed]);
 assert.equal(again.changed, 1);
