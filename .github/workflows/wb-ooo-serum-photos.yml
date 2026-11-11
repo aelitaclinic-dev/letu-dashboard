@@ -85,7 +85,7 @@ jobs:
           def card(nmid):
               response = call(API + "/content/v2/get/cards/list", {
                   "settings": {"cursor": {"limit": 100},
-                               "filter": {"textSearch": str(nmid), "withPhoto": -1}}})
+                               "filter": {"textSearch": next(t[1] for t in TARGETS if t[0] == nmid), "withPhoto": -1}}})
               matches = [item for item in response.get("cards", []) if item.get("nmID") == nmid]
               if len(matches) != 1:
                   raise RuntimeError(f"Target {nmid} was not uniquely found in OOO account")
@@ -114,18 +114,8 @@ jobs:
           def main():
               if not TOKEN:
                   raise RuntimeError("WB_OOO_API_TOKEN is missing")
-              # Read only: identify the two authorized destination cards by their barcodes.
-              for expected_id, barcode, source, basket, count in TARGETS:
-                  result = call(API + "/content/v2/get/cards/list", {
-                      "settings": {"cursor": {"limit": 100},
-                                   "filter": {"textSearch": barcode, "withPhoto": -1}}})
-                  matches = [item for item in result.get("cards", [])
-                      if barcode in [c for size in item.get("sizes", []) for c in size.get("skus", [])]]
-                  report(f"Source {source}: matching destination count {len(matches)}")
-                  for item in matches:
-                      report(f"Source {source}: nmID={item.get('nmID')}, imtID={item.get('imtID')}, photos={len(item.get('photos') or [])}")
-              report("Read-only diagnosis complete. No media changed.")
-              return
+              # Only the globally unique destination nmIDs plus exact barcodes authorize writes.
+              report("Checking the two confirmed OOO destination IDs and barcodes.")
               pending = []
               # Validate both destinations and every public source before any write.
               for nmid, barcode, source, basket, count in TARGETS:
