@@ -57,6 +57,12 @@ assert.equal(pack.lines.find(line => line.sku === 'C151616').qty, 4);
 assert.equal(pack.lines.find(line => line.sku === 'C151616').priceMinor, 73000);
 assert.equal(pack.lines.find(line => line.sku === 'C151613').priceMinor, 64000);
 assert.match(pack.compositionNote, /31 600 ₽/);
+assert.equal(pack.packingDocument.html, 'packing-list/valery-2026-11-12.html');
+assert.equal(pack.packingDocument.docx, 'packing-list/SINKO_Valery_packing_list_12.11.2026.docx');
+assert.equal(pack.packingDocument.pdf, 'packing-list/SINKO_Valery_packing_list_12.11.2026.pdf');
+assert.ok(fs.existsSync(path.join(__dirname, '..', pack.packingDocument.html)));
+assert.ok(fs.existsSync(path.join(__dirname, '..', pack.packingDocument.docx)));
+assert.ok(fs.existsSync(path.join(__dirname, '..', pack.packingDocument.pdf)));
 assert.equal(JSON.stringify(api.paymentFacts(pack)), JSON.stringify({known: true, paidKop: 0, debtKop: 3160000}));
 
 const both = api.totals(seedFile.orders);
