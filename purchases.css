@@ -56,7 +56,8 @@
 .do-line-total b{color:#4e3346}
 .do-profit{font-size:13px;color:#5c4a55}
 .do-profit small{display:block;color:#93808d;font-size:11px;margin-top:4px}
-.do-econ{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:16px 0}
+.do-order-no{margin:8px 0 0!important;font-size:13px!important;font-weight:700;color:#68445d!important;letter-spacing:.02em}
+.do-econ{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}
 .do-econ>div{padding:14px;border:1px solid #e5dfe2;border-radius:12px;background:#faf7f9;min-width:0}
 .do-econ span,.do-econ small{display:block;color:#82747c;font-size:11px;line-height:1.5}
 .do-econ strong{display:block;font-size:22px;color:#68445d;margin:8px 0 6px;overflow-wrap:anywhere}
