@@ -45,6 +45,8 @@
 .do-filters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:0 0 22px}
 .do-filters label{display:flex;flex-direction:column;gap:7px;font-size:11px;color:#8e7888;min-width:0}
 .do-filters input,.do-filters select{width:100%}
+.do-print-actions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 4px}
+.do-print-actions a{text-decoration:none;display:inline-flex;align-items:center}
 .do-order-top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start}
 .do-facts{display:flex;flex-wrap:wrap;gap:10px 18px;background:#f8f5f7;border-radius:10px;padding:12px 15px;margin:16px 0;font-size:12px;color:#7d6a76}
 .do-facts b{color:#4e3346;font-weight:600}

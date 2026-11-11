@@ -85,7 +85,7 @@
     },
     {
       "id": "direct-valery-romanovskiy-packing-20261112",
-      "sourceRevision": 1,
+      "sourceRevision": 2,
       "number": "",
       "date": "2026-11-12",
       "client": "Валерий Романовский",
@@ -243,6 +243,11 @@
       "paidKop": null,
       "fulfillmentStatus": "new",
       "delivery": "",
+      "packingDocument": {
+        "html": "packing-list/valery-2026-11-12.html",
+        "docx": "packing-list/SINKO_Valery_packing_list_12.11.2026.docx",
+        "pdf": "packing-list/SINKO_Valery_packing_list_12.11.2026.pdf"
+      },
       "comment": "Упаковочный лист для коробки. Отгрузка 12.11.2026. Пока не оплачен. Налог не начисляем. Индивидуальные коробочки не используются — одна коробка. Доставку клиенту не включаем, если её оплатит клиент."
     }
   ]

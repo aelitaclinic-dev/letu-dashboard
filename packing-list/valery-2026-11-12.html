@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Упаковочный лист — Валерий Романовский, 12.11.2026</title>
+<style>
+  :root { --ink:#2c2430; --muted:#6d5d68; --line:#d9ced6; --plum:#68445d; }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--ink); font: 14px/1.45 "Segoe UI", "Helvetica Neue", Arial, sans-serif; background: #f4eef2; }
+  .bar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 18px; background: #fff; border-bottom: 1px solid var(--line); }
+  .bar p { margin: 0; color: var(--muted); font-size: 13px; }
+  .bar strong { color: var(--ink); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .actions a, .actions button { appearance: none; border: 1px solid var(--plum); background: var(--plum); color: #fff; border-radius: 10px; padding: 10px 14px; font: 600 13px/1 inherit; text-decoration: none; cursor: pointer; }
+  .actions a.secondary, .actions button.secondary { background: #fff; color: var(--plum); }
+  .sheet { max-width: 210mm; margin: 18px auto 40px; background: #fff; padding: 18mm 14mm 16mm; box-shadow: 0 8px 28px #6f3c5c14; }
+  header.meta { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start; margin-bottom: 16px; }
+  .brand { font-size: 11px; letter-spacing: .14em; color: var(--plum); font-weight: 700; margin: 0 0 6px; }
+  h1 { margin: 0 0 8px; font-size: 26px; letter-spacing: -.4px; }
+  .facts { margin: 0; color: var(--muted); }
+  .pay { text-align: right; }
+  .pay small { display: block; color: var(--muted); font-size: 12px; }
+  .pay b { display: block; font-size: 28px; margin: 4px 0; letter-spacing: -.7px; }
+  .badge { display: inline-block; margin-top: 4px; padding: 4px 8px; border-radius: 6px; background: #f8efe6; color: #8a4e32; font-size: 12px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border-bottom: 1px solid #eee4ea; padding: 8px 6px; vertical-align: middle; text-align: left; }
+  th { font-size: 11px; color: #8a7683; font-weight: 600; background: #faf7f9; }
+  td.photo { width: 62px; }
+  td.photo img { width: 54px; height: 54px; object-fit: contain; display: block; background: #faf7f9; border-radius: 6px; }
+  td.sku { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; white-space: nowrap; }
+  td.qty, td.price { white-space: nowrap; text-align: right; }
+  tbody tr.group td { background: #f4eef2; font-weight: 700; font-size: 12px; letter-spacing: .02em; color: var(--plum); padding: 9px 8px; }
+  tfoot td { font-weight: 700; background: #f4eef2; font-size: 15px; }
+  tfoot td.price { font-size: 18px; }
+  .note { margin: 14px 0 0; color: var(--muted); font-size: 12px; }
+  @media print {
+    body { background: #fff; }
+    .bar { display: none !important; }
+    .sheet { margin: 0; max-width: none; box-shadow: none; padding: 8mm 8mm 10mm; }
+    tr { break-inside: avoid; }
+    a[href]::after { content: none !important; }
+  }
+  @page { size: A4; margin: 10mm; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <p>Упаковочный лист коробки · <strong>Валерий Романовский</strong> · 12.11.2026 · к оплате <strong>31 600 ₽</strong></p>
+  <div class="actions">
+    <button type="button" onclick="window.print()">Печать</button>
+    <a href="SINKO_Valery_packing_list_12.11.2026.pdf" download>Скачать PDF</a>
+    <a class="secondary" href="SINKO_Valery_packing_list_12.11.2026.docx" download>Скачать Word</a>
+    <a class="secondary" href="../index.html#direct-orders">К заказам</a>
+  </div>
+</div>
+<article class="sheet">
+  <header class="meta">
+    <div>
+      <p class="brand">SINKO STYLING · MA DISTRIBUTION</p>
+      <h1>Упаковочный лист</h1>
+      <p class="facts">Клиент: Валерий Романовский<br>Дата: 12.11.2026 · предварительный заказ<br>18 позиций · 43 единицы</p>
+    </div>
+    <div class="pay">
+      <small>Сумма к оплате (опт)</small>
+      <b>31 600 ₽</b>
+      <span class="badge">Не оплачен</span>
+    </div>
+  </header>
+  <table>
+    <thead>
+      <tr><th></th><th>Артикул</th><th>Наименование</th><th>Объём</th><th>Опт</th><th>РРЦ</th><th>Кол-во</th></tr>
+    </thead>
+    <tbody>
+      <tr class="group"><td colspan="7">Argan Oil / Питание и мягкость</td></tr>
+      <tr>
+        <td class="photo"><img src="photos/C151616.jpg" alt="C151616"></td>
+        <td class="sku">C151616</td>
+        <td>Питательный шампунь с аргановым маслом</td>
+        <td>250 мл</td>
+        <td class="price">730 ₽</td>
+        <td class="price">1 050 ₽</td>
+        <td class="qty">4</td>
+      </tr>
+      <tr class="group"><td colspan="7">Moringa / Очищение и свежесть</td></tr>
+      <tr>
+        <td class="photo"><img src="photos/C151618.jpg" alt="C151618"></td>
+        <td class="sku">C151618</td>
+        <td>Очищающий шампунь с морингой</td>
+        <td>250 мл</td>
+        <td class="price">730 ₽</td>
+        <td class="price">1 045 ₽</td>
+        <td class="qty">3</td>
+      </tr>
+      <tr class="group"><td colspan="7">Tea Tree / Комфорт и чёткий завиток</td></tr>
+      <tr>
+        <td class="photo"><img src="photos/C151619.jpg" alt="C151619"></td>
+        <td class="sku">C151619</td>
+        <td>Шампунь с чайным деревом</td>
+        <td>300 мл</td>
+        <td class="price">730 ₽</td>
+        <td class="price">1 050 ₽</td>
+        <td class="qty">2</td>
+      </tr>
+      <tr>
+        <td class="photo"><img src="photos/C151620.jpg" alt="C151620"></td>
+        <td class="sku">C151620</td>
+        <td>Кондиционер с чайным деревом</td>
+        <td>300 мл</td>
+        <td class="price">730 ₽</td>
+        <td class="price">1 050 ₽</td>
+        <td class="qty">2</td>
+      </tr>
+      <tr>
+        <td class="photo"><img src="photos/C151621.jpg" alt="C151621"></td>
+        <td class="sku">C151621</td>
+        <td>Маска для волос с чайным деревом</td>
+        <td>300 мл</td>
+        <td class="price">800 ₽</td>
+        <td class="price">1 530 ₽</td>
+        <td class="qty">2</td>
+      </tr>
+      <tr>
+        <td class="photo"><img src="photos/SKTS100.jpg" alt="SKTS100"></td>
+        <td class="sku">SKTS100</td>
+        <td>Несмываемый питательный спрей с чайным деревом</td>
+        <td>100 мл</td>
+        <td class="price">380 ₽</td>
+        <td class="price">760 ₽</td>
+        <td class="qty">2</td>
+      </tr>
+      <tr>
+        <td class="photo"><img src="photos/SKTC300.jpg" alt="SKTC300"></td>
+        <td class="sku">SKTC300</td>
+        <td>Крем для оформления локонов с чайным деревом</td>
+        <td>300 мл</td>
+        <td class="price">720 ₽</td>
+        <td class="price">1 490 ₽</td>
+        <td class="qty">2</td>
+      </tr>
+      <tr class="group"><td colspan="7">Ginger / Уход за ослабленными волосами</td></tr>
+      <tr>
+        <td class="photo"><img src="photos/C151624.jpg" alt="C151624"></td>
+        <td class="sku">C151624</td>
+        <td>Укрепляющий шампунь с органическим имбирём</td>
+        <td>200 мл</td>
+        <td class="price">470 ₽</td>
+        <td class="price">940 ₽</td>
+        <td class="qty">2</td>
+      </tr>
+      <tr>
+        <td class="photo"><img src="photos/C151623.jpg" alt="C151623"></td>
+        <td class="sku">C151623</td>
+        <td>Шампунь с органическим имбирём</td>
+        <td>300 мл</td>
+        <td class="price">730 ₽</td>
+        <td class="price">1 050 ₽</td>
+        <td class="qty">1</td>
+      </tr>
+      <tr>
+        <td class="photo"><img src="photos/C151622.jpg" alt="C151622"></td>
+        <td class="sku">C151622</td>
+        <td>Маска для волос с органическим имбирём</td>
+        <td>300 мл</td>
+        <td class="price">840 ₽</td>
+        <td class="price">1 050 ₽</td>
+        <td class="qty">1</td>
+      </tr>
+      <tr class="group"><td colspan="7">Macadamia / Увлажнение и гладкость</td></tr>
+      <tr>
+        <td class="photo"><img src="photos/C104703.jpg" alt="C104703"></td>
+        <td class="sku">C104703</td>
+        <td>Разглаживающая сыворотка с макадамией</td>
+        <td>100 мл</td>
+        <td class="price">710 ₽</td>
+        <td class="price">1 420 ₽</td>
+        <td class="qty">3</td>
+      </tr>
+      <tr class="group"><td colspan="7">Восстановление и дополнительный уход</td></tr>
+      <tr>
+        <td class="photo"><img src="photos/C151615.jpeg" alt="C151615"></td>
+        <td class="sku">C151615</td>
+        <td>Восстанавливающий крем для волос Энерджи Буст</td>
+        <td>500 мл</td>
+        <td class="price">1 050 ₽</td>
+        <td class="price">2 080 ₽</td>
+        <td class="qty">3</td>
+      </tr>
+      <tr>
+        <td class="photo"><img src="photos/SKBR500.jpg" alt="SKBR500"></td>
+        <td class="sku">SKBR500</td>
+        <td>Бальзам для повреждённых волос восстанавливающий с коллагеном SINKO STYLING Bond Repairing Complex and Collagen, 500 мл</td>
+        <td>500 мл</td>
+        <td class="price">1 020 ₽</td>
+        <td class="price">2 040 ₽</td>
+        <td class="qty">3</td>
+      </tr>
+      <tr>
+        <td class="photo"><img src="photos/C151612.jpg" alt="C151612"></td>
+        <td class="sku">C151612</td>
+        <td>Восстанавливающая сыворотка с кератином</td>
+        <td>100 мл</td>
+        <td class="price">600 ₽</td>
+        <td class="price">1 200 ₽</td>
+        <td class="qty">3</td>
+      </tr>
+      <tr>
+        <td class="photo"><img src="photos/SKSM300.jpg" alt="SKSM300"></td>
+        <td class="sku">SKSM300</td>
+        <td>Увлажняющая маска для кожи головы</td>
+        <td>250 мл</td>
+        <td class="price">730 ₽</td>
+        <td class="price">1 050 ₽</td>
+        <td class="qty">3</td>
+      </tr>
+      <tr class="group"><td colspan="7">Очищение и уход за оттенком</td></tr>
+      <tr>
+        <td class="photo"><img src="photos/SKSC300A.jpg" alt="SKSC300A"></td>
+        <td class="sku">SKSC300A</td>
+        <td>Мятный шампунь-кондиционер 2 в 1</td>
+        <td>300 мл</td>
+        <td class="price">730 ₽</td>
+        <td class="price">1 050 ₽</td>
+        <td class="qty">2</td>
+      </tr>
+      <tr>
+        <td class="photo"><img src="photos/SKDS300.jpg" alt="SKDS300"></td>
+        <td class="sku">SKDS300</td>
+        <td>Мятный шампунь глубокой очистки</td>
+        <td>300 мл</td>
+        <td class="price">730 ₽</td>
+        <td class="price">1 050 ₽</td>
+        <td class="qty">3</td>
+      </tr>
+      <tr>
+        <td class="photo"></td>
+        <td class="sku">C151613</td>
+        <td>Тревел-набор в косметичке (шампунь с маслом арганы 80 мл, кондиционер с маслом арганы 80 мл, шампунь моринга 80 мл)</td>
+        <td>240 мл</td>
+        <td class="price">640 ₽</td>
+        <td class="price">1 150 ₽</td>
+        <td class="qty">2</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4">Итого к оплате</td>
+        <td class="price" colspan="2">31 600 ₽</td>
+        <td class="qty">43</td>
+      </tr>
+    </tfoot>
+  </table>
+  <p class="note">РРЦ справочно, не к оплате: 53 995 ₽. Оптовые цены как в листе. Предварительный заказ, пока не оплачен.</p>
+</article>
+<script>
+  if (new URLSearchParams(location.search).has('print')) {
+    window.addEventListener('load', function () { window.print(); });
+  }
+</script>
+</body>
+</html>
