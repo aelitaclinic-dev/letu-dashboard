@@ -3,85 +3,165 @@
   "orders": [
     {
       "id": "direct-valery-romanovskiy-23000",
-      "sourceRevision": 5,
+      "sourceRevision": 6,
       "number": "",
       "date": "2026-11-06",
       "client": "Валерий Романовский",
       "channel": "прямой заказ",
       "lines": [
         {
-          "sku": "SKUK502",
-          "name": "Состав для кератинового выпрямления без формальдегида FM Free, 500 мл",
+          "sku": "C151616",
+          "name": "Питательный шампунь с аргановым маслом",
+          "brand": "SINKO STYLING",
+          "qty": 4,
+          "priceMinor": 73000,
+          "volume": "250 мл"
+        },
+        {
+          "sku": "C151618",
+          "name": "Очищающий шампунь с морингой",
           "brand": "SINKO STYLING",
           "qty": 3,
-          "priceMinor": 187000
+          "priceMinor": 73000,
+          "volume": "250 мл"
         },
         {
-          "sku": "SKUK5022",
-          "name": "Состав для кератинового выпрямления F 4%, 500 мл",
+          "sku": "C151619",
+          "name": "Шампунь с чайным деревом",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 73000,
+          "volume": "300 мл"
+        },
+        {
+          "sku": "C151620",
+          "name": "Кондиционер с чайным деревом",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 73000,
+          "volume": "300 мл"
+        },
+        {
+          "sku": "C151621",
+          "name": "Маска для волос с чайным деревом",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 80000,
+          "volume": "300 мл"
+        },
+        {
+          "sku": "SKTS100",
+          "name": "Несмываемый питательный спрей с чайным деревом",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 38000,
+          "volume": "100 мл"
+        },
+        {
+          "sku": "SKTC300",
+          "name": "Крем для оформления локонов с чайным деревом",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 72000,
+          "volume": "300 мл"
+        },
+        {
+          "sku": "C151624",
+          "name": "Укрепляющий шампунь с органическим имбирём",
+          "brand": "SINKO STYLING",
+          "qty": 2,
+          "priceMinor": 47000,
+          "volume": "200 мл"
+        },
+        {
+          "sku": "C151623",
+          "name": "Шампунь с органическим имбирём",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 73000,
+          "volume": "300 мл"
+        },
+        {
+          "sku": "C151622",
+          "name": "Маска для волос с органическим имбирём",
+          "brand": "SINKO STYLING",
+          "qty": 1,
+          "priceMinor": 84000,
+          "volume": "300 мл"
+        },
+        {
+          "sku": "C104703",
+          "name": "Разглаживающая сыворотка с макадамией",
           "brand": "SINKO STYLING",
           "qty": 3,
-          "priceMinor": 112000
+          "priceMinor": 71000,
+          "volume": "100 мл"
         },
         {
-          "sku": "SKUK502B",
-          "name": "Ботокс для волос без формальдегида FM Free Blue, 500 мл",
+          "sku": "C151615",
+          "name": "Восстанавливающий крем для волос Энерджи Буст",
           "brand": "SINKO STYLING",
           "qty": 3,
-          "priceMinor": 190000
+          "priceMinor": 105000,
+          "volume": "500 мл"
         },
         {
-          "sku": "C151605",
-          "name": "Коллагеновый комплекс СПЛЕКС №0, 450 мл",
+          "sku": "SKBR500",
+          "name": "Бальзам для повреждённых волос восстанавливающий с коллагеном SINKO STYLING Bond Repairing Complex and Collagen, 500 мл",
+          "brand": "SINKO STYLING",
+          "qty": 3,
+          "priceMinor": 102000,
+          "volume": "500 мл"
+        },
+        {
+          "sku": "C151612",
+          "name": "Восстанавливающая сыворотка с кератином",
+          "brand": "SINKO STYLING",
+          "qty": 3,
+          "priceMinor": 60000,
+          "volume": "100 мл"
+        },
+        {
+          "sku": "SKSM300",
+          "name": "Увлажняющая маска для кожи головы",
+          "brand": "SINKO STYLING",
+          "qty": 3,
+          "priceMinor": 73000,
+          "volume": "250 мл"
+        },
+        {
+          "sku": "SKSC300A",
+          "name": "Мятный шампунь-кондиционер 2 в 1",
           "brand": "SINKO STYLING",
           "qty": 2,
-          "priceMinor": 82000
+          "priceMinor": 73000,
+          "volume": "300 мл"
         },
         {
-          "sku": "C151603",
-          "name": "Состав СПЛЕКС №1 для повреждённых волос, 450 мл",
+          "sku": "SKDS300",
+          "name": "Мятный шампунь глубокой очистки",
+          "brand": "SINKO STYLING",
+          "qty": 3,
+          "priceMinor": 73000,
+          "volume": "300 мл"
+        },
+        {
+          "sku": "C151613",
+          "name": "Тревел-набор в косметичке (шампунь с маслом арганы 80 мл, кондиционер с маслом арганы 80 мл, шампунь моринга 80 мл)",
           "brand": "SINKO STYLING",
           "qty": 2,
-          "priceMinor": 91000
-        },
-        {
-          "sku": "C151607",
-          "name": "Состав СПЛЕКС №1 для здоровых волос, 450 мл",
-          "brand": "SINKO STYLING",
-          "qty": 2,
-          "priceMinor": 91000
-        },
-        {
-          "sku": "C151604",
-          "name": "Фиксатор СПЛЕКС №2, 450 мл",
-          "brand": "SINKO STYLING",
-          "qty": 1,
-          "priceMinor": 63000
-        },
-        {
-          "sku": "C102247",
-          "name": "Система выпрямления для повреждённых волос DS1 + S2, 2 × 800 мл",
-          "brand": "SINKO STYLING",
-          "qty": 1,
-          "unit": "компл.",
-          "priceMinor": 186000
-        },
-        {
-          "sku": "D200115",
-          "name": "Кристаллизующий крем для выпрямления повреждённых волос №1, 450 мл",
-          "brand": "SINKO STYLING",
-          "qty": 1,
-          "priceMinor": 68000
+          "priceMinor": 64000,
+          "volume": "240 мл"
         }
       ],
       "compositionStatus": "known",
-      "compositionNote": "Состав и цены из документа «Оптовый заказ SINKO STYLING». Оптовый прайс от 5 ноября 2026. Сумма заказа и оплаты 23 120 ₽.",
-      "totalKop": 2312000,
-      "paymentStatus": "paid",
+      "compositionNote": "Состав и количества из упаковочного листа от 11.11.2026. Названия и оптовые цены как в листе, без правок. 18 позиций, 43 единицы, 31 600 ₽.",
+      "totalKop": 3160000,
+      "paymentStatus": "partial",
       "paidKop": 2312000,
-      "fulfillmentStatus": "unknown",
+      "fulfillmentStatus": "done",
       "delivery": "Оплачена клиентом, 0 ₽ в расходе заказа",
-      "comment": "06.11.2026 на личную карту пришло 23 120 ₽. Налог не начисляем. Индивидуальные коробочки не использовались — все позиции в одной коробке."
+      "comment": "06.11.2026 на личную карту пришло 23 120 ₽. Упаковочный лист 11.11.2026. Налог не начисляем. Индивидуальные коробочки не использовались — все позиции в одной коробке. Доставку клиенту оплатил клиент."
     }
   ]
 }
