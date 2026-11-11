@@ -45,9 +45,9 @@ assert.equal(seed.lines.find(line => line.sku === 'C102247').unit, 'компл.'
 assert.match(seed.compositionNote, /23 120 ₽/);
 assert.match(seed.compositionNote, /23 000 ₽/);
 assert.match(seed.compositionNote, /120 ₽/);
-assert.equal(seed.paymentStatus, 'unknown');
-assert.equal(seed.paidKop, null);
-assert.equal(seed.date, '');
+assert.equal(seed.paymentStatus, 'paid');
+assert.equal(seed.paidKop, 2312000);
+assert.equal(seed.date, '2026-11-06');
 assert.equal(seed.number, '');
 assert.equal(seed.fulfillmentStatus, 'unknown');
 assert.equal(seed.delivery, 'Оплачена клиентом, 0 ₽ в расходе заказа');
@@ -56,8 +56,8 @@ assert.match(seed.comment, /личную карту/);
 const totals = api.totals([seed]);
 assert.equal(totals.count, 1);
 assert.equal(totals.sumKop, 2300000);
-assert.equal(totals.paidKop, null);
-assert.equal(totals.debtKop, null);
+assert.equal(totals.paidKop, 2312000);
+assert.equal(totals.debtKop, 0);
 const seedProfit = api.orderProfit(seed);
 assert.equal(seedProfit.state, 'known');
 assert.equal(seedProfit.freightGap, true);
@@ -95,16 +95,17 @@ const paid = {...seed, id: 'paid', client: 'Вера', paymentStatus: 'paid', pa
 assert.equal(JSON.stringify(api.paymentFacts(paid)), JSON.stringify({known: true, paidKop: 2300000, debtKop: 0}));
 const mixed = api.totals([seed, unpaid]);
 assert.equal(mixed.sumKop, 4600000);
-assert.equal(mixed.paidKop, 0);
-assert.equal(mixed.paidCount, 1);
+assert.equal(mixed.paidKop, 2312000);
+assert.equal(mixed.paidCount, 2);
 assert.equal(mixed.debtKop, 2300000);
-assert.equal(mixed.debtCount, 1);
+assert.equal(mixed.debtCount, 2);
 
-const period = api.applyFilters([seed, {...unpaid, date: '2026-11-01'}], {from: '2026-11-01', to: '2026-11-07', client: '', payment: 'all', fulfillment: 'all'});
+const undated = {...unpaid, id: 'undated', client: 'Галина', date: ''};
+const period = api.applyFilters([seed, {...unpaid, date: '2026-11-01'}, undated], {from: '2026-11-01', to: '2026-11-07', client: '', payment: 'all', fulfillment: 'all'});
 assert.equal(period.undated, 1);
-assert.equal(period.orders.length, 1);
-assert.equal(period.orders[0].client, 'Анна');
-const byClient = api.applyFilters([seed, unpaid], {from: '', to: '', client: 'Валерий Романовский', payment: 'unknown', fulfillment: 'unknown'});
+assert.equal(period.orders.length, 2);
+assert.equal(JSON.stringify(period.orders.map(order => order.client)), JSON.stringify(['Валерий Романовский', 'Анна']));
+const byClient = api.applyFilters([seed, unpaid], {from: '', to: '', client: 'Валерий Романовский', payment: 'paid', fulfillment: 'unknown'});
 assert.equal(byClient.orders.length, 1);
 
 context.window.UnitCost = {
@@ -136,7 +137,7 @@ assert.equal(api.orderProfit({...priced, lines: [{...priced.lines[0], sku: 'miss
 assert.equal(api.orderProfit({...priced, lines: [{...priced.lines[0], sku: 'ambiguous'}]}).state, 'needs-clarification');
 
 const draft = api.normalOrder({
-  id: 'draft', number: '', date: '', client: 'Валерий Романовский', channel: 'прямой заказ',
+  id: 'draft', number: '', date: '2026-11-06', client: 'Валерий Романовский', channel: 'прямой заказ',
   clarify: true, totalText: '23 000', paymentStatus: 'unknown', paidText: '',
   fulfillmentStatus: 'unknown', delivery: '', comment: ''
 });
