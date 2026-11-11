@@ -131,10 +131,10 @@ jobs:
                   urls = urls_for(source, basket, count)
                   for url in urls:
                       preflight(url)
-                  pending.append((nmid, barcode, count, urls))
+                  pending.append((nmid, barcode, count, urls, photos))
                   report(f"{nmid}: all {count} source files are accessible")
               failed = []
-              for nmid, barcode, count, urls in pending:
+              for nmid, barcode, count, urls, original_photos in pending:
                   # Recheck immediately before media/save, which replaces the whole gallery.
                   current = card(nmid)
                   validate_target(current, barcode)
@@ -158,6 +158,12 @@ jobs:
                       report(f"{nmid}: not confirmed within 5 minutes; do not treat as success")
               if failed:
                   raise RuntimeError(f"Photos not persisted for {failed}")
+              for nmid, barcode, source, basket, expected in TARGETS:
+                  actual = card(nmid)
+                  validate_target(actual, barcode)
+                  if len(actual.get("photos") or []) != expected:
+                      raise RuntimeError(f"{nmid}: final cross-card verification failed")
+                  report(f"{nmid}: FINAL VERIFIED {expected} photos")
               report("Готово: обе карточки проверены. Исходные карточки ИП, цены и остатки не изменялись.")
           
           try:
