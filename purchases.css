@@ -54,6 +54,16 @@
 .do-line-total b{color:#4e3346}
 .do-profit{font-size:13px;color:#5c4a55}
 .do-profit small{display:block;color:#93808d;font-size:11px;margin-top:4px}
+.do-econ{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:16px 0}
+.do-econ>div{padding:14px;border:1px solid #e5dfe2;border-radius:12px;background:#faf7f9;min-width:0}
+.do-econ span,.do-econ small{display:block;color:#82747c;font-size:11px;line-height:1.5}
+.do-econ strong{display:block;font-size:22px;color:#68445d;margin:8px 0 6px;overflow-wrap:anywhere}
+.do-econ-sum{background:#eee5ec;border-color:#d6bfd0}
+.do-why{margin:0 0 14px;padding:14px 16px;border-radius:12px;background:#f4eef2;color:#4e3346;font-size:13px;line-height:1.65}
+.do-loss{color:#922f43}
+.do-thin{color:#9c7544}
+@media(max-width:1050px){.do-econ{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.do-econ{grid-template-columns:1fr}.do-econ strong{font-size:20px}}
 .do-missing{display:inline-block;color:#8a4e32;background:#f8efe6;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:600}
 .do-kpi-missing{font-size:22px!important;letter-spacing:-.4px}
 .do-check{display:flex;flex-direction:row!important;align-items:center;gap:10px;margin:8px 0 14px;font-size:13px!important;color:#4e3346!important}

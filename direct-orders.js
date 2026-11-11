@@ -147,34 +147,100 @@
       return safe(sum + safe(qty * line.priceMinor));
     }, 0);
   }
+  function channelPrep(line) {
+    const purchases = window.PurchaseBook && window.PurchaseBook.core;
+    const empty = {unitKop: 0, packingKop: 0, parts: []};
+    if (!purchases || typeof purchases.preparationFor !== 'function') return empty;
+    const model = purchases.preparationFor({sku: line.sku, brand: line.brand || 'SINKO STYLING', gift: false});
+    if (!model) return empty;
+    let unitKop = 0;
+    let packingKop = 0;
+    const parts = [];
+    (model.parts || []).forEach(part => {
+      if (part.label === 'Коробочка' || part.label === 'Этикетка коробки') {
+        parts.push({label: part.label, amountKop: 0, excluded: true, reason: 'Одна общая коробка'});
+        return;
+      }
+      if (part.label === 'Упаковщик' || part.label === 'Плёнка') {
+        packingKop = safe(packingKop + (part.excluded ? 0 : part.amountKop));
+        parts.push({label: part.label, amountKop: 0, excluded: true, reason: 'Один раз на заказ'});
+        return;
+      }
+      if (part.excluded) {
+        parts.push(part);
+        return;
+      }
+      unitKop = safe(unitKop + part.amountKop);
+      parts.push(part);
+    });
+    return {unitKop, packingKop, parts, missing: model.missing || []};
+  }
   function lineEconomy(line) {
+    if (!Number.isSafeInteger(line.priceMinor) || line.priceMinor < 0 || !Number.isSafeInteger(line.qty) || line.qty < 1) {
+      return {state: 'needs-clarification', reason: PROFIT_GAP};
+    }
+    const purchases = window.PurchaseBook && window.PurchaseBook.core;
+    const db = purchases && typeof purchases.database === 'function' ? purchases.database() : null;
+    const landed = purchases && typeof purchases.skuLanded === 'function' ? purchases.skuLanded(line.sku, db) : null;
+    if (landed && Number.isSafeInteger(landed.landedUnitKop)) {
+      const prep = channelPrep(line);
+      const unitCostKop = safe(landed.landedUnitKop + prep.unitKop);
+      const unitProfitKop = safe(line.priceMinor - unitCostKop);
+      return {
+        state: 'known',
+        source: 'purchase',
+        basis: landed.basis,
+        moscowFreight: landed.moscowFreight,
+        unitGoodsKop: landed.goodsUnitKop,
+        unitFreightKop: landed.freightUnitKop,
+        unitPrepKop: prep.unitKop,
+        packingKop: prep.packingKop,
+        unitCostKop, unitProfitKop,
+        costKop: safe(unitCostKop * line.qty),
+        profitKop: safe(unitProfitKop * line.qty),
+        goodsKop: safe(landed.goodsUnitKop * line.qty),
+        freightKop: safe(landed.freightUnitKop * line.qty)
+      };
+    }
     const api = window.UnitCost;
     if (!api) return {state: 'needs-clarification', reason: PROFIT_GAP};
     const found = api.find(line.sku);
-    if (!found) return {state: 'needs-clarification', reason: 'Артикул не найден в справочнике. ' + PROFIT_GAP + '.'};
+    if (!found) return {state: 'needs-clarification', reason: 'Артикул не найден в закупках и в справочнике. ' + PROFIT_GAP + '.'};
     if (found.ambiguous) return {state: 'needs-clarification', reason: 'В справочнике несколько карточек с этим артикулом. ' + PROFIT_GAP + '.'};
     const costRub = api.accountedUnitCost(found);
     if (costRub == null || !Number.isFinite(Number(costRub))) return {state: 'needs-clarification', reason: PROFIT_GAP + '. Себестоимость карточки заполнена не полностью.'};
-    if (!Number.isSafeInteger(line.priceMinor) || line.priceMinor < 0 || !Number.isSafeInteger(line.qty) || line.qty < 1) return {state: 'needs-clarification', reason: PROFIT_GAP};
     const unitCostKop = Math.round(Number(costRub) * 100);
     if (!Number.isSafeInteger(unitCostKop) || unitCostKop < 0) return {state: 'needs-clarification', reason: PROFIT_GAP};
     const unitProfitKop = safe(line.priceMinor - unitCostKop);
     return {
-      state: 'known', unitCostKop, unitProfitKop,
+      state: 'known', source: 'card', moscowFreight: 'unknown',
+      unitCostKop, unitProfitKop,
       costKop: safe(unitCostKop * line.qty), profitKop: safe(unitProfitKop * line.qty)
     };
   }
   function orderProfit(order) {
-    if (!order || order.compositionStatus === 'needs-clarification' || !order.lines || !order.lines.length) {
+    if (!order || !order.lines || !order.lines.length || order.compositionStatus === 'needs-clarification') {
       return {state: 'needs-clarification', reason: PROFIT_GAP, lines: []};
     }
     const lines = order.lines.map(lineEconomy);
-    if (order.compositionStatus !== 'known' || lines.some(line => line.state !== 'known')) return {state: 'needs-clarification', reason: PROFIT_GAP, lines};
+    if (lines.some(line => line.state !== 'known')) return {state: 'needs-clarification', reason: PROFIT_GAP, lines};
+    const packingKop = lines.reduce((max, line) => Math.max(max, line.packingKop || 0), 0);
+    const saleKop = order.lines.reduce((sum, line) => safe(sum + safe(line.qty * line.priceMinor)), 0);
+    const costKop = safe(lines.reduce((sum, line) => safe(sum + line.costKop), 0) + packingKop);
+    const freightGap = lines.some(line => line.moscowFreight === 'not-in-batch');
     return {
       state: 'known',
-      reason: '',
-      costKop: lines.reduce((sum, line) => safe(sum + line.costKop), 0),
-      profitKop: lines.reduce((sum, line) => safe(sum + line.profitKop), 0),
+      reason: freightGap ? 'Доставка до Москвы по части позиций в принятых партиях ещё не стоит. Показанная прибыль по ним — верхняя оценка.' : '',
+      freightGap,
+      packingKop,
+      taxKop: 0,
+      outboundKop: 0,
+      boxKop: 0,
+      saleKop,
+      costKop,
+      profitKop: safe(saleKop - costKop),
+      goodsKop: lines.reduce((sum, line) => safe(sum + (line.goodsKop || 0)), 0),
+      freightKop: lines.reduce((sum, line) => safe(sum + (line.freightKop || 0)), 0),
       lines
     };
   }
@@ -318,7 +384,38 @@
   }
   function profitText(result) {
     if (!result || result.state !== 'known') return '<span class="do-missing">' + esc(PROFIT_GAP) + '</span>';
-    return '<b>' + money(result.profitKop) + '</b><small>Цена продажи минус учтённая себестоимость</small>';
+    return '<b>' + money(result.profitKop) + '</b><small>' + (result.freightGap
+      ? 'По учтённым статьям, без налога, коробочки и клиентской доставки. Доставка до Москвы по части позиций ещё не в партии — это верхняя оценка.'
+      : 'Продажа минус закупка, доставка партии до склада и подготовка этого канала. Налог, коробочка и доставка клиенту не вычитаются.') + '</small>';
+  }
+  function costCell(economy) {
+    if (!economy || economy.state !== 'known') return '<span class="do-missing">' + esc(PROFIT_GAP) + '</span>';
+    const freight = economy.moscowFreight === 'not-in-batch'
+      ? 'доставка партии только по инвойсу, без Москвы'
+      : (economy.moscowFreight === 'included' ? 'с доставкой до Москвы' : '');
+    const parts = [];
+    if (economy.unitGoodsKop != null) parts.push('товар ' + money(economy.unitGoodsKop));
+    if (economy.unitFreightKop != null) parts.push('доставка партии ' + money(economy.unitFreightKop));
+    if (economy.unitPrepKop) parts.push('этикетка ' + money(economy.unitPrepKop));
+    if (freight) parts.push(freight);
+    return '<b>' + money(economy.unitCostKop) + '</b>' + (parts.length ? '<small>' + esc(parts.join(' · ')) + '</small>' : '');
+  }
+  function profitCell(economy) {
+    if (!economy || economy.state !== 'known') return '<span class="do-missing">' + esc(PROFIT_GAP) + '</span>';
+    const tone = economy.unitProfitKop < 0 ? ' class="do-loss"' : (economy.unitProfitKop < 40000 ? ' class="do-thin"' : '');
+    return '<b' + tone + '>' + money(economy.profitKop) + '</b><small>' + money(economy.unitProfitKop) + ' с единицы</small>';
+  }
+  function economicsPanel(order, profit) {
+    if (profit.state !== 'known') return '';
+    const prepKop = safe((profit.costKop || 0) - (profit.goodsKop || 0) - (profit.freightKop || 0));
+    const free = order.lines.find(line => line.sku === 'SKUK502');
+    const four = order.lines.find(line => line.sku === 'SKUK5022');
+    const freeE = free ? lineEconomy(free) : null;
+    const fourE = four ? lineEconomy(four) : null;
+    const why = (freeE && fourE && freeE.state === 'known' && fourE.state === 'known')
+      ? '<p class="do-why"><strong>Почему цена кажется низкой.</strong> FM 4% стоит ' + money(four.priceMinor) + ' против ' + money(free.priceMinor) + ' у FM Free не потому, что его «отдали почти даром»: закупка FM 4% ' + money(fourE.unitGoodsKop) + ' за флакон, FM Free — ' + money(freeE.unitGoodsKop) + '. В рублях FM 4% зарабатывает больше. Тонкая маржа у FM Free и Blue: доставка до Москвы на дорогой артикул даёт ' + money(freeE.unitFreightKop) + ' из ' + money(freeE.unitCostKop) + ' себестоимости. Оптовый прайс мастера далеко ниже витрины Л’Этуаль (2 700–3 399 ₽ за 500 мл ухода).</p>'
+      : '';
+    return '<div class="do-econ"><div><span>Товар</span><strong>' + money(profit.goodsKop) + '</strong><small>Средняя закупка принятых партий, иначе цена инвойса</small></div><div><span>Доставка партий до склада</span><strong>' + money(profit.freightKop) + '</strong><small>Это не доставка клиенту</small></div><div><span>Подготовка этого заказа</span><strong>' + money(prepKop) + '</strong><small>Этикетка на флакон, упаковщик и плёнка один раз. Коробочка 0 ₽</small></div><div><span>Налог и доставка клиенту</span><strong>0 ₽</strong><small>Оплата на личную карту, доставку оплатил клиент</small></div><div class="do-econ-sum"><span>Прибыль по учтённым статьям</span><strong>' + money(profit.profitKop) + '</strong><small>' + (profit.freightGap ? esc(profit.reason) : 'Все статьи доставки партии учтены') + '</small></div></div>' + why;
   }
   function orderCard(order) {
     const profit = orderProfit(order);
@@ -329,9 +426,9 @@
     const lines = order.lines && order.lines.length ? order.lines.map((line, index) => {
       const economy = profit.lines[index] || lineEconomy(line);
       const amount = safe(line.qty * line.priceMinor);
-      return '<tr><td><strong>' + esc(line.name) + '</strong><small>' + esc(line.sku) + (line.brand ? ' · ' + esc(line.brand) : '') + '</small></td><td>' + esc(line.qty) + (line.unit ? ' ' + esc(line.unit) : '') + '</td><td>' + money(line.priceMinor) + '</td><td>' + money(amount) + '</td><td>' + (economy.state === 'known' ? money(economy.unitCostKop) : '<span class="do-missing">' + esc(PROFIT_GAP) + '</span>') + '</td><td>' + (economy.state === 'known' ? money(economy.profitKop) : '<span class="do-missing">' + esc(PROFIT_GAP) + '</span>') + '</td></tr>';
+      return '<tr><td><strong>' + esc(line.name) + '</strong><small>' + esc(line.sku) + (line.brand ? ' · ' + esc(line.brand) : '') + '</small></td><td>' + esc(line.qty) + (line.unit ? ' ' + esc(line.unit) : '') + '</td><td>' + money(line.priceMinor) + '</td><td>' + money(amount) + '</td><td>' + costCell(economy) + '</td><td>' + profitCell(economy) + '</td></tr>';
     }).join('') : '';
-    return '<article class="pb-order do-order" id="order-' + esc(order.id) + '"><div class="do-order-top"><div><p class="market-eyebrow">' + esc(order.channel || 'прямой заказ') + '</p><h4>' + esc(order.client) + '</h4><p>Номер: ' + shown(order.number) + ' · Дата: ' + (order.date ? day(order.date) : missing()) + '</p></div><div class="pb-order-total"><small>Сумма заказа</small><strong>' + money(order.totalKop) + '</strong><span>Оплачено: ' + (paid == null ? missing() : money(paid)) + '</span></div></div><div class="do-facts"><span>Оплата <b>' + esc(payments[order.paymentStatus]) + '</b></span><span>Выполнение <b>' + esc(fulfillment[order.fulfillmentStatus]) + '</b></span><span>Доставка <b>' + shown(order.delivery) + '</b></span><span>Задолженность <b>' + (debt.known ? money(debt.debtKop) : missing()) + '</b></span></div>' + (order.compositionStatus === 'needs-clarification' ? '<p class="do-clarify">' + esc(CLARIFY) + '</p>' : '') + (order.compositionStatus === 'mismatch' ? '<p class="do-mismatch">' + esc(order.compositionNote) + '</p><p class="do-line-total"><span>Сумма строк</span><b>' + money(goods) + '</b></p>' : '') + (lines ? '<div class="pb-table-wrap"><table><thead><tr><th>Товар / артикул</th><th>Количество</th><th>Цена продажи</th><th>Сумма строки</th><th>Себестоимость</th><th>Прибыль строки</th></tr></thead><tbody>' + lines + '</tbody></table></div><p class="pb-help">Себестоимость берётся из карточки артикула в юнит-экономике. Этих артикулов в карточках нет: в закупках они есть, но полная себестоимость из закупки, доставки и подготовки не собрана. ' + esc(PROFIT_GAP) + '.</p>' : '') + '<p class="do-profit">Прибыль: ' + profitText(profit) + '</p><div class="pb-order-actions"><button type="button" class="pb-outline" data-open="' + esc(order.id) + '" aria-expanded="' + open + '">' + (open ? 'Скрыть заказ' : 'Просмотр') + '</button><button type="button" class="pb-outline" data-edit="' + esc(order.id) + '">Редактировать</button></div>' + (open ? '<div class="do-detail"><dl><div><dt>Номер заказа</dt><dd>' + shown(order.number) + '</dd></div><div><dt>Дата заказа</dt><dd>' + (order.date ? day(order.date) : missing()) + '</dd></div><div><dt>Имя клиента</dt><dd>' + esc(order.client) + '</dd></div><div><dt>Канал</dt><dd>' + esc(order.channel) + '</dd></div><div><dt>Общая сумма</dt><dd>' + money(order.totalKop) + '</dd></div><div><dt>Статус оплаты</dt><dd>' + esc(payments[order.paymentStatus]) + '</dd></div><div><dt>Фактически оплачено</dt><dd>' + (paid == null ? missing() : money(paid)) + '</dd></div><div><dt>Статус выполнения</dt><dd>' + esc(fulfillment[order.fulfillmentStatus]) + '</dd></div><div><dt>Доставка</dt><dd>' + shown(order.delivery) + '</dd></div><div><dt>Комментарий</dt><dd>' + shown(order.comment) + '</dd></div></dl>' + '<p class="pb-help">Прибыль строки — цена продажи минус учтённая себестоимость. Комиссия площадки к прямому заказу не относится. Налог не вычитается: режим в проекте не задан. Пустая статья нулём не заменяется.</p></div>' : '') + '</article>';
+    return '<article class="pb-order do-order" id="order-' + esc(order.id) + '"><div class="do-order-top"><div><p class="market-eyebrow">' + esc(order.channel || 'прямой заказ') + '</p><h4>' + esc(order.client) + '</h4><p>Номер: ' + shown(order.number) + ' · Дата: ' + (order.date ? day(order.date) : missing()) + '</p></div><div class="pb-order-total"><small>Сумма заказа</small><strong>' + money(order.totalKop) + '</strong><span>Оплачено: ' + (paid == null ? missing() : money(paid)) + '</span></div></div><div class="do-facts"><span>Оплата <b>' + esc(payments[order.paymentStatus]) + '</b></span><span>Выполнение <b>' + esc(fulfillment[order.fulfillmentStatus]) + '</b></span><span>Доставка <b>' + shown(order.delivery) + '</b></span><span>Задолженность <b>' + (debt.known ? money(debt.debtKop) : missing()) + '</b></span></div>' + (order.compositionStatus === 'needs-clarification' ? '<p class="do-clarify">' + esc(CLARIFY) + '</p>' : '') + (order.compositionStatus === 'mismatch' ? '<p class="do-mismatch">' + esc(order.compositionNote) + '</p><p class="do-line-total"><span>Сумма строк</span><b>' + money(goods) + '</b></p>' : '') + economicsPanel(order, profit) + (lines ? '<div class="pb-table-wrap"><table><thead><tr><th>Товар / артикул</th><th>Количество</th><th>Цена продажи</th><th>Сумма строки</th><th>Себестоимость канала</th><th>Прибыль строки</th></tr></thead><tbody>' + lines + '</tbody></table></div><p class="pb-help">Себестоимость канала: средняя закупка и доставка партии из журнала закупок плюс этикетка на флакон. Коробочка и этикетка коробки не входят — позиции ушли в одной коробке. Налог 0 ₽: оплата на личную карту. Доставка клиенту 0 ₽: её оплатил клиент. Комиссия площадки не применяется.</p>' : '') + '<p class="do-profit">Прибыль: ' + profitText(profit) + '</p><div class="pb-order-actions"><button type="button" class="pb-outline" data-open="' + esc(order.id) + '" aria-expanded="' + open + '">' + (open ? 'Скрыть заказ' : 'Просмотр') + '</button><button type="button" class="pb-outline" data-edit="' + esc(order.id) + '">Редактировать</button></div>' + (open ? '<div class="do-detail"><dl><div><dt>Номер заказа</dt><dd>' + shown(order.number) + '</dd></div><div><dt>Дата заказа</dt><dd>' + (order.date ? day(order.date) : missing()) + '</dd></div><div><dt>Имя клиента</dt><dd>' + esc(order.client) + '</dd></div><div><dt>Канал</dt><dd>' + esc(order.channel) + '</dd></div><div><dt>Общая сумма</dt><dd>' + money(order.totalKop) + '</dd></div><div><dt>Статус оплаты</dt><dd>' + esc(payments[order.paymentStatus]) + '</dd></div><div><dt>Фактически оплачено</dt><dd>' + (paid == null ? missing() : money(paid)) + '</dd></div><div><dt>Статус выполнения</dt><dd>' + esc(fulfillment[order.fulfillmentStatus]) + '</dd></div><div><dt>Доставка</dt><dd>' + shown(order.delivery) + '</dd></div><div><dt>Комментарий</dt><dd>' + shown(order.comment) + '</dd></div></dl><p class="pb-help">Прибыль считается по сумме строк. Названная сумма заказа, если она отличается, на прибыль не подставляется и скидкой не становится. Пустая оплата нулём не заменяется.</p></div>' : '') + '</article>';
   }
   function editor() {
     const order = state.editor;
@@ -377,7 +474,7 @@
     const saved = state.db.updatedAt ? 'сохранено ' + new Date(state.db.updatedAt).toLocaleString('ru-RU') : 'общий файл подключится при открытии';
     const paidNote = !summary ? 'Считаем известные оплаты' : summary.paidKop == null ? 'Сумма оплаты не подтверждена' : (summary.paidCount < summary.count ? 'По ' + summary.paidCount + ' из ' + summary.count + ' заказов' : 'По заказам с известной оплатой');
     const debtNote = !summary ? 'Только известный статус оплаты' : summary.debtKop == null ? 'Нет заказов с известным статусом оплаты' : (summary.debtCount < summary.count ? 'По ' + summary.debtCount + ' из ' + summary.count + ' заказов' : 'Статус оплаты известен');
-    container.innerHTML = '<div class="pb-page do-page" id="do-root"><div class="pb-heading"><div><a class="do-back" href="#purchases">← К закупкам</a><p class="market-eyebrow">MA DISTRIBUTION / ПРЯМЫЕ ЗАКАЗЫ</p><h2>Прямые заказы клиентов</h2><p>Заказы сторонних клиентов, оформленные лично или через переписку.</p></div><button class="pb-primary" type="button" data-action="new-order">＋ Новый заказ</button></div><div class="pb-storage"><span>Общий файл сайта доступен с другого устройства. Правки этой страницы сохраняются в браузере и остаются после обновления · ' + esc(saved) + '</span><div><button type="button" data-action="backup">Сохранить копию</button></div></div>' + (state.storageError ? '<p class="pb-error" role="alert">' + esc(state.storageError) + '</p>' : '') + '<p class="pb-message" role="status">' + esc(state.message) + '</p>' + (state.error ? '<p class="pb-error" role="alert">' + esc(state.error) + '</p>' : '') + '<div class="pb-kpis">' + kpi('Заказов', pending ? '<strong>…</strong>' : '<strong>' + summary.count + '</strong>', 'В выбранных фильтрах') + kpi('Сумма заказов', amount(summary && summary.sumKop, pending), 'Сумма заказов, не оплата') + kpi('Фактически оплачено', amount(summary && summary.paidKop, pending), esc(paidNote)) + kpi('Задолженность', amount(summary && summary.debtKop, pending), esc(debtNote)) + '</div><form class="do-filters" id="do-filters"><label>Период с<input type="date" name="from" value="' + esc(state.filters.from) + '"></label><label>Период по<input type="date" name="to" value="' + esc(state.filters.to) + '"></label><label>Клиент<select name="client">' + options([['', 'Все клиенты'], ...clients.map(client => [client, client])], state.filters.client) + '</select></label><label>Статус оплаты<select name="payment">' + options([['all', 'Все статусы'], ...Object.entries(payments)], state.filters.payment) + '</select></label><label>Статус выполнения<select name="fulfillment">' + options([['all', 'Все статусы'], ...Object.entries(fulfillment)], state.filters.fulfillment) + '</select></label></form>' + (filtered.undated ? '<p class="pb-help">Заказов без даты, они не входят в выбранный период: ' + filtered.undated + '.</p>' : '') + editor() + '<div class="do-list">' + (filtered.orders.length ? filtered.orders.map(orderCard).join('') : '<div class="pb-empty"><span class="pb-empty-icon" aria-hidden="true">✎</span><h3>' + (state.db.orders.length ? 'В этих фильтрах заказов нет' : 'Прямых заказов пока нет') + '</h3><p>' + (state.db.orders.length ? 'Сбросьте период, клиента или статус.' : 'Добавьте заказ клиента, оформленный лично или в переписке.') + '</p></div>') + '</div><details class="pb-calculation"><summary>Как считаем сумму, оплату, задолженность и прибыль</summary><p>Сумма заказов — это сумма поля «Общая сумма». Она не подтверждает получение денег.</p><p>Фактически оплаченная сумма складывается только из заказов, где оплата указана. Пустое значение в сумму нулём не входит. Если таких заказов нет, показатель — «Не указано».</p><p>Задолженность считается только при известном статусе оплаты и согласованной сумме: не оплачен, частично оплачен или оплачен. Заказ со статусом «Не указано» в задолженность не входит.</p><p>Прибыль строки считается, когда артикул есть в справочнике и себестоимость карточки заполнена полностью: цена продажи минус учтённая себестоимость, умноженная на количество. Себестоимость — та же, что в юнит-экономике. Иначе показываем «' + esc(PROFIT_GAP) + '».</p></details><datalist id="do-catalog">' + catalog().map(item => '<option value="' + esc(item.sku) + '">' + esc(item.name) + '</option>').join('') + '</datalist><datalist id="do-clients">' + clients.map(client => '<option value="' + esc(client) + '"></option>').join('') + '</datalist></div>';
+    container.innerHTML = '<div class="pb-page do-page" id="do-root"><div class="pb-heading"><div><a class="do-back" href="#purchases">← К закупкам</a><p class="market-eyebrow">MA DISTRIBUTION / ПРЯМЫЕ ЗАКАЗЫ</p><h2>Прямые заказы клиентов</h2><p>Заказы сторонних клиентов, оформленные лично или через переписку.</p></div><button class="pb-primary" type="button" data-action="new-order">＋ Новый заказ</button></div><div class="pb-storage"><span>Общий файл сайта доступен с другого устройства. Правки этой страницы сохраняются в браузере и остаются после обновления · ' + esc(saved) + '</span><div><button type="button" data-action="backup">Сохранить копию</button></div></div>' + (state.storageError ? '<p class="pb-error" role="alert">' + esc(state.storageError) + '</p>' : '') + '<p class="pb-message" role="status">' + esc(state.message) + '</p>' + (state.error ? '<p class="pb-error" role="alert">' + esc(state.error) + '</p>' : '') + '<div class="pb-kpis">' + kpi('Заказов', pending ? '<strong>…</strong>' : '<strong>' + summary.count + '</strong>', 'В выбранных фильтрах') + kpi('Сумма заказов', amount(summary && summary.sumKop, pending), 'Сумма заказов, не оплата') + kpi('Фактически оплачено', amount(summary && summary.paidKop, pending), esc(paidNote)) + kpi('Задолженность', amount(summary && summary.debtKop, pending), esc(debtNote)) + '</div><form class="do-filters" id="do-filters"><label>Период с<input type="date" name="from" value="' + esc(state.filters.from) + '"></label><label>Период по<input type="date" name="to" value="' + esc(state.filters.to) + '"></label><label>Клиент<select name="client">' + options([['', 'Все клиенты'], ...clients.map(client => [client, client])], state.filters.client) + '</select></label><label>Статус оплаты<select name="payment">' + options([['all', 'Все статусы'], ...Object.entries(payments)], state.filters.payment) + '</select></label><label>Статус выполнения<select name="fulfillment">' + options([['all', 'Все статусы'], ...Object.entries(fulfillment)], state.filters.fulfillment) + '</select></label></form>' + (filtered.undated ? '<p class="pb-help">Заказов без даты, они не входят в выбранный период: ' + filtered.undated + '.</p>' : '') + editor() + '<div class="do-list">' + (filtered.orders.length ? filtered.orders.map(orderCard).join('') : '<div class="pb-empty"><span class="pb-empty-icon" aria-hidden="true">✎</span><h3>' + (state.db.orders.length ? 'В этих фильтрах заказов нет' : 'Прямых заказов пока нет') + '</h3><p>' + (state.db.orders.length ? 'Сбросьте период, клиента или статус.' : 'Добавьте заказ клиента, оформленный лично или в переписке.') + '</p></div>') + '</div><details class="pb-calculation"><summary>Как считаем сумму, оплату, задолженность и прибыль</summary><p>Сумма заказов — это сумма поля «Общая сумма». Она не подтверждает получение денег.</p><p>Фактически оплаченная сумма складывается только из заказов, где оплата указана. Пустое значение в сумму нулём не входит. Если таких заказов нет, показатель — «Не указано».</p><p>Задолженность считается только при известном статусе оплаты и согласованной сумме: не оплачен, частично оплачен или оплачен. Заказ со статусом «Не указано» в задолженность не входит.</p><p>Прибыль прямого заказа: цена продажи минус средняя закупка и доставка партии из журнала закупок, минус этикетка на флакон. Коробочка не входит, если товар ушёл в одной коробке. Налог не вычитается, если оплата на личную карту. Доставка клиенту не вычитается, если её оплатил клиент. Комиссия площадки не применяется. Если доставка до Москвы по позиции ещё не стоит в принятой партии, прибыль по ней — верхняя оценка.</p></details><datalist id="do-catalog">' + catalog().map(item => '<option value="' + esc(item.sku) + '">' + esc(item.name) + '</option>').join('') + '</datalist><datalist id="do-clients">' + clients.map(client => '<option value="' + esc(client) + '"></option>').join('') + '</datalist></div>';
     bind(container);
     preview();
   }
@@ -559,7 +656,8 @@
   }
   window.DirectOrders = {
     mount, homeCard,
-    core: {validate, validateOrder, empty, totals, knownPaid, paymentFacts, orderProfit, lineEconomy, mergeShared, appendOrders, identity, normalOrder, applyFilters, moneyInput}
+    refreshCost: function () { if (document.getElementById('do-root') && !state.editor) show(); else paintCard(); },
+    core: {validate, validateOrder, empty, totals, knownPaid, paymentFacts, orderProfit, lineEconomy, mergeShared, appendOrders, identity, normalOrder, applyFilters, moneyInput, channelPrep}
   };
   state.db = read();
   fetch('direct-orders.json', {cache: 'no-store'}).then(response => response.ok ? response.json() : null).then(data => {

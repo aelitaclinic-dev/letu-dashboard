@@ -197,8 +197,43 @@
       changed++;conflicts+=merged.conflicts;
     }
     if(!changed)return false;
-    save(next);notice(conflicts?'Поставка обновлена из документа. Поля с вашими отличающимися правками сохранены — проверьте карточку.':'Поставка из документа добавлена или обновлена. Проверьте карточку: владелец, склад, курс и приёмка сохраняются по указанным данным.');show();return true;
+    save(next);notice(conflicts?'Поставка обновлена из документа. Поля с вашими отличающимися правками сохранены — проверьте карточку.':'Поставка из документа добавлена или обновлена. Проверьте карточку: владелец, склад, курс и приёмка сохраняются по указанным данным.');show();if(window.DirectOrders&&typeof window.DirectOrders.refreshCost==='function')window.DirectOrders.refreshCost();return true;
   }
-  window.PurchaseBook={mount,homeCard:()=>'<a class="pb-home-card" href="#purchases"><span class="pb-home-icon" aria-hidden="true">▦</span><div><p class="market-eyebrow">ТОВАРНЫЙ УЧЁТ</p><h3>Закупки и склад</h3><p>Поставки, доставка, остатки и себестоимость каждого товара.</p></div><span class="pb-home-button">Открыть закупки ↗</span></a>', core:{cost,preparationFor,fullCost,allocate,ledger,validate,normalOrder,stockCSV,fixed,key,appendShared,mergeShared}};
+  function skuLanded(sku, db) {
+    const key = String(sku || '').trim().toLocaleLowerCase('ru');
+    if (!key) return null;
+    const source = db || state.db;
+    if (!source || !Array.isArray(source.orders)) return null;
+    const received = {qty: 0, goods: 0, ship: 0, batches: []};
+    const other = {qty: 0, goods: 0, ship: 0, batches: []};
+    source.orders.forEach(order => {
+      const priced = cost(order);
+      priced.lines.forEach(line => {
+        if (String(line.sku || '').trim().toLocaleLowerCase('ru') !== key) return;
+        if (line.goodsKop == null || line.shippingKop == null) return;
+        const bucket = order.status === 'received' ? received : other;
+        bucket.qty = safe(bucket.qty + line.qty);
+        bucket.goods = safe(bucket.goods + line.goodsKop);
+        bucket.ship = safe(bucket.ship + line.shippingKop);
+        bucket.batches.push({
+          id: order.id, status: order.status, date: order.date, reference: order.reference || '',
+          qty: line.qty, goodsKop: line.goodsKop, shippingKop: line.shippingKop,
+          rateUnits: order.rateUnits, currency: order.currency
+        });
+      });
+    });
+    const pick = received.qty ? received : (other.qty ? other : null);
+    if (!pick) return null;
+    return {
+      basis: received.qty ? 'received' : 'invoice',
+      moscowFreight: received.qty ? 'included' : 'not-in-batch',
+      qty: pick.qty,
+      goodsUnitKop: roundRatio(BigInt(pick.goods), BigInt(pick.qty)),
+      freightUnitKop: roundRatio(BigInt(pick.ship), BigInt(pick.qty)),
+      landedUnitKop: roundRatio(BigInt(pick.goods + pick.ship), BigInt(pick.qty)),
+      batches: received.batches.length ? received.batches : pick.batches
+    };
+  }
+  window.PurchaseBook={mount,homeCard:()=>'<a class="pb-home-card" href="#purchases"><span class="pb-home-icon" aria-hidden="true">▦</span><div><p class="market-eyebrow">ТОВАРНЫЙ УЧЁТ</p><h3>Закупки и склад</h3><p>Поставки, доставка, остатки и себестоимость каждого товара.</p></div><span class="pb-home-button">Открыть закупки ↗</span></a>', core:{cost,preparationFor,fullCost,allocate,ledger,validate,normalOrder,stockCSV,fixed,key,appendShared,mergeShared,skuLanded,database:()=>state.db}};
   ['purchases-data.json','purchases-orders.json','purchase-receipt-2026-06-29.json','purchase-receipt-2026-05-18.json'].forEach(path=>fetch(path,{cache:'no-store'}).then(r=>r.ok?r.json():null).then(appendShared).catch(e=>{state.error='Поставки из документов не загружены: '+e.message;show();}));
 })();

@@ -51,4 +51,16 @@ assert.equal(api.preparationFor({brand:'Test Brand',sku:'NEW'}).knownKop,9700);
 c.window.DASHBOARD.unitEconomics.groups.push({...prep,boxRub:31,items:[{article:'OTHER'}]});
 assert.equal(api.preparationFor({brand:'Test Brand',sku:'NEW'}),null); // Ambiguous brand models are never guessed.
 assert.equal(api.fullCost({...priced,lines:[{...priced.lines[0],brand:'Unknown'}]}).knownTotalKop,null);
+const landed = api.skuLanded('SKUK502', {schemaVersion: 1, orders: [{
+  id: 'batch', entity: 'ip', date: '2026-01-01', receivedDate: '2026-01-02', status: 'received',
+  reference: 'SINKO', supplier: 'Factory', warehouse: 'Main', currency: 'CNY', rateUnits: 140000,
+  deliveryCurrency: 'RUB', deliveryMinor: 1400, deliveryKop: 1400, allocation: 'value', note: '',
+  lines: [{sku: 'SKUK502', name: 'Keratin', brand: 'SINKO STYLING', qty: 2, priceMinor: 6168}]
+}], movements: []});
+assert.equal(landed.basis, 'received');
+assert.equal(landed.moscowFreight, 'included');
+assert.equal(landed.goodsUnitKop, 86352);
+assert.equal(landed.freightUnitKop, 700);
+assert.equal(landed.landedUnitKop, 87052);
+assert.equal(api.skuLanded('MISSING', {schemaVersion: 1, orders: [], movements: []}), null);
 console.log('Passed: purchase versus prepared unit costs; no double freight; unknown and ambiguous costs stay unfilled.');

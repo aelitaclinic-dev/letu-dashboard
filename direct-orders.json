@@ -3,7 +3,7 @@
   "orders": [
     {
       "id": "direct-valery-romanovskiy-23000",
-      "sourceRevision": 2,
+      "sourceRevision": 3,
       "number": "",
       "date": "",
       "client": "Валерий Романовский",
@@ -80,8 +80,8 @@
       "paymentStatus": "unknown",
       "paidKop": null,
       "fulfillmentStatus": "unknown",
-      "delivery": "",
-      "comment": ""
+      "delivery": "Оплачена клиентом, 0 ₽ в расходе заказа",
+      "comment": "Налог не начисляем: оплата пришла на личную карту. Индивидуальные коробочки не использовались — все позиции в одной коробке."
     }
   ]
 }
