@@ -88,6 +88,14 @@ jobs:
                                "filter": {"textSearch": str(nmid), "withPhoto": -1}}})
               matches = [item for item in response.get("cards", []) if item.get("nmID") == nmid]
               if len(matches) != 1:
+                  report("Search returned IDs: " + str([item.get("nmID") for item in response.get("cards", [])]))
+                  catalog = call(API + "/content/v2/get/cards/list", {
+                      "settings": {"cursor": {"limit": 100}, "filter": {"withPhoto": -1}}})
+                  for item in catalog.get("cards", []):
+                      codes = [c for size in item.get("sizes", []) for c in size.get("skus", [])]
+                      report(json.dumps({"nmID": item.get("nmID"), "imtID": item.get("imtID"),
+                          "title": item.get("title"), "vendorCode": item.get("vendorCode"),
+                          "barcodes": codes, "photos": len(item.get("photos") or [])}, ensure_ascii=False))
                   raise RuntimeError(f"Target {nmid} was not uniquely found in OOO account")
               return matches[0]
           
