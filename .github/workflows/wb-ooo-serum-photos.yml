@@ -1,0 +1,171 @@
+name: WB ООО — фото двух сывороток
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/wb-ooo-serum-photos.yml'
+
+permissions: {}
+
+concurrency:
+  group: wb-ooo-serum-photos
+  cancel-in-progress: false
+
+jobs:
+  copy-photos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - name: Загрузить и проверить фото 100 и 120 мл
+        env:
+          WB_OOO_API_TOKEN: ${{ secrets.WB_OOO_API_TOKEN }}
+        shell: python
+        run: |
+          import json
+          import os
+          import re
+          import time
+          import urllib.error
+          import urllib.request
+          
+          TOKEN = os.environ.get("WB_OOO_API_TOKEN", "").strip()
+          API = "https://content-api.wildberries.ru"
+          TARGETS = [
+              (2237876164, "2061653962730", 553164105, 29, 13),
+              (2237876163, "2061653961184", 533622995, 28, 15),
+          ]
+          def report(message):
+              safe = str(message).replace(TOKEN, "[REDACTED]") if TOKEN else str(message)
+              safe = safe.replace("\r", " ").replace("\n", " ")
+              print(safe, flush=True)
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
+                  stream.write(safe + "\n\n")
+          
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+          opener = urllib.request.build_opener(NoRedirect)
+          
+          def call(url, payload=None):
+              deadline = time.monotonic() + 2100
+              while True:
+                  headers = {"Authorization": TOKEN, "Accept": "application/json"}
+                  data = None
+                  if payload is not None:
+                      data = json.dumps(payload).encode("utf-8")
+                      headers["Content-Type"] = "application/json"
+                  request = urllib.request.Request(url, data=data, headers=headers,
+                                                   method="POST" if data is not None else "GET")
+                  try:
+                      with opener.open(request, timeout=60) as response:
+                          result = json.load(response)
+                      if not isinstance(result, dict):
+                          raise RuntimeError("WB: unexpected response format")
+                      if result.get("error"):
+                          raise RuntimeError("WB: " + str(result.get("errorText", "API error"))[:1500])
+                      return result
+                  except urllib.error.HTTPError as error:
+                      body = error.read(5000).decode("utf-8", errors="replace")
+                      if error.code != 429:
+                          raise RuntimeError(f"WB HTTP {error.code}: {body[:1500]}") from None
+                      try:
+                          delay = max(5, int(error.headers.get("X-Ratelimit-Retry",
+                                          error.headers.get("Retry-After", "60"))) + 2)
+                      except (ValueError, TypeError):
+                          delay = 60
+                      if time.monotonic() + delay > deadline:
+                          raise RuntimeError("WB rate limit wait exceeds 35 minutes") from None
+                      report(f"WB HTTP 429: waiting {delay} seconds before retry")
+                      for _ in range(delay // 30):
+                          time.sleep(30)
+                      time.sleep(delay % 30)
+          
+          def card(nmid):
+              response = call(API + "/content/v2/get/cards/list", {
+                  "settings": {"cursor": {"limit": 100},
+                               "filter": {"textSearch": str(nmid), "withPhoto": -1}}})
+              matches = [item for item in response.get("cards", []) if item.get("nmID") == nmid]
+              if len(matches) != 1:
+                  raise RuntimeError(f"Target {nmid} was not uniquely found in OOO account")
+              return matches[0]
+          
+          def validate_target(item, barcode):
+              codes = [code for size in item.get("sizes", []) for code in size.get("skus", [])]
+              if barcode not in codes:
+                  raise RuntimeError(f"Barcode mismatch for {item.get('nmID')}; nothing uploaded")
+          
+          def urls_for(source, basket, count):
+              return [f"https://basket-{basket}.wbbasket.ru/vol{source // 100000}/part{source // 1000}/{source}/images/big/{i}.webp"
+                      for i in range(1, count + 1)]
+          
+          def preflight(url):
+              # Never send an API token to public image storage.
+              request = urllib.request.Request(url, headers={"User-Agent": "WB-serum-photo-copy/1.0"})
+              with urllib.request.urlopen(request, timeout=40) as response:
+                  content_type = response.headers.get("Content-Type", "").split(";")[0]
+                  raw = response.read(32 * 1024 * 1024 + 1)
+              if len(raw) > 32 * 1024 * 1024 or len(raw) < 12:
+                  raise RuntimeError("Source image size is invalid")
+              if not content_type.startswith("image/") or raw[:4] != b"RIFF" or raw[8:12] != b"WEBP":
+                  raise RuntimeError("Source URL did not return a WebP image")
+          
+          def main():
+              if not TOKEN:
+                  raise RuntimeError("WB_OOO_API_TOKEN is missing")
+              seller = call("https://common-api.wildberries.ru/api/v1/seller-info")
+              name = re.sub(r'[\s«»„“”"]+', '', str(seller.get("name", "")).upper())
+              if name not in {"ОООКЛМ", "ОБЩЕСТВОСОГРАНИЧЕННОЙОТВЕТСТВЕННОСТЬЮКЛМ"}:
+                  raise RuntimeError("Token seller is not OOO KLM; no media will be changed")
+              report("ООО «КЛМ»: продавец подтверждён.")
+              pending = []
+              # Validate both destinations and every public source before any write.
+              for nmid, barcode, source, basket, count in TARGETS:
+                  item = card(nmid)
+                  validate_target(item, barcode)
+                  photos = item.get("photos") or []
+                  report(f"{nmid}: current photos {len(photos)}, expected {count}")
+                  if photos:
+                      if len(photos) != count:
+                          raise RuntimeError(f"{nmid}: existing gallery is nonempty and differs; preserved")
+                      report(f"{nmid}: full gallery already exists; preserved without overwrite")
+                      continue
+                  urls = urls_for(source, basket, count)
+                  for url in urls:
+                      preflight(url)
+                  pending.append((nmid, barcode, count, urls))
+                  report(f"{nmid}: all {count} source files are accessible")
+              failed = []
+              for nmid, barcode, count, urls in pending:
+                  # Recheck immediately before media/save, which replaces the whole gallery.
+                  current = card(nmid)
+                  validate_target(current, barcode)
+                  if current.get("photos"):
+                      raise RuntimeError(f"{nmid}: gallery changed during preflight; preserved")
+                  call(API + "/content/v3/media/save", {"nmId": nmid, "data": urls})
+                  report(f"{nmid}: WB accepted media/save; checking persistence")
+                  confirmed = False
+                  for attempt in range(15):
+                      time.sleep(20)
+                      actual = card(nmid)
+                      photos = actual.get("photos") or []
+                      if len(photos) == count:
+                          for photo in photos:
+                              preflight(photo["big"])
+                          confirmed = True
+                          report(f"{nmid}: VERIFIED {count} saved and accessible photos")
+                          break
+                  if not confirmed:
+                      failed.append(nmid)
+                      report(f"{nmid}: not confirmed within 5 minutes; do not treat as success")
+              if failed:
+                  raise RuntimeError(f"Photos not persisted for {failed}")
+              report("Готово: обе карточки проверены. Исходные карточки ИП, цены и остатки не изменялись.")
+          
+          try:
+              main()
+          except Exception as error:
+              report("ERROR: " + str(error))
+              raise SystemExit(1)
+          
