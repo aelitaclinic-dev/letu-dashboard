@@ -62,6 +62,7 @@
 .do-why{margin:0 0 14px;padding:14px 16px;border-radius:12px;background:#f4eef2;color:#4e3346;font-size:13px;line-height:1.65}
 .do-loss{color:#922f43}
 .do-thin{color:#9c7544}
+.do-order tfoot th,.do-order tfoot td{background:#f4eef2;font-weight:600;color:#4e3346}
 @media(max-width:1050px){.do-econ{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.do-econ{grid-template-columns:1fr}.do-econ strong{font-size:20px}}
 .do-missing{display:inline-block;color:#8a4e32;background:#f8efe6;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:600}
