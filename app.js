@@ -68,11 +68,11 @@
     let from = query.get("from") || "2026-01-01";
     var wb = wbStore();
     var wbTo = wb && [wb.sales, wb.orders].filter(function (v) { return v && v.state === "ready"; }).map(function (v) { return v.to; }).sort().pop();
-    let to = query.get("to") || (wbTo && wbTo > DATA.asOf ? wbTo : DATA.asOf || "2026-10-28");
+    let to = query.get("to") || (wbTo && wbTo > DATA.asOf ? wbTo : DATA.asOf || "2026-10-31");
     const brand = query.get("brand") || "";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
       from = "2026-01-01";
-      to = "2026-10-28";
+      to = "2026-10-31";
     }
     return { from: from, to: to, brand: brand };
   }
@@ -207,13 +207,16 @@
     const loaded = function (state) { return state === "month" || state === "partial"; };
     if (!loaded(move) && !loaded(fin)) return MISSING;
     let head = "Есть отчёт исполнителя, файла заказов нет";
-    if (move === "partial" || fin === "partial") head = "Неполный";
+    if (move === "partial" && fin === "month") head = "Отчёт исполнителя полный, заказы в аналитике неполные";
+    else if (move === "month" && fin === "partial") head = "Файл заказов полный, отчёт исполнителя неполный";
+    else if (move === "partial" || fin === "partial") head = "Неполный";
     else if (move === "month" && fin === "month") head = "Полный";
     else if (move === "month") head = "Есть файл заказов, отчёта исполнителя нет";
     if (loaded(move) && loaded(fin)) {
       const gap = row.deliveredKop - row.realizationKop;
       let tail = gap === 0 ? "Сверка доставки и реализации сходится." : "Доставка и реализация расходятся на " + money(gap) + ".";
-      if (move === "partial" || fin === "partial") tail += " С полным соседним месяцем не сравнивается.";
+      if (move === "partial" && fin === "month") tail += " Аналитика короче отчёта. Начисления с полным месяцем сравниваются, заказы — нет.";
+      else if (move === "partial" || fin === "partial") tail += " С полным соседним месяцем не сравнивается.";
       return head + ". " + tail;
     }
     return head;
@@ -499,7 +502,7 @@
         { name: "Начислено к выплате", color: "#69465F", values: payouts, tips: tips },
         { name: "Поступило на счёт", color: "#4F6272", values: received, tips: receivedTips },
       ],
-      "«Начислено к выплате» — строка «к оплате» после вычета аванса. «Поступило на счёт» — аванс и «к оплате», которые уже пришли. Поступление выше начисления на сумму аванса, это не вторая выплата. Сентябрь: в выписке есть аванс, конечная выплата ещё не пришла. Платежи по отчётам 2025 года в столбики не входят. Октябрь со звёздочкой — начисление только до 15 октября."
+      "«Начислено к выплате» — строка «к оплате» после вычета аванса. «Поступило на счёт» — аванс и «к оплате», которые уже пришли. Поступление выше начисления на сумму аванса, это не вторая выплата. Сентябрь и октябрь: в выписке по 29 октября есть аванс, конечная выплата ещё не пришла. Платежи по отчётам 2025 года в столбики не входят."
     ) + drawLine(
       "Накопительный итог начислений с начала выбранного периода",
       labels,
@@ -558,8 +561,8 @@
       const richest = full.slice().sort(function (a, b) { return (b.payoutKop || 0) - (a.payoutKop || 0); })[0];
       bits.push("Самое большое начисление полного месяца — " + MONTH_NAME[richest.month.slice(5)].toLowerCase() + ": " + money(richest.payoutKop) + ". Это «к оплате», не поступление на счёт.");
     }
-    if (chosen.some(function (row) { return row.month === "2026-10" && (row.movementState === "partial" || row.financeState === "partial"); })) {
-      bits.push("Сравнивать октябрь с сентябрём нельзя: октябрь не закончен. Заказы в аналитике до 27 октября, начисление в отчёте исполнителя до 15 октября. Сентябрь закрыт полным месяцем.");
+    if (chosen.some(function (row) { return row.month === "2026-10" && row.movementState === "partial"; })) {
+      bits.push("Заказы октября в аналитике загружены по 27 октября, поэтому число заказов с сентябрём не сравнивается. Отчёт исполнителя ОК001344644 закрывает начисления за 1–31 октября.");
     }
     if (!bits.length) return "<p>Для выбранных дат полного месяца, по которому видна динамика, нет.</p>";
     return bits.map(function (bit) { return "<p>" + esc(bit) + "</p>"; }).join("");
@@ -601,7 +604,12 @@
     }, 0) : null;
     const partial = chosen.some(function (row) { return row.movementState === "partial" || row.financeState === "partial"; });
     let totalStatus = chosen.length ? "Сумма файлов, которые целиком попали в выбранные даты." : "В выбранных датах загруженного файла нет.";
-    if (partial) totalStatus += " Неполный месяц в сумму входит и с полным месяцем не сравнивается.";
+    if (partial) {
+      const finPartial = chosen.some(function (row) { return row.useFinance && row.financeState === "partial"; });
+      const movePartial = chosen.some(function (row) { return row.useMovement && row.movementState === "partial"; });
+      if (finPartial) totalStatus += " Неполный отчёт в сумму входит и с полным месяцем не сравнивается.";
+      else if (movePartial) totalStatus += " Неполный файл заказов в сумму входит. Начисления взяты из полных отчётов исполнителя.";
+    }
     function totalMoney(value, ready) { return !ready || value == null ? MISSING : esc(money(value)); }
     function totalQty(value, ready) { return !ready || value == null ? MISSING : esc(qty(value)); }
     const total = "<tr class='total'><td>Итого в выбранных датах</td>"
@@ -656,11 +664,12 @@
       const list = (item.rates || []).map(function (rate) { return qty(rate) + "%"; }).join(", ");
       return brandLabel(item.brand) + (list ? " " + list : "");
     }).join("; ");
+    const reportName = row.report ? " Отчёт " + row.report.number + " от " + dayText(row.report.date) + "." : "";
     return "<p>Начисление за " + esc(dayText(row.financeStart)) + "–" + esc(dayText(row.financeEnd))
       + ". Реализация " + esc(money(row.realizationKop)) + ", возвраты " + esc(money(row.returnsKop))
       + ", вознаграждение после скидки " + esc(money(row.commissionAfterKop))
       + ", авансы " + esc(money(row.advancesKop)) + ", маркетинг " + esc(money(row.marketingKop))
-      + ". Начислено к выплате " + esc(money(row.payoutKop)) + ". " + receiptSentence(row) + "</p>"
+      + ". Начислено к выплате " + esc(money(row.payoutKop)) + ". " + receiptSentence(row) + esc(reportName) + "</p>"
       + (rates ? "<p>Ставки вознаграждения в строках, без усреднения: " + esc(rates) + ".</p>" : "");
   }
 
@@ -1383,6 +1392,26 @@
     apply();
   }
 
+  function reportTable(row, brand) {
+    const lines = (row.reportLines || []).filter(function (line) { return !brand || line.brand === brand; });
+    if (!lines.length) return "";
+    const body = lines.map(function (line) {
+      const kind = line.qty < 0 ? "возврат" : "продажа";
+      return "<tr><td>" + esc(dayText(line.date)) + "</td><td>" + esc(kind) + "</td><td>" + esc(line.article) + "</td><td>" + esc(line.brand) + "</td><td>" + esc(line.name) + "</td>"
+        + "<td class='num'>" + esc(qty(line.qty)) + "</td>"
+        + "<td class='num'>" + esc(money(line.priceKop)) + "</td>"
+        + "<td class='num'>" + esc(money(line.discountKop)) + "</td>"
+        + "<td class='num'>" + esc(money(line.sumKop)) + "</td>"
+        + "<td class='num'>" + esc(String(line.ratePercent)) + "%</td>"
+        + "<td class='num'>" + esc(money(line.commissionKop)) + "</td>"
+        + "<td>" + esc(line.order) + "</td></tr>";
+    }).join("");
+    const title = row.report ? "Продажи отчёта " + row.report.number : "Продажи отчёта исполнителя";
+    return "<h2>" + esc(title) + "</h2><p class='muted'>Все строки отчёта. Минус в количестве — возврат. Сумма с НДС уже учитывает скидку исполнителя. Вознаграждение считается от заявленной цены, не от цены со скидкой.</p>"
+      + "<div class='table-wrap'><table><thead><tr><th>Дата</th><th>Операция</th><th>Артикул</th><th>Бренд</th><th>Товар</th><th class='num'>Шт.</th><th class='num'>Цена с НДС</th><th class='num'>Скидка</th><th class='num'>Сумма с НДС</th><th class='num'>Ставка</th><th class='num'>Вознаграждение</th><th>Заказ</th></tr></thead><tbody>"
+      + body + "</tbody></table></div>";
+  }
+
   function renderMonth(key, state) {
     const row = DATA.months.filter(function (item) { return item.month === key; })[0];
     if (!row) return "<p>Такого месяца нет.</p>";
@@ -1399,6 +1428,7 @@
       html += "<p>Файл заказов: Нет данных.</p>";
     }
     html += financeParagraph(row) + "</div>";
+    html += reportTable(row, state.brand);
     if (state.brand) {
       html += "<p class='muted'>Фильтр бренда: " + esc(state.brand) + ". Товары и склады ниже — этого бренда. Подвал выше — на весь отчёт.</p>";
     }
@@ -1868,7 +1898,7 @@
     var button = function (id, text) {
       return "<button type='button' data-profit-preset='" + id + "'" + (preset === id ? "" : " class='secondary'") + ">" + esc(text) + "</button>";
     };
-    var coverage = "Продажи в аналитике загружены по " + dayText(cov.salesThrough) + ". Полные финансовые отчёты — по " + dayText(cov.financeFullThrough) + ". Последний финансовый отчёт — по " + dayText(cov.financeThrough) + ". Дата 30 октября 2026 отчёты до этого дня не продлевает.";
+    var coverage = "Продажи в аналитике загружены по " + dayText(cov.salesThrough) + ". Полные финансовые отчёты — по " + dayText(cov.financeFullThrough) + ". Последний финансовый отчёт — по " + dayText(cov.financeThrough) + ". Дата сборки страницы отчёты дальше не продлевает.";
     function monthLastDay(month) {
       var year = Number(month.slice(0, 4));
       var mon = Number(month.slice(5));
