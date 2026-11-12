@@ -1992,7 +1992,7 @@
   var EXPENSE_KEY = "ma-distribution-expenses-v1";
   var expenseEntity = "all";
   var expenseEditing = null;
-  var expenseFilters = { category: "", channel: "", status: "", from: "2026-01", to: "2026-10" };
+  var expenseFilters = { category: "", channel: "", status: "", from: "2026-01", to: "2026-11" };
 
   function expenseBook() {
     return DATA.businessExpenses || { records: [], entities: [], categories: [], channels: [], methods: [], unitAlready: [], note: "" };
@@ -2314,11 +2314,13 @@
     }
     var list = shown.map(function (row) {
       var profitText = "Не определено";
-      var share = expenseShare(row, filters.to, row.entity, row.channelScope === "several" ? "letu" : (row.channelScope || "letu"));
+      var paidForShare = row.paidMonth || String(row.date || "").slice(0, 7);
+      var shareMonth = row.allocationMethod === "month" && paidForShare ? paidForShare : filters.to;
+      var share = expenseShare(row, shareMonth, row.entity, row.channelScope === "several" ? "letu" : (row.channelScope || "letu"));
       if (share.state === "included") profitText = "Уже включено в другой расход";
       else if (share.state === "excluded") profitText = "Бизнес в целом, по площадкам не разделено";
       else if (share.state === "review") profitText = "Нужно уточнить: разные юрлица";
-      else if (share.state === "known") profitText = "В выбранном способе: " + money(share.kop);
+      else if (share.state === "known") profitText = (row.allocationMethod === "month" ? "В месяце оплаты: " : "В выбранном способе: ") + money(share.kop);
       return "<article class='profit-sku expense-row'><b>" + esc(row.title || "Расход") + "</b>"
         + "<span>" + esc(entityLabel(row.entity)) + " · " + esc(labelOf(book.categories, row.category)) + "</span>"
         + "<span>Дата: " + esc(row.date ? dayText(row.date) : (row.yearLabel || "Нужно уточнить")) + "</span>"
@@ -2335,7 +2337,7 @@
       return "<li>" + esc(item.name) + " — " + esc(item.detail) + ". " + esc(item.status) + ".</li>";
     }).join("");
     return "<section id='expenses'><div class='unit-heading'><h2>Расходы бизнеса</h2><span class='unit-date'>ИП и ООО отдельно</span></div>"
-      + "<div class='unit-intro'><strong>Здесь платежи и расходы периода не смешиваются.</strong> ИП и ООО не складываются в одну прибыль. Комиссии и удержания из отчётов площадок повторно не добавляются. " + esc(book.note || "") + " Новые записи сохраняются только в этом браузере. Цены, карточки и остатки в магазинах не меняются.</div>"
+      + "<div class='unit-intro'><strong>Здесь платежи и расходы периода не смешиваются.</strong> ИП и ООО не складываются в одну прибыль. " + esc(book.note || "") + " Новые записи сохраняются только в этом браузере. Цены, карточки и остатки в магазинах не меняются.</div>"
       + "<div class='profit-presets'>" + switcher + "</div>"
       + "<form id='expense-filters' class='filters'>"
       + "<label>С месяца<select id='expense-from'>" + expenseMonthOptions(filters.from, false) + "</select></label>"
@@ -2647,7 +2649,40 @@
     if (other.length) {
       html += "<h3>Уведомления о выкупе и отдельные отчёты</h3><p>Эти документы не прибавлены к недельным итогам выше.</p>" + wbPayoutTable(other);
     }
+    html += wbChargeSection();
     return html;
+  }
+  function wbChargeReady(source) {
+    function dateOk(value) { return /^\d{4}-\d{2}-\d{2}$/.test(value); }
+    if (!source || source.state !== "ready" || source.basis !== "penalty and deduction" || !Array.isArray(source.rows)) return false;
+    return source.rows.every(function (row) {
+      return row && dateOk(row.date) && typeof row.operation === "string" && typeof row.type === "string"
+        && Number.isSafeInteger(row.rows) && row.rows > 0
+        && Number.isSafeInteger(row.penaltyKop) && Number.isSafeInteger(row.deductionKop);
+    });
+  }
+  function wbChargeSection() {
+    var source = WB_FINANCE_SNAPSHOT && WB_FINANCE_SNAPSHOT.charges;
+    if (!wbChargeReady(source)) return "<h3>Отчёт по штрафам и удержаниям</h3><p>Построчная детализация штрафов и удержаний ещё не загружена. Общая карточка выше её не заменяет.</p>";
+    var groups = {};
+    source.rows.forEach(function (row) {
+      var key = row.operation + "\n" + row.type;
+      var item = groups[key] || (groups[key] = { operation: row.operation, type: row.type, rows: 0, penaltyKop: 0, deductionKop: 0 });
+      item.rows += row.rows;
+      item.penaltyKop += row.penaltyKop;
+      item.deductionKop += row.deductionKop;
+    });
+    var list = Object.keys(groups).map(function (key) { return groups[key]; }).sort(function (a, b) {
+      return (Math.abs(b.penaltyKop) + Math.abs(b.deductionKop)) - (Math.abs(a.penaltyKop) + Math.abs(a.deductionKop));
+    });
+    var penalty = list.reduce(function (sum, row) { return sum + row.penaltyKop; }, 0);
+    var deduction = list.reduce(function (sum, row) { return sum + row.deductionKop; }, 0);
+    var body = list.map(function (row) {
+      return "<tr><td>" + esc(row.operation) + "</td><td>" + esc(row.type) + "</td><td class='num'>" + esc(qty(row.rows)) + "</td><td class='num'>" + esc(money(row.penaltyKop)) + "</td><td class='num'>" + esc(money(row.deductionKop)) + "</td></tr>";
+    }).join("");
+    return "<h3>Отчёт по штрафам и удержаниям</h3><p>Это строки операций «Штраф» и «Удержание» из детализации WB за 2026 год. Сумма строк совпала с шапкой недельных отчётов: штрафы " + esc(money(penalty)) + ", удержания " + esc(money(deduction)) + ". В карточке выше они были вместе с хранением и приёмкой, без видов. Добровольная выплата WB за пострадавший товар — компенсация, не расход. Штрафы и положительные удержания записаны в <a href='#expenses'>расходах ИП</a>. Из «итого к оплате» они уже вычтены и второй раз не вычитаются.</p>"
+      + "<div class='table-wrap'><table><thead><tr><th>Операция</th><th>Вид по отчёту WB</th><th class='num'>Строк</th><th class='num'>Штраф</th><th class='num'>Удержание</th></tr></thead><tbody>"
+      + body + "</tbody></table></div>";
   }
   function wbCard(label, value, note) {
     return "<div class='market-empty-metric'><span>" + esc(label) + "</span><strong>" + esc(value == null ? "Нет данных" : value)
@@ -3141,6 +3176,7 @@
       || !reverse.rows.every(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.date) && typeof r.type === "string"
         && Number.isSafeInteger(r.reverseQty) && r.reverseQty >= 0 && Number.isSafeInteger(r.forwardQty) && r.forwardQty >= 0; }))) return;
     if (data.payouts && !wbPayoutReady(data.payouts)) delete data.payouts;
+    if (data.charges && !wbChargeReady(data.charges)) delete data.charges;
     WB_FINANCE_SNAPSHOT = data;
     if (wbStore()) render();
   }).catch(function () { /* Preserve operational view when finance is unavailable. */ });
