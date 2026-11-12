@@ -1,0 +1,31 @@
+name: WB ИП — выплаты 2026
+on:
+  push:
+    branches: [cursor/wb-ip-payouts-2026-8c47]
+    paths:
+      - .github/workflows/wb-ip-payouts-once.yml
+permissions:
+  contents: write
+jobs:
+  finance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cursor/wb-ip-payouts-2026-8c47
+      - name: Проверить расчёты и защиту данных
+        run: python -m unittest discover -s tests -p 'test_wb_*.py'
+      - name: Получить выплаты ИП за 2026
+        env:
+          WB_IP_FINANCE_API_TOKEN: ${{ secrets.WB_IP_FINANCE_API_TOKEN }}
+          WB_FINANCE_YEAR: "2026"
+        run: python scripts/wb_finance_sync.py
+      - name: Сохранить сводку на ветке
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add wb-finance.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Load WB IP payout totals for 2026'
+          git push origin HEAD:cursor/wb-ip-payouts-2026-8c47
