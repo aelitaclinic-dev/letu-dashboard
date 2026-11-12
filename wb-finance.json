@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-13T00:42:37+03:00",
+  "generatedAt": "2026-11-13T01:04:39+03:00",
   "audit": [
     {
       "operation": "Возврат",
@@ -138,7 +138,7 @@
   ],
   "reverseLogistics": {
     "state": "ready",
-    "fetchedAt": "2026-11-13T00:42:37+03:00",
+    "fetchedAt": "2026-11-13T01:04:39+03:00",
     "coverage": [
       [
         "2026-01-01",
@@ -5922,7 +5922,7 @@
   },
   "sales": {
     "state": "ready",
-    "fetchedAt": "2026-11-13T00:42:37+03:00",
+    "fetchedAt": "2026-11-13T01:04:39+03:00",
     "from": "2026-01-01",
     "to": "2026-11-13",
     "coverage": [
@@ -8429,7 +8429,7 @@
   },
   "payouts": {
     "state": "ready",
-    "fetchedAt": "2026-11-13T00:42:37+03:00",
+    "fetchedAt": "2026-11-13T01:04:39+03:00",
     "from": "2026-01-01",
     "to": "2026-11-13",
     "period": "weekly",
@@ -10017,7 +10017,7 @@
   },
   "charges": {
     "state": "ready",
-    "fetchedAt": "2026-11-13T00:42:37+03:00",
+    "fetchedAt": "2026-11-13T01:04:39+03:00",
     "from": "2026-01-01",
     "to": "2026-11-13",
     "basis": "penalty and deduction",
