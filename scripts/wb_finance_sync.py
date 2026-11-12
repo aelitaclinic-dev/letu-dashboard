@@ -19,7 +19,8 @@ import urllib.request
 MOSCOW = dt.timezone(dt.timedelta(hours=3))
 BASE = 'https://finance-api.wildberries.ru/api/finance/v1/sales-reports/'
 FIELDS = ['rrdId', 'dateFrom', 'dateTo', 'currency', 'rrDate', 'sellerOperName',
-          'docTypeName', 'quantity', 'retailAmount', 'returnAmount', 'deliveryAmount', 'bonusTypeName']
+          'docTypeName', 'quantity', 'retailAmount', 'returnAmount', 'deliveryAmount', 'bonusTypeName',
+          'penalty', 'deduction']
 
 class SyncError(Exception):
     pass
@@ -131,6 +132,19 @@ def signed_kopecks(value):
         raise SyncError('Unexpected payout amount')
     return int(scaled)
 
+def optional_signed(value):
+    if value is None or value == '':
+        return 0
+    return signed_kopecks(value)
+
+def charge_label(value):
+    label = ' '.join(str(value or '').split())
+    if not label:
+        return 'Без уточнения'
+    if len(label) > 180:
+        label = label[:180].rstrip()
+    return label
+
 def payout_amount(report, key, required):
     if key not in report or report[key] is None or report[key] == '':
         if required:
@@ -191,7 +205,8 @@ def aggregate(rows, reports, start, end, fetched):
             coverage.append([lo, hi])
     coverage = merge_ranges(coverage)
     seen, output, skipped = {}, {}, 0
-    audit, logistics = {}, {}
+    audit, logistics, charges = {}, {}, {}
+    has_charge_fields = False
     for row in rows:
         ident = row.get('rrdId')
         if not isinstance(ident, int) or isinstance(ident, bool) or ident <= 0:
@@ -210,6 +225,22 @@ def aggregate(rows, reports, start, end, fetched):
         audit_reverse = row.get('returnAmount')
         if isinstance(audit_reverse, int):
             audit_item['reverseDeliveryQty'] += audit_reverse
+        if 'penalty' in row or 'deduction' in row:
+            has_charge_fields = True
+            penalty_kop = optional_signed(row.get('penalty')) if 'penalty' in row else 0
+            deduction_kop = optional_signed(row.get('deduction')) if 'deduction' in row else 0
+            if penalty_kop or deduction_kop or operation in ('Штраф', 'Удержание'):
+                charge_date = day(row.get('rrDate'))
+                if start <= charge_date <= end:
+                    if row.get('currency') != 'RUB':
+                        raise SyncError('Unsupported accounting currency')
+                    label = charge_label(row.get('bonusTypeName'))
+                    charge_key = (charge_date, str(operation or 'Без операции'), label)
+                    charge = charges.setdefault(charge_key, dict(date=charge_date, operation=charge_key[1],
+                                                                 type=label, rows=0, penaltyKop=0, deductionKop=0))
+                    charge['rows'] += 1
+                    charge['penaltyKop'] += penalty_kop
+                    charge['deductionKop'] += deduction_kop
         if operation in ('Логистика', 'Доставка'):
             date = day(row.get('rrDate'))
             if start <= date <= end:
@@ -252,7 +283,13 @@ def aggregate(rows, reports, start, end, fetched):
                   'coverage': coverage, 'rows': [output[key] for key in sorted(output)],
                   'basis': 'retailAmount', 'dateBasis': 'rrDate', 'period': 'weekly',
                   'reportCount': len(reports), 'excludedOtherOperationRows': skipped},
-        'payouts': payouts(reports, start, end, fetched)}
+        'payouts': payouts(reports, start, end, fetched),
+        'charges': {'state': 'ready', 'fetchedAt': fetched, 'from': start, 'to': end,
+                    'basis': 'penalty and deduction',
+                    'rows': [charges[key] for key in sorted(charges)],
+                    'note': 'Строки, где WB указал штраф или удержание, и операции «Штраф» и «Удержание». Номера строк отчёта не публикуются.'}
+                   if has_charge_fields else
+                   {'state': 'not_connected', 'note': 'В детализации WB нет сумм штрафа и удержания.'}}
 
 def sync(client, start, end, fetched):
     reports, offset = [], 0
@@ -295,13 +332,15 @@ def main():
     payout = result.get('payouts') or {}
     if payout.get('state') != 'ready' or not payout.get('rows'):
         raise SyncError('WB report list did not include payout totals')
+    if (result.get('charges') or {}).get('state') != 'ready':
+        raise SyncError('WB detail did not include penalty and deduction amounts')
     target = pathlib.Path('wb-finance.json')
     temporary = target.with_suffix('.tmp')
     temporary.write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     temporary.replace(target)
-    s, payout_rows = result['sales'], result['payouts']['rows']
+    s, payout_rows, charge_rows = result['sales'], result['payouts']['rows'], result['charges']['rows']
     standard = sum(row['kind'] == 'standard' for row in payout_rows)
-    print(f"Finance history ready: {s['reportCount']} reports, {len(s['rows'])} daily aggregates, {standard} weekly payout totals.")
+    print(f"Finance history ready: {s['reportCount']} reports, {len(s['rows'])} daily aggregates, {standard} weekly payout totals, {len(charge_rows)} penalty rows.")
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
     if summary:
         with open(summary, 'a', encoding='utf-8') as stream:

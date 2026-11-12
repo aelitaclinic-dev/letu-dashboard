@@ -116,5 +116,25 @@ class FinanceTests(unittest.TestCase):
         result=self.calc([self.row()])
         self.assertEqual(result['payouts']['state'],'not_connected')
         self.assertNotIn('rows',result['payouts'])
+        self.assertEqual(result['charges']['state'],'not_connected')
+    def test_penalty_and_deduction_are_kept_by_type(self):
+        fine=self.row(); fine.update(rrdId=8,sellerOperName='Штраф',docTypeName='',quantity=0,penalty='12.50',deduction='0',
+                                     bonusTypeName='Штраф МП. Невыполненный заказ',srid='SECRET-ORDER')
+        hold=self.row(); hold.update(rrdId=9,sellerOperName='Удержание',docTypeName='',quantity=0,penalty='0',deduction='-3.20',
+                                     bonusTypeName='Удержание за продвижение')
+        other=self.row(); other.update(rrdId=10,penalty='1.00',deduction='0',bonusTypeName='Корректировка')
+        result=self.calc([self.row(),fine,hold,other])
+        rows=result['charges']['rows']
+        self.assertEqual([(r['operation'], r['type'], r['penaltyKop'], r['deductionKop']) for r in rows],
+                         [('Продажа','Корректировка',100,0),
+                          ('Удержание','Удержание за продвижение',0,-320),
+                          ('Штраф','Штраф МП. Невыполненный заказ',1250,0)])
+        dumped=json.dumps(result['charges'])
+        self.assertNotIn('SECRET-ORDER', dumped)
+        self.assertNotIn('rrdId', dumped)
+    def test_fractional_penalty_fails(self):
+        bad=self.row(); bad.update(rrdId=8,sellerOperName='Штраф',docTypeName='',penalty='0.001',deduction='0')
+        with self.assertRaises(sync.SyncError):
+            self.calc([bad])
 
 if __name__=='__main__': unittest.main()
