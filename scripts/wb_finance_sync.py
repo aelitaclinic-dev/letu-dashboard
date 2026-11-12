@@ -98,6 +98,80 @@ def kopecks(value):
     except decimal.InvalidOperation:
         raise SyncError('Invalid sale amount') from None
 
+PAYOUT_KINDS = {1: 'standard', 2: 'buyout', 3: 'georgia'}
+PAYOUT_AMOUNTS = (
+    ('retailAmountSum', 'retailKop', True),
+    ('forPaySum', 'forPayKop', True),
+    ('deliveryServiceSum', 'deliveryKop', True),
+    ('paidStorageSum', 'storageKop', True),
+    ('paidAcceptanceSum', 'acceptanceKop', True),
+    ('deductionSum', 'deductionKop', True),
+    ('penaltySum', 'penaltyKop', True),
+    ('additionalPaymentSum', 'adjustmentKop', True),
+    ('cashbackAmountSum', 'cashbackAmountKop', False),
+    ('cashbackDiscountSum', 'cashbackDiscountKop', False),
+    ('cashbackCommissionChangeSum', 'cashbackCommissionKop', False),
+    ('paymentSchedule', 'paymentScheduleKop', False),
+    ('bankPaymentSum', 'bankPaymentKop', True),
+)
+
+def signed_kopecks(value):
+    if isinstance(value, bool) or isinstance(value, float):
+        raise SyncError('Unexpected payout amount')
+    if value is None or (isinstance(value, str) and not value.strip()):
+        raise SyncError('Missing payout amount')
+    try:
+        number = decimal.Decimal(str(value).strip())
+    except decimal.InvalidOperation:
+        raise SyncError('Invalid payout amount') from None
+    if not number.is_finite():
+        raise SyncError('Invalid payout amount')
+    scaled = number * 100
+    if scaled != scaled.to_integral_value() or abs(scaled) > 9_007_199_254_740_991:
+        raise SyncError('Unexpected payout amount')
+    return int(scaled)
+
+def payout_amount(report, key, required):
+    if key not in report or report[key] is None or report[key] == '':
+        if required:
+            raise SyncError('WB payout total is incomplete')
+        return None
+    return signed_kopecks(report[key])
+
+def payouts(reports, start, end, fetched):
+    """Weekly 'итого к оплате' from the report list. Report ids and seller names are dropped."""
+    if not any(isinstance(report, dict) and ('bankPaymentSum' in report or 'forPaySum' in report) for report in reports):
+        return {'state': 'not_connected',
+                'note': 'В списке отчётов WB нет итога к оплате. Начисление к выплате не опубликовано.'}
+    chosen = {}
+    for report in reports:
+        if not isinstance(report, dict) or report.get('currency') != 'RUB':
+            raise SyncError('Unsupported report currency')
+        lo, hi = day(report.get('dateFrom')), day(report.get('dateTo'))
+        if lo > hi:
+            raise SyncError('Invalid payout period')
+        if hi < start or lo > end:
+            continue
+        kind = PAYOUT_KINDS.get(report.get('reportType'))
+        if kind is None:
+            raise SyncError('Unsupported payout report type')
+        formed = day(report.get('createDate'))
+        amounts = {target: payout_amount(report, source, required) for source, target, required in PAYOUT_AMOUNTS}
+        signature = tuple(amounts[target] for _, target, _ in PAYOUT_AMOUNTS)
+        row = {'from': lo, 'to': hi, 'formed': formed, 'kind': kind}
+        row.update(amounts)
+        current = chosen.get((lo, hi, kind))
+        if current is None or formed > current[0]:
+            chosen[(lo, hi, kind)] = (formed, signature, row)
+        elif formed == current[0] and signature != current[1]:
+            raise SyncError('Conflicting payout report for the same week')
+    if not chosen:
+        raise SyncError('WB payout totals do not cover the requested year')
+    rows = [item[2] for item in sorted(chosen.values(), key=lambda item: (item[2]['from'], item[2]['to'], item[2]['kind']))]
+    return {'state': 'ready', 'fetchedAt': fetched, 'from': start, 'to': end, 'period': 'weekly',
+            'basis': 'bankPaymentSum', 'rows': rows,
+            'note': 'Итого к оплате по недельному отчёту WB. Это начисление к перечислению, не поступление на банковский счёт.'}
+
 def merge_ranges(ranges):
     merged = []
     for start, end in sorted(set(map(tuple, ranges))):
@@ -177,7 +251,8 @@ def aggregate(rows, reports, start, end, fetched):
         'sales': {'state': 'ready', 'fetchedAt': fetched, 'from': start, 'to': end,
                   'coverage': coverage, 'rows': [output[key] for key in sorted(output)],
                   'basis': 'retailAmount', 'dateBasis': 'rrDate', 'period': 'weekly',
-                  'reportCount': len(reports), 'excludedOtherOperationRows': skipped}}
+                  'reportCount': len(reports), 'excludedOtherOperationRows': skipped},
+        'payouts': payouts(reports, start, end, fetched)}
 
 def sync(client, start, end, fetched):
     reports, offset = [], 0
@@ -217,18 +292,23 @@ def main():
     result = sync(Client(token), start, end, now.isoformat(timespec='seconds'))
     if not result['sales']['coverage']:
         raise SyncError('WB returned no financial reports for requested year')
+    payout = result.get('payouts') or {}
+    if payout.get('state') != 'ready' or not payout.get('rows'):
+        raise SyncError('WB report list did not include payout totals')
     target = pathlib.Path('wb-finance.json')
     temporary = target.with_suffix('.tmp')
     temporary.write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     temporary.replace(target)
-    s = result['sales']
-    print(f"Finance history ready: {s['reportCount']} reports, {len(s['rows'])} daily aggregates.")
+    s, payout_rows = result['sales'], result['payouts']['rows']
+    standard = sum(row['kind'] == 'standard' for row in payout_rows)
+    print(f"Finance history ready: {s['reportCount']} reports, {len(s['rows'])} daily aggregates, {standard} weekly payout totals.")
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
     if summary:
         with open(summary, 'a', encoding='utf-8') as stream:
             stream.write('## Финансовая история WB ИП\n\nПроверка токена успешна. Получены недельные отчёты за ' + start + '–' + end + '.\n\n'
-                         'Фактическое покрытие: ' + ', '.join(a + '–' + b for a,b in s['coverage']) + '.\n\n'
-                         'Опубликованы только дневные итоги продаж и возвратов. Токен и исходные отчёты не публикуются.\n')
+                         'Фактическое покрытие продаж: ' + ', '.join(a + '–' + b for a,b in s['coverage']) + '.\n\n'
+                         'К оплате опубликовано по ' + str(standard) + ' недельным отчётам. Это начисление отчёта, не банковская выписка.\n\n'
+                         'Опубликованы только сводные суммы. Токен, номера отчётов и наименование продавца не публикуются.\n')
 
 if __name__ == '__main__':
     try:

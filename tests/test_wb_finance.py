@@ -74,5 +74,47 @@ class FinanceTests(unittest.TestCase):
         self.assertEqual(sync.kopecks('0.01'),1)
         for value in ['-1','NaN','0.001']:
             with self.assertRaises(sync.SyncError): sync.kopecks(value)
+    def report(self, **updates):
+        base=dict(dateFrom='2026-01-05',dateTo='2026-01-11',createDate='2026-01-12',currency='RUB',reportType=1,
+                  retailAmountSum='1000.00',forPaySum='700.00',deliveryServiceSum='50.00',paidStorageSum='10.00',
+                  paidAcceptanceSum='0',deductionSum='5.00',penaltySum='0.00',additionalPaymentSum='-1.50',
+                  cashbackAmountSum='0.00',cashbackDiscountSum=None,cashbackCommissionChangeSum='',paymentSchedule='-3.50',
+                  bankPaymentSum='635.00',reportId=987654321,sellerFinanceName='SECRET-SELLER')
+        base.update(updates); return base
+    def test_payout_uses_bank_total_and_drops_identity(self):
+        result=sync.payouts([self.report()],'2026-01-01','2026-11-12','2026-11-12T12:00:00+03:00')
+        row=result['rows'][0]
+        self.assertEqual(row['bankPaymentKop'],63500)
+        self.assertEqual(row['forPayKop'],70000)
+        self.assertEqual(row['adjustmentKop'],-150)
+        self.assertEqual(row['paymentScheduleKop'],-350)
+        self.assertIsNone(row['cashbackDiscountKop'])
+        self.assertEqual(row['kind'],'standard')
+        dumped=json.dumps(result)
+        self.assertNotIn('SECRET-SELLER',dumped); self.assertNotIn('987654321',dumped); self.assertNotIn('reportId',dumped)
+    def test_later_payout_replaces_same_week(self):
+        older=self.report(bankPaymentSum='100.00')
+        newer=self.report(createDate='2026-01-20',bankPaymentSum='80.00')
+        rows=sync.payouts([older,newer],'2026-01-01','2026-12-31','2026-11-12T12:00:00+03:00')['rows']
+        self.assertEqual(len(rows),1); self.assertEqual(rows[0]['bankPaymentKop'],8000); self.assertEqual(rows[0]['formed'],'2026-01-20')
+    def test_conflicting_payout_same_day_fails(self):
+        with self.assertRaises(sync.SyncError):
+            sync.payouts([self.report(),self.report(bankPaymentSum='1.00')],'2026-01-01','2026-12-31','2026-11-12T12:00:00+03:00')
+    def test_buyout_stays_separate_and_prior_year_is_left_out(self):
+        rows=sync.payouts([
+            self.report(dateFrom='2025-12-22',dateTo='2025-12-28',createDate='2025-12-29'),
+            self.report(dateFrom='2025-12-29',dateTo='2026-01-04',createDate='2026-01-05',bankPaymentSum='10.00'),
+            self.report(reportType=2,bankPaymentSum='4.00'),
+        ],'2026-01-01','2026-12-31','2026-11-12T12:00:00+03:00')['rows']
+        self.assertEqual([(r['kind'], r['bankPaymentKop'], r['from']) for r in rows],[('standard',1000,'2025-12-29'),('buyout',400,'2026-01-05')])
+    def test_incomplete_or_fractional_payout_fails(self):
+        for broken in [self.report(bankPaymentSum=None), self.report(bankPaymentSum='0.001'), self.report(bankPaymentSum=1.25),
+                       self.report(currency='USD'), self.report(reportType=9)]:
+            with self.assertRaises(sync.SyncError):
+                sync.payouts([broken],'2026-01-01','2026-12-31','2026-11-12T12:00:00+03:00')
+    def test_sales_sync_without_payout_fields_stays_unconnected(self):
+        result=self.calc([self.row()])
+        self.assertEqual(result['payouts']['state'],'not_connected')
+        self.assertNotIn('rows',result['payouts'])
 
 if __name__=='__main__': unittest.main()

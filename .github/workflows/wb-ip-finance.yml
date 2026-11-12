@@ -44,5 +44,9 @@ jobs:
           git add wb-finance.json wb-returns.json
           if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Update WB IP financial history aggregates'
-          git pull --rebase origin main
-          git push origin HEAD:main
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

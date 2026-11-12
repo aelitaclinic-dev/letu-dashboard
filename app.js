@@ -68,7 +68,9 @@
     let from = query.get("from") || "2026-01-01";
     var wb = wbStore();
     var wbTo = wb && [wb.sales, wb.orders].filter(function (v) { return v && v.state === "ready"; }).map(function (v) { return v.to; }).sort().pop();
-    let to = query.get("to") || (wbTo && wbTo > DATA.asOf ? wbTo : DATA.asOf || "2026-10-28");
+    var payoutTo = location.hash.indexOf("/payouts") >= 0 && wbPayoutReady(WB_FINANCE_SNAPSHOT && WB_FINANCE_SNAPSHOT.payouts)
+      ? WB_FINANCE_SNAPSHOT.payouts.to : null;
+    let to = query.get("to") || [wbTo && wbTo > DATA.asOf ? wbTo : DATA.asOf, payoutTo].filter(Boolean).sort().pop() || "2026-10-28";
     const brand = query.get("brand") || "";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
       from = "2026-01-01";
@@ -2573,6 +2575,80 @@
     var sales = wbStats(rows, "sale"), returns = wbStats(rows, "return");
     return !sales || sales.missing || returns.missing ? null : sales.amount - returns.amount;
   }
+  function wbPayoutReady(source) {
+    var kinds = ["standard", "buyout", "georgia"];
+    var required = ["retailKop", "forPayKop", "deliveryKop", "storageKop", "acceptanceKop", "deductionKop", "penaltyKop", "adjustmentKop", "bankPaymentKop"];
+    var optional = ["cashbackAmountKop", "cashbackDiscountKop", "cashbackCommissionKop", "paymentScheduleKop"];
+    function dateOk(value) { return /^\d{4}-\d{2}-\d{2}$/.test(value); }
+    function moneyOk(value) { return Number.isSafeInteger(value); }
+    if (!source || source.state !== "ready" || source.basis !== "bankPaymentSum" || source.period !== "weekly"
+      || !dateOk(source.from) || !dateOk(source.to) || source.from > source.to || typeof source.fetchedAt !== "string"
+      || !Array.isArray(source.rows)) return false;
+    return source.rows.every(function (row) {
+      return row && dateOk(row.from) && dateOk(row.to) && dateOk(row.formed) && row.from <= row.to && kinds.indexOf(row.kind) >= 0
+        && required.every(function (key) { return moneyOk(row[key]); })
+        && optional.every(function (key) { return row[key] == null || moneyOk(row[key]); });
+    });
+  }
+  function wbPayoutSum(rows, key) {
+    if (!rows.length || rows.some(function (row) { return row[key] == null; })) return null;
+    return rows.reduce(function (sum, row) { return sum + row[key]; }, 0);
+  }
+  function wbPayoutTable(rows) {
+    var headers = ["Неделя отчёта", "Сформирован", "Продажа", "К перечислению за товар", "Логистика", "Хранение", "Приёмка", "Штрафы", "Удержания", "Корректировка ВВ", "Итого к оплате"];
+    var body = rows.map(function (row) {
+      var wider = row.wider ? " · неделя шире выбранных дат" : "";
+      return "<tr><td>" + esc(dayText(row.from) + "–" + dayText(row.to) + wider) + "</td><td>" + esc(dayText(row.formed)) + "</td>"
+        + [row.retailKop, row.forPayKop, row.deliveryKop, row.storageKop, row.acceptanceKop, row.penaltyKop, row.deductionKop, row.adjustmentKop, row.bankPaymentKop].map(function (value) {
+          return "<td class='num'>" + esc(money(value)) + "</td>";
+        }).join("") + "</tr>";
+    }).join("");
+    var total = "<tr><td colspan='2'><b>Итого по этим неделям</b></td>"
+      + ["retailKop", "forPayKop", "deliveryKop", "storageKop", "acceptanceKop", "penaltyKop", "deductionKop", "adjustmentKop", "bankPaymentKop"].map(function (key) {
+        return "<td class='num'><b>" + esc(money(wbPayoutSum(rows, key))) + "</b></td>";
+      }).join("") + "</tr>";
+    return "<div class='table-wrap'><table><thead><tr>" + headers.map(function (header) { return "<th>" + esc(header) + "</th>"; }).join("")
+      + "</tr></thead><tbody>" + body + total + "</tbody></table></div>";
+  }
+  function wbPayoutSection(state) {
+    var source = WB_FINANCE_SNAPSHOT && WB_FINANCE_SNAPSHOT.payouts;
+    if (!wbPayoutReady(source)) return "<p>История начислений к выплате за 2026 год ещё не загружена. Текущий баланс выше не заменяет её и не подтверждает поступление на счёт.</p>";
+    var rows = source.rows.filter(function (row) { return row.from <= state.to && row.to >= state.from; }).map(function (row) {
+      return Object.assign({}, row, {wider: row.from < state.from || row.to > state.to});
+    });
+    var standard = rows.filter(function (row) { return row.kind === "standard"; });
+    var other = rows.filter(function (row) { return row.kind !== "standard"; });
+    var html = "<h3>К оплате по недельным отчётам</h3><p>Загружены отчёты кабинета ИП за " + esc(dayText(source.from)) + "–" + esc(dayText(source.to))
+      + ". Обновлено " + esc(source.fetchedAt.replace("T", " ").slice(0, 19)) + " МСК. «Итого к оплате» — сумма bankPaymentSum: к перечислению за товар уже после комиссии площадки и после логистики, хранения, приёмки, штрафов и удержаний. Это начисление отчёта, не строка банковской выписки. Дата формирования — не дата поступления. Неделя, которая лишь пересекает выбранные даты, входит целиком и по дням не делится.</p>";
+    if (!standard.length) html += "<p>За выбранные даты недельного отчёта нет. Это не ноль.</p>";
+    else {
+      html += "<div class='market-empty-metrics'>"
+        + wbCard("Итого к оплате", money(wbPayoutSum(standard, "bankPaymentKop")), "По недельным отчётам внутри выбранных дат")
+        + wbCard("К перечислению за товар", money(wbPayoutSum(standard, "forPayKop")), "После комиссии, до логистики и удержаний")
+        + wbCard("Логистика", money(wbPayoutSum(standard, "deliveryKop")), "Как в шапке отчёта")
+        + wbCard("Хранение, приёмка, штрафы, удержания", money(["storageKop", "acceptanceKop", "penaltyKop", "deductionKop"].reduce(function (sum, key) {
+          var part = wbPayoutSum(standard, key); return part == null || sum == null ? null : sum + part;
+        }, 0)), "Сумма этих четырёх статей") + "</div>";
+      html += wbPayoutTable(standard);
+    }
+    var loyalty = standard.filter(function (row) {
+      return ["cashbackAmountKop", "cashbackDiscountKop", "cashbackCommissionKop", "paymentScheduleKop"].some(function (key) { return row[key]; });
+    });
+    if (loyalty.length) {
+      html += "<details class='wb-daily-fold'><summary>Лояльность и срок перечисления <span>" + loyalty.length + "</span></summary>"
+        + "<div class='table-wrap'><table><thead><tr><th>Неделя отчёта</th><th class='num'>Баллы удержаны</th><th class='num'>Компенсация скидки</th><th class='num'>Участие в программе</th><th class='num'>Срок перечисления</th></tr></thead><tbody>"
+        + loyalty.map(function (row) {
+          return "<tr><td>" + esc(dayText(row.from) + "–" + dayText(row.to)) + "</td>"
+            + ["cashbackAmountKop", "cashbackDiscountKop", "cashbackCommissionKop", "paymentScheduleKop"].map(function (key) {
+              return "<td class='num'>" + esc(money(row[key])) + "</td>";
+            }).join("") + "</tr>";
+        }).join("") + "</tbody></table></div></details>";
+    }
+    if (other.length) {
+      html += "<h3>Уведомления о выкупе и отдельные отчёты</h3><p>Эти документы не прибавлены к недельным итогам выше.</p>" + wbPayoutTable(other);
+    }
+    return html;
+  }
   function wbCard(label, value, note) {
     return "<div class='market-empty-metric'><span>" + esc(label) + "</span><strong>" + esc(value == null ? "Нет данных" : value)
       + "</strong><small>" + esc(note) + "</small></div>";
@@ -2828,7 +2904,7 @@
         + wbCard("Текущий баланс", money(b.currentKop), "По данным WB") + wbCard("Доступно к выводу", money(b.availableKop), "Это не фактическая выплата") + "</div>";
       else html += "<p>Текущий баланс не получен." + (b && b.lastError ? " " + esc(b.lastError) : "") + "</p>";
       if (b && b.state === "ready" && b.lastError) html += "<p>Последнее обновление баланса не удалось: " + esc(b.lastError) + "</p>";
-      html += "<p>История фактических выплат пока не подключена.</p>";
+      html += wbPayoutSection(state);
     } else html += "<h3>Остатки ещё не загружены</h3><p>Этот этап подключает оперативные заказы, продажи, возвраты и доступный баланс. Остатки, поставки и обращения покупателей подключим отдельно.</p>";
     if (sales && sales.some(function (r) { return r.missingAmountQty || r.zeroAmountQty; })) html += "<p>В части операций WB ещё не указал цену или вернул ноль. Денежные суммы требуют уточнения; количество операций сохранено.</p>";
     return html;
@@ -3064,6 +3140,7 @@
     if (reverse && (reverse.state !== "ready" || !Array.isArray(reverse.coverage) || !Array.isArray(reverse.rows)
       || !reverse.rows.every(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.date) && typeof r.type === "string"
         && Number.isSafeInteger(r.reverseQty) && r.reverseQty >= 0 && Number.isSafeInteger(r.forwardQty) && r.forwardQty >= 0; }))) return;
+    if (data.payouts && !wbPayoutReady(data.payouts)) delete data.payouts;
     WB_FINANCE_SNAPSHOT = data;
     if (wbStore()) render();
   }).catch(function () { /* Preserve operational view when finance is unavailable. */ });
