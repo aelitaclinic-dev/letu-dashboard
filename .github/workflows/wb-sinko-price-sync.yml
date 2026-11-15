@@ -1,0 +1,78 @@
+name: WB SINKO — сверка цен ИП и ООО
+on:
+  push:
+    paths:
+      - '.github/workflows/wb-sinko-price-sync.yml'
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: wb-sinko-price-sync
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Read current seller identities, SINKO cards and prices
+        env:
+          WB_IP_API_TOKEN: ${{ secrets.WB_IP_API_TOKEN }}
+          WB_OOO_API_TOKEN: ${{ secrets.WB_OOO_API_TOKEN }}
+        shell: python
+        run: |
+          import json, os, urllib.request, urllib.error, time, re
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *args): return None
+          opener = urllib.request.build_opener(NoRedirect())
+          def req(token, url, body=None):
+              r=urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(), headers={"Authorization":token,"Content-Type":"application/json"}, method="GET" if body is None else "POST")
+              try:
+                  with opener.open(r,timeout=45) as f: return json.load(f)
+              except urllib.error.HTTPError as e: raise RuntimeError("WB HTTP "+str(e.code)) from None
+          stores={}
+          for store in ("IP","OOO"):
+              token=os.environ["WB_"+store+"_API_TOKEN"].strip()
+              if not token: raise RuntimeError("Missing token "+store)
+              seller=req(token,"https://common-api.wildberries.ru/api/v1/seller-info")
+              name=re.sub(r'[\s«»„“”"]+',"",str(seller.get("name","")).upper())
+              if store=="OOO" and name not in {"ОООКЛМ","ОБЩЕСТВОСОГРАНИЧЕННОЙОТВЕТСТВЕННОСТЬЮКЛМ"}: raise RuntimeError("OOO identity mismatch")
+              if store=="IP" and not name.startswith(("ИП","ИНДИВИДУАЛЬНЫЙПРЕДПРИНИМАТЕЛЬ")): raise RuntimeError("IP identity mismatch")
+              print("Seller identity verified:",store)
+              cards=[]; cursor={"limit":100}
+              for page in range(100):
+                  result=req(token,"https://content-api.wildberries.ru/content/v2/get/cards/list",{"settings":{"cursor":cursor,"filter":{"withPhoto":-1}}})
+                  batch=result.get("cards")
+                  if not isinstance(batch,list): raise RuntimeError("Invalid cards response")
+                  cards.extend(c for c in batch if "sinko" in re.sub(r"[^a-z]","",str(c.get("brand","")).lower()))
+                  cur=result.get("cursor",{})
+                  if cur.get("total",0)<100: break
+                  cursor={"limit":100,"updatedAt":cur["updatedAt"],"nmID":cur["nmID"]}
+                  time.sleep(1)
+              else: raise RuntimeError("Card pagination incomplete")
+              prices={}; offset=0
+              for page in range(100):
+                  result=req(token,"https://discounts-prices-api.wildberries.ru/api/v2/list/goods/filter?limit=1000&offset="+str(offset))
+                  batch=result.get("data",{}).get("listGoods")
+                  if result.get("error") or not isinstance(batch,list): raise RuntimeError("Invalid prices response")
+                  prices.update({str(p["nmID"]):p for p in batch})
+                  if len(batch)<1000: break
+                  offset+=1000; time.sleep(1)
+              else: raise RuntimeError("Price pagination incomplete")
+              stores[store]={"cards":cards,"prices":prices}
+              print("SINKO card count",store,len(cards))
+          def barcode_set(c):
+              return {str(b) for s in c.get("sizes",[]) for b in s.get("skus",[]) if b}
+          matched=unmatched=ambiguous=changed=0
+          for c in stores["IP"]["cards"]:
+              candidates=[d for d in stores["OOO"]["cards"] if barcode_set(c)&barcode_set(d)]
+              if not candidates: unmatched+=1; continue
+              if len(candidates)!=1: ambiguous+=1; continue
+              d=candidates[0]
+              p=stores["IP"]["prices"].get(str(c["nmID"]))
+              q=stores["OOO"]["prices"].get(str(d["nmID"]))
+              if not p or not q: unmatched+=1; continue
+              matched+=1
+              if p.get("discount")!=q.get("discount") or sorted(s["price"] for s in p["sizes"])!=sorted(s["price"] for s in q["sizes"]): changed+=1
+          print("Exact barcode matches:",matched)
+          print("Prices differ:",changed)
+          print("No unambiguous source:",unmatched+ambiguous)
+          print("READ ONLY. No prices changed. No identities, SKUs or prices exported.")
