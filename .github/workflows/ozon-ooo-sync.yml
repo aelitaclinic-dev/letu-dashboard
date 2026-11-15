@@ -49,5 +49,7 @@ jobs:
           req("/v1/finance/cash-flow-statement/list",{"date":{"from":"2026-01-01T00:00:00+03:00","to":now.isoformat()+"T23:59:59+03:00"},"page":1,"page_size":100,"with_details":True})
           req("/v2/finance/realization",{"month":now.month,"year":now.year})
           req("/v1/finance/accrual/types",{})
-          req("/v3/product/info/list",{"product_id":[item["product_id"] for item in req("/v3/product/list",{"filter":{"visibility":"ALL"},"limit":100}).get("result",{}).get("items",[])]})
+          catalog=req("/v3/product/list",{"filter":{"visibility":"ALL"},"limit":100}).get("result",{}).get("items",[])
+          req("/v1/analytics/stocks",{"skus":[item["sku"] for item in catalog if item.get("sku")]})
+          req("/v2/product/info/stocks-by-warehouse/fbs",{"sku":[item["sku"] for item in catalog if item.get("sku")]})
           
