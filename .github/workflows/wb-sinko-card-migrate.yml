@@ -1,0 +1,108 @@
+name: WB SINKO — перенос карточек ИП в ООО
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/wb-sinko-card-migrate.yml']
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: wb-sinko-card-migrate
+  cancel-in-progress: false
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Audit unique products against KLM catalog
+        env:
+          WB_IP_API_TOKEN: ${{ secrets.WB_IP_API_TOKEN }}
+          WB_OOO_API_TOKEN: ${{ secrets.WB_OOO_API_TOKEN }}
+        shell: python
+        run: |
+          PLAN=[{"sku":"C151616","type":"shampoo","sourceIds":[1196506033],"sourceTitle":"Шампунь с аргановым маслом питательный 250 мл","ml":250,"sourceCount":1},{"sku":"C151613","type":"set","sourceIds":[1201758973],"sourceTitle":"Дорожный набор для волос 3×80 мл","ml":240,"sourceCount":1},{"sku":"C151612","type":"serum","sourceIds":[1208779836],"sourceTitle":"Сыворотка для волос с кератином, 100 мл","ml":100,"sourceCount":1},{"sku":"C151609","type":"shampoo","sourceIds":[1196506030],"sourceTitle":"Шампунь с аргановым маслом питательный 500 мл","ml":500,"sourceCount":1},{"sku":"C151611","type":"shampoo","sourceIds":[1196506032,1144348868],"sourceTitle":"Шампунь с морингой глубокое очищение 500 мл","ml":500,"sourceCount":2},{"sku":"SKLC200","type":"cream","sourceIds":[1208779837,1014173492],"sourceTitle":"Несмываемый крем для волос, 200 мл","ml":200,"sourceCount":2},{"sku":"C151615","type":"cream","sourceIds":[1196506025],"sourceTitle":"Восстанавливающий крем для волос Super Energy Boost 500 мл","ml":500,"sourceCount":1},{"sku":"SKMS300","type":"shampoo","sourceIds":[1201758975],"sourceTitle":"Шампунь с маслом макадамии увлажняющий 300 мл","ml":300,"sourceCount":1},{"sku":"C151617","type":"conditioner","sourceIds":[1196506034,1242475567],"sourceTitle":"Кондиционер с аргановым маслом 250 мл","ml":250,"sourceCount":2},{"sku":"C151620","type":"conditioner","sourceIds":[1204093267,1242475568,1249888317],"sourceTitle":"Кондиционер с чайным деревом 300 мл","ml":300,"sourceCount":3},{"sku":"SKSC300A","type":"shampoo","sourceIds":[1201758974],"sourceTitle":"Шампунь-кондиционер 2 в 1 с мятой 300 мл","ml":300,"sourceCount":1},{"sku":"C151624","type":"shampoo","sourceIds":[1211129555],"sourceTitle":"Укрепляющий шампунь с имбирем, 200 мл","ml":200,"sourceCount":1},{"sku":"C151610","type":"conditioner","sourceIds":[1196506031,1242475566],"sourceTitle":"Кондиционер с аргановым маслом 500 мл","ml":500,"sourceCount":2},{"sku":"SKTO30","type":"oil","sourceIds":[1204093269],"sourceTitle":"Масло для волос с чайным деревом 30 мл","ml":30,"sourceCount":1},{"sku":"SKTS100","type":"spray","sourceIds":[1196506027,1249888315],"sourceTitle":"Спрей для волос с чайным деревом, 100 мл","ml":100,"sourceCount":2},{"sku":"SKPS220","type":"peel","sourceIds":[1196506029],"sourceTitle":"Пилинг для кожи головы с чайным деревом 220 мл","ml":220,"sourceCount":1},{"sku":"C104703","type":"serum","sourceIds":[1196506026],"sourceTitle":"Сыворотка для волос с маслом макадамии, 100 мл","ml":100,"sourceCount":1},{"sku":"C151621","type":"mask","sourceIds":[1204093268,1249888318],"sourceTitle":"Маска для волос с чайным деревом 300 мл","ml":300,"sourceCount":2},{"sku":"C151622","type":"mask","sourceIds":[1211129554],"sourceTitle":"Маска для волос с имбирем, 300 мл","ml":300,"sourceCount":1},{"sku":"SKTC300","type":"cream","sourceIds":[1196506028,1249888316],"sourceTitle":"Крем для кудрявых волос с чайным деревом 300 мл","ml":300,"sourceCount":2},{"sku":"C151623","type":"shampoo","sourceIds":[1209873195,1144348869,1537297276],"sourceTitle":"Органический шампунь с имбирем, 300 мл","ml":300,"sourceCount":3},{"sku":"SET-C151611-C151610","type":"set","sourceIds":[1052638252],"sourceTitle":"Набор шампунь для жирной кожи и кондиционер 2×500 мл","ml":1000,"sourceCount":1},{"sku":"SET-C151609-C151610","type":"set","sourceIds":[1052638253],"sourceTitle":"Набор шампунь и кондиционер с маслом арганы","ml":1000,"sourceCount":1},{"sku":"SKUK503","type":"shampoo","sourceIds":[1144222404],"sourceTitle":"Шампунь уход после бразильского кератина бессульфатный","ml":500,"sourceCount":1},{"sku":"SET-SKUK501-KERATIN500","type":"set","sourceIds":[1052638254],"sourceTitle":"Набор бразильское кератиновое выпрямление профессиолнальный","ml":1000,"sourceCount":1},{"sku":"SKAS300","type":"shampoo","sourceIds":[1144348866],"sourceTitle":"Профессиональный шампунь против перхоти с морингой","ml":300,"sourceCount":1},{"sku":"C151619","type":"shampoo","sourceIds":[1249888319],"sourceTitle":"Шампунь с чайным деревом, 300 мл","ml":300,"sourceCount":1},{"sku":"SET-C151619-C151620","type":"set","sourceIds":[1259399575],"sourceTitle":"Набор шампунь+кондиционер с маслом чайного дерева","ml":600,"sourceCount":1},{"sku":"C151058","type":"set","sourceIds":[1281694661],"sourceTitle":"Гликопротеиновый набор для восстановления волос маска+ампулы","ml":300,"sourceCount":1}]
+          import os,json,re,time,urllib.request,urllib.error,urllib.parse,base64
+          API="https://content-api.wildberries.ru"
+          TOKENS={k:os.environ["WB_"+k+"_API_TOKEN"].strip() for k in ("IP","OOO")}
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,*args): return None
+          opener=urllib.request.build_opener(NoRedirect())
+          def call(store,path,body=None):
+              deadline=time.monotonic()+1800
+              while True:
+                  req=urllib.request.Request(API+path,data=None if body is None else json.dumps(body,ensure_ascii=False).encode(),headers={"Authorization":TOKENS[store],"Content-Type":"application/json"},method="GET" if body is None else "POST")
+                  try:
+                      with opener.open(req,timeout=60) as f: data=json.load(f)
+                      if isinstance(data,dict) and data.get("error"): raise RuntimeError("WB returned content error")
+                      return data
+                  except urllib.error.HTTPError as e:
+                      if e.code!=429: raise RuntimeError("WB HTTP "+str(e.code)+" "+path.split("?")[0]) from None
+                      delay=max(2,int(e.headers.get("X-Ratelimit-Retry",e.headers.get("Retry-After","60"))))+2
+                      if time.monotonic()+delay>deadline:raise RuntimeError("Rate limit wait exceeds 30 minutes") from None
+                      print("RATE_LIMIT_WAIT",delay,flush=True);time.sleep(delay)
+                  finally:time.sleep(0.7)
+          def cards(store):
+              out=[];cursor={"limit":100}
+              for page in range(100):
+                  data=call(store,"/content/v2/get/cards/list",{"settings":{"cursor":cursor,"filter":{"withPhoto":-1}}})
+                  batch=data.get("cards")
+                  if not isinstance(batch,list):raise RuntimeError("Invalid cards")
+                  out+=batch;cur=data["cursor"]
+                  if cur.get("total",0)<100:return out
+                  cursor={"limit":100,"nmID":cur["nmID"],"updatedAt":cur["updatedAt"]}
+              raise RuntimeError("Incomplete pagination")
+          def norm(x):return re.sub(r"\s+"," ",str(x or "").casefold().replace("ё","е")).strip()
+          def volume(c):
+              for x in c.get("characteristics",[]):
+                  if norm(x.get("name"))=="объем товара":
+                      v=x.get("value")
+                      if isinstance(v,list):v=v[0] if len(v)==1 else None
+                      try:return float(str(v).replace(",","."))
+                      except ValueError:return None
+          def bars(c):return {str(b) for s in c.get("sizes",[]) for b in s.get("skus",[]) if b}
+          def key(c):
+              n=norm(c.get("title"));t=n+" "+norm(c.get("description"))[:650];v=volume(c)
+              has=lambda *terms:any(x in t for x in terms)
+              shampoo="шампун" in n;cond="кондиционер" in n and not shampoo;serum="сыворот" in n;set_="набор" in n
+              if has("гликопроте","glycoprotein"):return "C151058" if v==300 else None
+              if set_ and v==1000 and has("кератин","keratin"):return "SET-SKUK501-KERATIN500"
+              if set_ and v==600 and has("чайного дерева","чайным деревом","tea tree"):return "SET-C151619-C151620"
+              if set_ and v==1000 and has("моринг","moringa") and has("арган","argan"):return "SET-C151611-C151610"
+              if set_ and v==1000 and has("арган","argan"):return "SET-C151609-C151610"
+              if shampoo and has("макадам","macadamia") and v==300:return "SKMS300"
+              if shampoo and has("моринг","moringa"):
+                  return {250:"C151618",500:"C151611",300:"SKAS300"}.get(v)
+              if shampoo and has("чайного дерева","чайным деревом","tea tree") and v==300:return "C151619"
+              if shampoo and has("арган","argan"):return {250:"C151616",500:"C151609"}.get(v)
+              if cond and has("арган","argan"):return {250:"C151617",500:"C151610"}.get(v)
+              if shampoo and v==500 and has("кератин","keratin") and has("daily","после","ежедневн"):return "SKUK503"
+              if cond and v==500 and has("кератин","keratin"):return "SKUK504"
+              if serum and v==100 and has("макадам","macadamia"):return "C104703"
+              return None
+          for store,token in TOKENS.items():
+              parts=token.split(".")
+              if len(parts)!=3:raise RuntimeError("Invalid token "+store)
+              claims=json.loads(base64.urlsafe_b64decode(parts[1]+"="*(-len(parts[1])%4)))
+              scope=int(claims.get("s",0))
+              if not scope&(1<<1):raise RuntimeError("Content permission missing "+store)
+              if store=="OOO" and scope&(1<<30):raise RuntimeError("OOO token is read-only")
+          sources=cards("IP");dest=cards("OOO")
+          byid={c["nmID"]:c for c in sources}
+          dest_sinko=[c for c in dest if "sinko" in norm(c.get("brand"))]
+          report=[]
+          for p in PLAN:
+              src=[byid[n] for n in p["sourceIds"] if n in byid]
+              if not src:raise RuntimeError("Source no longer exists")
+              if any(volume(c)!=p["ml"] for c in src):raise RuntimeError("Source volume changed")
+              exact=[d for d in dest_sinko if str(d.get("vendorCode",""))==p["sku"] or any(bars(c)&bars(d) for c in src)]
+              if not exact:
+                  exact=[d for d in dest_sinko if volume(d)==p["ml"] and (key(d)==p["sku"] or any(norm(c.get("title"))==norm(d.get("title")) for c in src))]
+              status="exists" if len(exact)==1 else "hold_ambiguous" if len(exact)>1 else "create"
+              record={"sku":p["sku"],"sourceId":p["sourceIds"][0],"title":p["sourceTitle"],"ml":p["ml"],"status":status,"existingNmId":exact[0]["nmID"] if len(exact)==1 else None,"sourcePhotos":len(src[0].get("photos") or [])}
+              report.append(record);print("REPORT",json.dumps(record,ensure_ascii=False),flush=True)
+          print("COUNTS",len(sources),len(dest_sinko),len(report),flush=True)
+          for query in ("шампуни","кондиционеры","маски","кремы","сыворотки","масла","спреи","пилинги","скрабы","косметические наборы"):
+              data=call("OOO","/content/v2/object/all?limit=1000&name="+urllib.parse.quote(query))
+              for o in data.get("data",[]):
+                  if o.get("parentName")=="Красота":
+                      print("SUBJECT",json.dumps(o,ensure_ascii=False),flush=True)
+          
