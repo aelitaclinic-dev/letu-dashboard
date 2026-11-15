@@ -15,39 +15,12 @@ jobs:
           WB_OOO_API_TOKEN: ${{ secrets.WB_OOO_API_TOKEN }}
         shell: python
         run: |
-          import os,json,re,time,urllib.request,urllib.error
-          def norm(s): return re.sub(r"\s+"," ",str(s or "").strip().casefold())
-          stores={}
-          for store in ("IP","OOO"):
-              token=os.environ["WB_"+store+"_API_TOKEN"].strip()
-              cards=[]; cursor={"limit":100}
-              for page in range(100):
-                  body={"settings":{"cursor":cursor,"filter":{"withPhoto":-1}}}
-                  request=urllib.request.Request("https://content-api.wildberries.ru/content/v2/get/cards/list",data=json.dumps(body).encode(),headers={"Authorization":token,"Content-Type":"application/json"})
-                  try:
-                      with urllib.request.urlopen(request,timeout=45) as f: data=json.load(f)
-                  except urllib.error.HTTPError as e: raise RuntimeError("WB HTTP "+str(e.code)) from None
-                  batch=data.get("cards")
-                  if not isinstance(batch,list): raise RuntimeError("Invalid content")
-                  cards.extend(c for c in batch if "sinko" in re.sub("[^a-z]","",str(c.get("brand","")).lower()))
-                  cur=data["cursor"]
-                  if cur.get("total",0)<100: break
-                  cursor={"limit":100,"nmID":cur["nmID"],"updatedAt":cur["updatedAt"]};time.sleep(1)
-              stores[store]=cards
-          stats={"exact_vendor":0,"exact_title":0,"factory_code":0,"unmatched":0,"ambiguous":0}
-          def codes(c):
-              return set(re.findall(r"(?i)c\d{6}",str(c.get("vendorCode",""))+" "+str(c.get("title",""))))
-          for c in stores["IP"]:
-              match=[d for d in stores["OOO"] if norm(c.get("vendorCode"))==norm(d.get("vendorCode"))];method="exact_vendor"
-              if not match:
-                  match=[d for d in stores["OOO"] if norm(c.get("title"))==norm(d.get("title"))];method="exact_title"
-              if not match:
-                  match=[d for d in stores["OOO"] if codes(c)&codes(d)];method="factory_code"
-              stats["unmatched" if not match else "ambiguous" if len(match)!=1 else method]+=1
-          print("CATALOG MATCH COUNTS",json.dumps(stats),flush=True)
-          print("IP",len(stores["IP"]),"OOO",len(stores["OOO"]))
-          print("READ ONLY; only user-authorized names, volumes, categories follow. No prices or credentials.")
-          for store,cards in stores.items():
-              for c in cards:
-                  attrs=[{"name":x.get("name"),"value":x.get("value")} for x in c.get("characteristics",[]) if any(k in norm(x.get("name")) for k in ("объем","объём","количество предметов","концентрац","процент"))]
-                  print("PUBLIC_PRODUCT",store,json.dumps({"title":c.get("title"),"category":c.get("subjectName"),"attributes":attrs},ensure_ascii=False))
+          import os,json,base64
+          token=os.environ["WB_IP_API_TOKEN"].strip()
+          parts=token.split(".")
+          if len(parts)!=3: raise RuntimeError("Token format cannot be diagnosed")
+          claims=json.loads(base64.urlsafe_b64decode(parts[1]+"="*(-len(parts[1])%4)))
+          scope=int(claims.get("s",0))
+          print("IP_PRICES_CATEGORY",bool(scope & (1<<3)))
+          print("IP_READ_ONLY",bool(scope & (1<<30)))
+          print("No tokens, token IDs, seller IDs or token claims are exported.")
