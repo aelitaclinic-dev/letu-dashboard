@@ -1,13 +1,15 @@
 name: WB SINKO — сверка цен ИП и ООО
 on:
   workflow_dispatch:
+  push:
+    paths: ['.github/workflows/wb-sinko-price-sync.yml']
 permissions: {}
 concurrency:
   group: wb-sinko-price-sync
   cancel-in-progress: false
 jobs:
   audit:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'Run authorized SINKO price sync after IP token replacement')
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
