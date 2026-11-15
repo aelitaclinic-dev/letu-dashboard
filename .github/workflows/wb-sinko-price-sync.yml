@@ -72,75 +72,67 @@ jobs:
               else: raise RuntimeError("Price pagination incomplete")
               stores[store]={"cards":cards,"prices":prices}
               print("SINKO card count",store,len(cards))
-          def barcode_set(c):
-              return {str(b) for s in c.get("sizes",[]) for b in s.get("skus",[]) if b}
-          def norm(s):
-              return re.sub(r"\\s+"," ",str(s or "").strip().casefold())
-          methods={"barcode":0,"vendor":0,"title":0}
-          matched=unmatched=ambiguous=changed=already=unsupported=0
-          changes=[]; targets={}; pairs=[]
-          for c in stores["IP"]["cards"]:
-              candidates=[d for d in stores["OOO"]["cards"] if barcode_set(c)&barcode_set(d)]
-              method="barcode"
-              if not candidates and norm(c.get("vendorCode")):
-                  candidates=[d for d in stores["OOO"]["cards"] if norm(c.get("vendorCode"))==norm(d.get("vendorCode"))]
-                  method="vendor"
-              if not candidates and norm(c.get("title")):
-                  candidates=[d for d in stores["OOO"]["cards"] if norm(c.get("title"))==norm(d.get("title")) and c.get("subjectID")==d.get("subjectID")]
-                  method="title"
-              if not candidates: unmatched+=1; continue
-              if len(candidates)!=1: ambiguous+=1; continue
-              d=candidates[0]
-              if c.get("subjectID")!=d.get("subjectID"): ambiguous+=1; continue
-              def discriminators(card):
-                  return {norm(x.get("name")):sorted(norm(v) for v in (x["value"] if isinstance(x.get("value"),list) else [x.get("value")])) for x in card.get("characteristics",[]) if any(s in norm(x.get("name")) for s in ("объем","объём","количество предметов","номер тона","тон краски","процент","концентрац"))}
-              x,y=discriminators(c),discriminators(d)
-              if any(x[k]!=y[k] for k in x.keys()&y.keys()): ambiguous+=1; continue
+          def norm(s): return re.sub(r"\s+"," ",str(s or "").strip().casefold())
+          def volume(c):
+              values=[x.get("value") for x in c.get("characteristics",[]) if norm(x.get("name")).replace("ё","е")=="объем товара"]
+              if len(values)!=1: return None
+              value=values[0]
+              if isinstance(value,list):
+                  if len(value)!=1: return None
+                  value=value[0]
+              try: return float(str(value).replace(",","."))
+              except ValueError: return None
+          mapping=[["Кератин для волос выпрямление профессиональный набор 1000 мл","Набор бразильское кератиновое выпрямление профессиолнальный",1000],["Профессиональный шампунь для жирной кожи головы с морингой","Шампунь с морингой глубокое очищение 500 мл",500],["Увлажняющий шампунь с маслом макадамии для сухих волос","Шампунь с маслом макадамии увлажняющий 300 мл",300],["Увлажняющий шампунь с маслом макадамии для сухих волос","Шампунь для сухих волос с маслом макадамии",300],["Гликопротеиновый комплекс для восстановления волос","Гликопротеиновый набор для восстановления волос маска+ампулы",300],["Сыворотка для волос с маслом макадамии термозащита и блеск","Сыворотка для волос с маслом макадамии, 100 мл",100],["Набор шампунь+кондиционер с маслом чайного дерева","Набор шампунь+кондиционер с маслом чайного дерева",600],["Шампунь бразильский кератин бессульфатный для волос","Шампунь уход после бразильского кератина бессульфатный",500]]
+          targets={};changes=[];clubs=[];already=unsupported=0
+          for source_title,target_title,ml in mapping:
+              sources=[c for c in stores["OOO"]["cards"] if norm(c.get("title"))==norm(source_title) and volume(c)==ml]
+              destinations=[c for c in stores["IP"]["cards"] if norm(c.get("title"))==norm(target_title) and volume(c)==ml]
+              if len(sources)!=1 or len(destinations)!=1:
+                  raise RuntimeError("Mapped product selector no longer resolves uniquely; no updates submitted")
+              c,d=destinations[0],sources[0]
               p=stores["IP"]["prices"].get(str(c["nmID"]))
               q=stores["OOO"]["prices"].get(str(d["nmID"]))
-              if not p or not q: unsupported+=1; continue
-              if p.get("currencyIsoCode4217")!="RUB" or q.get("currencyIsoCode4217")!="RUB": unsupported+=1; continue
+              if not p or not q: raise RuntimeError("Mapped product price missing; no updates submitted")
+              if p.get("currencyIsoCode4217")!="RUB" or q.get("currencyIsoCode4217")!="RUB": raise RuntimeError("Currency mismatch")
               source_prices={s.get("price") for s in q.get("sizes",[])}
-              if len(source_prices)!=1 or not isinstance(q.get("discount"),int): unsupported+=1; continue
+              if len(source_prices)!=1 or not isinstance(q.get("discount"),int): raise RuntimeError("Unsupported source price")
               target=next(iter(source_prices))
-              if not isinstance(target,(int,float)) or int(target)!=target or target<=0 or not 0<=q["discount"]<100: unsupported+=1; continue
-              if p.get("editableSizePrice") or p.get("editablePriceSize"): unsupported+=1; continue
-              matched+=1; methods[method]+=1
-              targets[c["nmID"]]={"price":int(target),"discount":q["discount"]}
-              pairs.append((c["nmID"],d["nmID"]))
-              if p.get("discount")==q["discount"] and all(s.get("price")==target for s in p.get("sizes",[])):
-                  already+=1
-              else:
-                  changes.append({"nmID":c["nmID"],"price":int(target),"discount":q["discount"]})
-          print("MATCHES",json.dumps(methods),flush=True)
-          print("MATCHED",matched,"ALREADY_EQUAL",already,"TO_UPDATE",len(changes),"UNMATCHED",unmatched,"AMBIGUOUS",ambiguous,"UNSUPPORTED",unsupported,flush=True)
-          if not matched: raise RuntimeError("No unambiguous product pairs; no changes submitted")
+              if not isinstance(target,(int,float)) or int(target)!=target or target<=0 or not 0<=q["discount"]<100: raise RuntimeError("Invalid source price")
+              if p.get("editableSizePrice") or p.get("editablePriceSize"): raise RuntimeError("Size price unsupported")
+              t={"price":int(target),"discount":q["discount"]}
+              if c["nmID"] in targets: raise RuntimeError("Duplicate destination selector")
+              targets[c["nmID"]]=t
+              if p.get("discount")==q["discount"] and p.get("sizes") and all(s.get("price")==target for s in p["sizes"]): already+=1
+              else: changes.append({"nmID":c["nmID"],"price":int(target),"discount":q["discount"]})
+          print("CONFIRMED_PAIRS",len(targets),"ALREADY_EQUAL_BASE",already,"TO_UPDATE_BASE",len(changes),"TO_UPDATE_CLUB",len(clubs),flush=True)
           ip_token=os.environ["WB_IP_API_TOKEN"].strip()
-          if changes:
+          def submit(path,data):
+              if not data: return
               time.sleep(1)
-              upload=req(ip_token,"https://discounts-prices-api.wildberries.ru/api/v2/upload/task",{"data":changes})
-              if upload.get("error") or not isinstance(upload.get("data"),dict) or not upload["data"].get("id"):
-                  raise RuntimeError("WB did not accept price update")
-              print("SUBMITTED",len(changes),"UPLOAD_ID",upload["data"]["id"],flush=True)
-              time.sleep(30)
+              upload=req(ip_token,"https://discounts-prices-api.wildberries.ru"+path,{"data":data})
+              if upload.get("error") or not isinstance(upload.get("data"),dict) or not upload["data"].get("id"): raise RuntimeError("WB did not accept update")
+              print("SUBMITTED",len(data),"UPLOAD_ID",upload["data"]["id"],flush=True)
+          submit("/api/v2/upload/task",changes)
+          if changes or clubs: time.sleep(30)
           def current_prices():
-              out={}; offset=0
+              out={};offset=0
               for page in range(100):
                   result=req(ip_token,"https://discounts-prices-api.wildberries.ru/api/v2/list/goods/filter?limit=1000&offset="+str(offset))
                   batch=result.get("data",{}).get("listGoods")
                   if result.get("error") or not isinstance(batch,list): raise RuntimeError("Invalid verification response")
                   out.update({p["nmID"]:p for p in batch})
                   if len(batch)<1000: return out
-                  offset+=1000; time.sleep(1)
+                  offset+=1000;time.sleep(1)
               raise RuntimeError("Verification pagination incomplete")
+          def equal(p,t):
+              return p and all(p.get(k)==v for k,v in t.items() if k!="price") and p.get("sizes") and all(s.get("price")==t["price"] for s in p["sizes"])
           for attempt in range(5):
               actual=current_prices()
-              verified=sum(1 for nm,t in targets.items() if nm in actual and actual[nm].get("discount")==t["discount"] and actual[nm].get("sizes") and all(s.get("price")==t["price"] for s in actual[nm]["sizes"]))
-              if verified==matched: break
-              print("Verification pending",matched-verified,flush=True)
-              time.sleep(45)
-          print("VERIFIED",verified,"OF",matched,flush=True)
-          summary="## SINKO: ООО КЛМ → ИП\n\n"+"\\n".join(["IP SINKO cards: "+str(len(stores["IP"]["cards"])),"OOO SINKO cards: "+str(len(stores["OOO"]["cards"])),"Matched: "+str(matched),"Already equal: "+str(already),"Submitted updates: "+str(len(changes)),"Verified equal: "+str(verified),"Unmatched: "+str(unmatched),"Ambiguous: "+str(ambiguous),"Unsupported: "+str(unsupported)])+"\n"
+              verified=sum(1 for nm,t in targets.items() if equal(actual.get(nm),t))
+              if verified==len(targets): break
+              print("VERIFICATION_PENDING",len(targets)-verified,flush=True);time.sleep(45)
+          print("VERIFIED",verified,"OF",len(targets),"IP_TOTAL",len(stores["IP"]["cards"]),"OOO_TOTAL",len(stores["OOO"]["cards"]),flush=True)
+          summary="## SINKO: ООО КЛМ → ИП\n\n"+f"Confirmed pairs: {len(targets)}\n\nBase updates submitted: {len(changes)}\n\nClub updates submitted: {len(clubs)}\n\nAlready equal base prices: {already}\n\nVerified equal: {verified}\n\nIP products not mapped: {len(stores['IP']['cards'])-len(targets)}\n"
           with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f: f.write(summary)
-          if verified!=matched: raise RuntimeError("Not all submitted prices verified; check upload status")
-          print("COMPLETE: price and seller discount verified. No product data or prices published.",flush=True)
+          if verified!=len(targets): raise RuntimeError("Not all submitted prices verified")
+          print("COMPLETE. No prices or credentials published.",flush=True)
