@@ -342,7 +342,9 @@ def collect(client, year, today):
             row['balance'] = unavailable(error)
         row['state'] = 'ready' if row['sales']['state']=='ready' and row['balance']['state']=='ready' else 'partial'
         snapshot['months'].append(row)
-        print(row['month'] + ': sales=' + row['sales']['state'] + '; balance=' + row['balance']['state'], flush=True)
+        print(row['month'] + ': sales=' + row['sales']['state'] + '; balance=' + row['balance']['state']
+              + '; payments_reconciled=' + str(row['balance'].get('paymentReconciled', False))
+              + ('; sales_status=' + row['sales']['error'] if row['sales'].get('error') else ''), flush=True)
     try:
         snapshot['cashflow'] = cashflow_rows(client, snapshot['fromDate'], snapshot['toDate'])
     except SyncError as error:
@@ -353,6 +355,11 @@ def collect(client, year, today):
         snapshot['stocks']['asOf'] = snapshot['generatedAt']
     except SyncError as error:
         snapshot['stocks'] = unavailable(error)
+    print('cashflow=' + snapshot['cashflow']['state'] + '; stocks=' + snapshot['stocks']['state']
+          + '; fbo=' + snapshot['stocks'].get('fboState', 'unavailable'), flush=True)
+    for source in ('cashflow', 'stocks'):
+        if snapshot[source].get('error'):
+            print(source + ' status: ' + snapshot[source]['error'], flush=True)
     return snapshot
 
 
