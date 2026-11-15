@@ -1,0 +1,49 @@
+name: WB SINKO — catalog matching audit
+on:
+  push:
+    paths: ['.github/workflows/wb-sinko-catalog-audit.yml']
+permissions: {}
+jobs:
+  audit:
+    if: github.event.head_commit.message == 'Check SINKO catalog matching counts without price requests'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Compare product identifiers without exporting product data
+        env:
+          WB_IP_API_TOKEN: ${{ secrets.WB_IP_API_TOKEN }}
+          WB_OOO_API_TOKEN: ${{ secrets.WB_OOO_API_TOKEN }}
+        shell: python
+        run: |
+          import os,json,re,time,urllib.request,urllib.error
+          def norm(s): return re.sub(r"\s+"," ",str(s or "").strip().casefold())
+          stores={}
+          for store in ("IP","OOO"):
+              token=os.environ["WB_"+store+"_API_TOKEN"].strip()
+              cards=[]; cursor={"limit":100}
+              for page in range(100):
+                  body={"settings":{"cursor":cursor,"filter":{"withPhoto":-1}}}
+                  request=urllib.request.Request("https://content-api.wildberries.ru/content/v2/get/cards/list",data=json.dumps(body).encode(),headers={"Authorization":token,"Content-Type":"application/json"})
+                  try:
+                      with urllib.request.urlopen(request,timeout=45) as f: data=json.load(f)
+                  except urllib.error.HTTPError as e: raise RuntimeError("WB HTTP "+str(e.code)) from None
+                  batch=data.get("cards")
+                  if not isinstance(batch,list): raise RuntimeError("Invalid content")
+                  cards.extend(c for c in batch if "sinko" in re.sub("[^a-z]","",str(c.get("brand","")).lower()))
+                  cur=data["cursor"]
+                  if cur.get("total",0)<100: break
+                  cursor={"limit":100,"nmID":cur["nmID"],"updatedAt":cur["updatedAt"]};time.sleep(1)
+              stores[store]=cards
+          stats={"exact_vendor":0,"exact_title":0,"factory_code":0,"unmatched":0,"ambiguous":0}
+          def codes(c):
+              return set(re.findall(r"(?i)c\d{6}",str(c.get("vendorCode",""))+" "+str(c.get("title",""))))
+          for c in stores["IP"]:
+              match=[d for d in stores["OOO"] if norm(c.get("vendorCode"))==norm(d.get("vendorCode"))];method="exact_vendor"
+              if not match:
+                  match=[d for d in stores["OOO"] if norm(c.get("title"))==norm(d.get("title"))];method="exact_title"
+              if not match:
+                  match=[d for d in stores["OOO"] if codes(c)&codes(d)];method="factory_code"
+              stats["unmatched" if not match else "ambiguous" if len(match)!=1 else method]+=1
+          print("CATALOG MATCH COUNTS",json.dumps(stats),flush=True)
+          print("IP",len(stores["IP"]),"OOO",len(stores["OOO"]))
+          print("READ ONLY; no product identifiers, titles, seller details or prices exported.")
