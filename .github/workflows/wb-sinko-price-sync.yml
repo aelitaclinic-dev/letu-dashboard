@@ -61,9 +61,19 @@ jobs:
               print("SINKO card count",store,len(cards))
           def barcode_set(c):
               return {str(b) for s in c.get("sizes",[]) for b in s.get("skus",[]) if b}
+          def norm(s):
+              return re.sub(r"\\s+"," ",str(s or "").strip().casefold())
+          methods={"barcode":0,"vendor":0,"title":0}
           matched=unmatched=ambiguous=changed=0
           for c in stores["IP"]["cards"]:
               candidates=[d for d in stores["OOO"]["cards"] if barcode_set(c)&barcode_set(d)]
+              method="barcode"
+              if not candidates and norm(c.get("vendorCode")):
+                  candidates=[d for d in stores["OOO"]["cards"] if norm(c.get("vendorCode"))==norm(d.get("vendorCode"))]
+                  method="vendor"
+              if not candidates and norm(c.get("title")):
+                  candidates=[d for d in stores["OOO"]["cards"] if norm(c.get("title"))==norm(d.get("title")) and c.get("subjectID")==d.get("subjectID")]
+                  method="title"
               if not candidates: unmatched+=1; continue
               if len(candidates)!=1: ambiguous+=1; continue
               d=candidates[0]
@@ -71,8 +81,9 @@ jobs:
               q=stores["OOO"]["prices"].get(str(d["nmID"]))
               if not p or not q: unmatched+=1; continue
               matched+=1
+              methods[method]+=1
               if p.get("discount")!=q.get("discount") or sorted(s["price"] for s in p["sizes"])!=sorted(s["price"] for s in q["sizes"]): changed+=1
-          print("Exact barcode matches:",matched)
+          print("Matching methods:",json.dumps(methods))
           print("Prices differ:",changed)
-          print("No unambiguous source:",unmatched+ambiguous)
+          print("Unmatched:",unmatched,"Ambiguous:",ambiguous)
           print("READ ONLY. No prices changed. No identities, SKUs or prices exported.")
