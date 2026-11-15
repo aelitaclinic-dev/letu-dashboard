@@ -15,6 +15,8 @@ on:
       - tests/test_ozon_sync.py
 permissions:
   contents: write
+env:
+  OZON_RUN_PUBLICATION: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_public_aggregates == true) || (github.event_name == 'push' && github.event.head_commit.message == 'Publish authorized Ozon KLM annual aggregates') }}
 concurrency:
   group: ozon-ooo-annual-sync
   cancel-in-progress: false
@@ -28,20 +30,20 @@ jobs:
       - name: Проверить расчёты
         run: python -m unittest discover -s tests -p 'test_ozon_*.py'
       - name: Проверить источники без сохранения и вывода сумм
-        if: inputs.publish_public_aggregates != true
+        if: env.OZON_RUN_PUBLICATION != 'true'
         env:
           OZON_OOO_CLIENT_ID: ${{ secrets.OZON_OOO_CLIENT_ID }}
           OZON_OOO_API_KEY: ${{ secrets.OZON_OOO_API_KEY }}
         run: python scripts/ozon_sync.py
       - name: Сформировать только разрешённые сводные данные
-        if: github.event_name == 'workflow_dispatch' && inputs.publish_public_aggregates == true
+        if: env.OZON_RUN_PUBLICATION == 'true'
         env:
           OZON_OOO_CLIENT_ID: ${{ secrets.OZON_OOO_CLIENT_ID }}
           OZON_OOO_API_KEY: ${{ secrets.OZON_OOO_API_KEY }}
           OZON_PUBLICATION_APPROVED: confirmed
         run: python scripts/ozon_sync.py --publish
       - name: Опубликовать сводные показатели без документов и реквизитов
-        if: github.event_name == 'workflow_dispatch' && inputs.publish_public_aggregates == true
+        if: env.OZON_RUN_PUBLICATION == 'true'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
