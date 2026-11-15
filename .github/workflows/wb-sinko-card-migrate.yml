@@ -11,9 +11,9 @@ concurrency:
 jobs:
   migrate:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 85
     steps:
-      - name: Audit unique products against KLM catalog
+      - name: Create only missing SINKO cards with factory SKUs and copy photos
         env:
           WB_IP_API_TOKEN: ${{ secrets.WB_IP_API_TOKEN }}
           WB_OOO_API_TOKEN: ${{ secrets.WB_OOO_API_TOKEN }}
@@ -100,9 +100,119 @@ jobs:
               record={"sku":p["sku"],"sourceId":p["sourceIds"][0],"title":p["sourceTitle"],"ml":p["ml"],"status":status,"existingNmId":exact[0]["nmID"] if len(exact)==1 else None,"sourcePhotos":len(src[0].get("photos") or [])}
               report.append(record);print("REPORT",json.dumps(record,ensure_ascii=False),flush=True)
           print("COUNTS",len(sources),len(dest_sinko),len(report),flush=True)
-          for query in ("шампуни","кондиционеры","маски","кремы","сыворотки","масла","спреи","пилинги","скрабы","косметические наборы"):
-              data=call("OOO","/content/v2/object/all?limit=1000&name="+urllib.parse.quote(query))
-              for o in data.get("data",[]):
-                  if o.get("parentName")=="Красота":
-                      print("SUBJECT",json.dumps(o,ensure_ascii=False),flush=True)
+          
+          SUBJECTS={"shampoo":358,"conditioner":447,"mask":360,"cream":357,"serum":372,"oil":362,"spray":436,"peel":361,"set":403}
+          NEW_ALLOWLIST={p["sku"] for p,r in zip(PLAN,report) if r["status"]=="create"}
+          EXPECTED_EXISTING={r["sku"]:r["existingNmId"] for r in report if r["status"]=="exists"}
+          if len(NEW_ALLOWLIST)!=21 or len(EXPECTED_EXISTING)!=8:raise RuntimeError("Catalog changed from reviewed audit; no cards submitted")
+          # Prices and inventory are intentionally omitted: creation produces catalog cards,
+          # with no unreviewed sale price or stock copied between different sellers.
+          schemas={}
+          for sid in sorted(set(SUBJECTS[p["type"]] for p,r in zip(PLAN,report) if r["status"]=="create")):
+              schema=call("OOO","/content/v2/object/charcs/"+str(sid))
+              schemas[sid]=schema.get("data",[])
+              if not schemas[sid]:raise RuntimeError("Empty category schema")
+          blueprints=[];missing_required=[]
+          for p,r in zip(PLAN,report):
+              if r["status"]!="create":continue
+              c=byid[p["sourceIds"][0]];sid=SUBJECTS[p["type"]]
+              photos=[ph.get("big") or ph.get("c516x688") for ph in c.get("photos",[]) if ph.get("big") or ph.get("c516x688")]
+              if not photos:raise RuntimeError("Source lacks photos "+p["sku"])
+              dims={k:c.get("dimensions",{}).get(k) for k in ("length","width","height","weightBrutto") if c.get("dimensions",{}).get(k) is not None}
+              if any(not isinstance(dims.get(k),(int,float)) or dims[k]<=0 for k in ("length","width","height","weightBrutto")):raise RuntimeError("Source dimensions missing "+p["sku"])
+              attrs={norm(a.get("name")):a.get("value") for a in c.get("characteristics",[]) if a.get("value") not in (None,[], "")}
+              built=[]
+              for s in schemas[sid]:
+                  name=norm(s["name"]);value=attrs.get(name)
+                  if name=="объем товара":value=p["ml"]
+                  if value is None:
+                      if s.get("required"):missing_required.append((p["sku"],s["name"]))
+                      continue
+                  if s.get("charcType")==4:
+                      v=value[0] if isinstance(value,list) and len(value)==1 else value
+                      try:
+                          v=float(str(v).replace(",","."))
+                          if int(v)==v:v=int(v)
+                          value=v
+                      except (ValueError,TypeError):
+                          if s.get("required"):missing_required.append((p["sku"],s["name"]))
+                          continue
+                  else:
+                      value=[str(v) for v in value] if isinstance(value,list) else [str(value)]
+                      if s.get("maxCount",0)>0:value=value[:s["maxCount"]]
+                  built.append({"id":s["charcID"],"value":value})
+              title=c["title"].strip()
+              if len(title)>60:raise RuntimeError("Source title exceeds creation limit "+p["sku"])
+              variant={"vendorCode":p["sku"],"title":title,"description":c.get("description",""),"brand":c.get("brand") or "Sinko Styling","dimensions":dims,"characteristics":built}
+              if not variant["description"]:raise RuntimeError("Source description missing "+p["sku"])
+              if "kizMarked" in c:variant["kizMarked"]=c["kizMarked"]
+              if c.get("gtin"):variant["gtin"]=c["gtin"]
+              docs=c.get("documents",{}).get("items",[])
+              if docs:
+                  allowed={"type","number","productNumber","tradeName","applicant","startDate","endDate","isEndless"}
+                  variant["documents"]={"items":[{k:v for k,v in d.items() if k in allowed} for d in docs]}
+              blueprints.append((p,variant,sid,photos))
+          if missing_required:
+              for sku,name in missing_required:print("REQUIRED_FIELD_MISSING",sku,name,flush=True)
+              raise RuntimeError("Required source characteristics missing; no cards submitted")
+          limits=call("OOO","/content/v2/cards/limits").get("data",{})
+          capacity=int(limits.get("freeLimits",0))+int(limits.get("paidLimits",0))-len(dest)
+          if capacity<len(blueprints):raise RuntimeError("Existing card allowance insufficient; no paid limits purchased")
+          # Re-read before submission to avoid creating duplicate cards if another process changed KLM.
+          latest=cards("OOO")
+          for p,v,sid,photos in blueprints:
+              if any(d.get("vendorCode")==p["sku"] or key(d)==p["sku"] for d in latest):raise RuntimeError("Destination appeared during preflight; no cards submitted")
+          codes=call("OOO","/content/v2/barcodes",{"count":len(blueprints)}).get("data")
+          if not isinstance(codes,list) or len(codes)!=len(blueprints) or len(set(codes))!=len(codes):raise RuntimeError("Invalid generated barcode count")
+          payload=[]
+          for (p,v,sid,photos),barcode in zip(blueprints,codes):
+              v["sizes"]=[{"techSize":"0","skus":[str(barcode)]}]
+              payload.append({"subjectID":sid,"variants":[v]})
+          call("OOO","/content/v2/cards/upload",payload)
+          print("CARDS_SUBMITTED",len(payload),flush=True)
+          wanted={p["sku"] for p,v,sid,photos in blueprints}
+          found={}
+          for attempt in range(61):
+              actual=cards("OOO")
+              found={c["vendorCode"]:c for c in actual if c.get("vendorCode") in wanted}
+              print("CREATION_VISIBLE",len(found),"OF",len(wanted),flush=True)
+              if len(found)==len(wanted):break
+              if attempt==2:
+                  errors=call("OOO","/content/v2/cards/error/list",{"cursor":{"limit":100},"order":{"ascending":False}})
+                  for batch in errors.get("data",{}).get("items",[]):
+                      for sku in wanted&set(batch.get("vendorCodes",[])):
+                          messages=batch.get("errors",{}).get(sku,[])
+                          # Only validation field names and our planned factory SKU may be public.
+                          print("CREATION_ERROR",sku,"COUNT",len(messages),flush=True)
+                  if any(wanted&set(batch.get("vendorCodes",[])) for batch in errors.get("data",{}).get("items",[])):raise RuntimeError("Creation validation errors; no duplicate resubmission")
+              time.sleep(30)
+          if len(found)!=len(wanted):raise RuntimeError("Some cards not visible within creation window")
+          for p,v,sid,photos in blueprints:
+              d=found[p["sku"]]
+              if volume(d)!=p["ml"] or d.get("subjectID")!=sid:raise RuntimeError("New card identity mismatch "+p["sku"])
+              if d.get("photos"):raise RuntimeError("New gallery changed externally; preserved "+p["sku"])
+              call("OOO","/content/v3/media/save",{"nmId":d["nmID"],"data":photos})
+              print("PHOTOS_SUBMITTED",p["sku"],len(photos),flush=True)
+          for attempt in range(21):
+              actual=cards("OOO")
+              found={c["vendorCode"]:c for c in actual if c.get("vendorCode") in wanted}
+              confirmed=[]
+              for (p,v,sid,photos),barcode in zip(blueprints,codes):
+                  d=found.get(p["sku"])
+                  if not d:continue
+                  valid=(volume(d)==p["ml"] and d.get("subjectID")==sid and str(barcode) in bars(d)
+                         and d.get("title")==v["title"] and d.get("description","").strip()==v["description"].strip()
+                         and len(d.get("photos",[]))==len(photos))
+                  if valid:confirmed.append(p["sku"])
+              print("FINAL_VERIFIED",len(confirmed),"OF",len(wanted),flush=True)
+              if len(confirmed)==len(wanted):break
+              time.sleep(30)
+          for p,v,sid,photos in blueprints:
+              d=found.get(p["sku"],{})
+              row={"sku":p["sku"],"sourceId":p["sourceIds"][0],"targetId":d.get("nmID"),"title":v["title"],"ml":p["ml"],"category":d.get("subjectName"),"photos":len(d.get("photos",[])),"status":"created_verified" if p["sku"] in confirmed else "created_unverified"}
+              print("FINAL_REPORT",json.dumps(row,ensure_ascii=False),flush=True)
+          if len(confirmed)!=len(wanted):raise RuntimeError("Not all new cards fully verified")
+          print("COMPLETE",len(confirmed),"CREATED",len(EXPECTED_EXISTING),"EXISTING_PRESERVED",flush=True)
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f:
+              f.write("## SINKO: перенос ИП → ООО КЛМ\n\nСоздано и проверено: "+str(len(confirmed))+"\n\nУже были в ООО, сохранены: "+str(len(EXPECTED_EXISTING))+"\n\nЦены и остатки новых карточек не задавались.\n")
           
