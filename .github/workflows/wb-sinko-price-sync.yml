@@ -31,9 +31,9 @@ jobs:
                   try:
                       with opener.open(r,timeout=45) as f: return json.load(f)
                   except urllib.error.HTTPError as e:
-                      if e.code!=429: raise RuntimeError("WB HTTP "+str(e.code)) from None
+                      if e.code!=429 or "/seller-info" in url: raise RuntimeError("WB HTTP "+str(e.code)) from None
                       delay=max(2,int(e.headers.get("X-Ratelimit-Retry",e.headers.get("Retry-After","60"))))
-                      if time.monotonic()+delay>deadline: raise RuntimeError("WB rate limit exceeds bounded wait") from None
+                      if time.monotonic()+delay>deadline: raise RuntimeError("WB rate limit exceeds bounded wait: "+str(delay)+" seconds") from None
                       print("WB rate limit: waiting",delay,"seconds",flush=True)
                       for elapsed in range(0,delay,30): time.sleep(min(30,delay-elapsed))
           stores={}
