@@ -50,6 +50,8 @@ jobs:
           req("/v2/finance/realization",{"month":now.month,"year":now.year})
           req("/v1/finance/accrual/types",{})
           catalog=req("/v3/product/list",{"filter":{"visibility":"ALL"},"limit":100}).get("result",{}).get("items",[])
+          import time
+          time.sleep(5)
           req("/v1/analytics/stocks",{"skus":[item["sku"] for item in catalog if item.get("sku")]})
-          req("/v2/product/info/stocks-by-warehouse/fbs",{"sku":[item["sku"] for item in catalog if item.get("sku")]})
+          req("/v2/product/info/stocks-by-warehouse/fbs",{"limit":1000,"cursor":"","sku":[item["sku"] for item in catalog if item.get("sku")]})
           
