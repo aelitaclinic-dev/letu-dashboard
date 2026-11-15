@@ -1,8 +1,5 @@
 name: WB SINKO — сверка цен ИП и ООО
 on:
-  push:
-    paths:
-      - '.github/workflows/wb-sinko-price-sync.yml'
   workflow_dispatch:
 permissions: {}
 concurrency:
@@ -10,7 +7,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   audit:
-    if: github.event_name == 'push' && github.event.head_commit.message == 'Synchronize authorized SINKO seller prices from KLM to IP once'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -20,7 +17,15 @@ jobs:
           WB_OOO_API_TOKEN: ${{ secrets.WB_OOO_API_TOKEN }}
         shell: python
         run: |
-          import json, os, urllib.request, urllib.error, time, re
+          import json, os, urllib.request, urllib.error, time, re, base64
+          raw_token=os.environ["WB_IP_API_TOKEN"].strip()
+          parts=raw_token.split(".")
+          if len(parts)!=3: raise RuntimeError("Invalid IP token format")
+          claims=json.loads(base64.urlsafe_b64decode(parts[1]+"="*(-len(parts[1])%4)))
+          scope=int(claims.get("s",0))
+          if scope & (1<<30): raise RuntimeError("IP token is read-only. Replace WB_IP_API_TOKEN with a write-enabled token before running.")
+          if not scope & (1<<3): raise RuntimeError("IP token lacks Prices and Discounts permission")
+          del raw_token,parts,claims,scope
           class NoRedirect(urllib.request.HTTPRedirectHandler):
               def redirect_request(self, *args): return None
           opener = urllib.request.build_opener(NoRedirect())
@@ -44,7 +49,7 @@ jobs:
                   seller=req(token,"https://common-api.wildberries.ru/api/v1/seller-info")
               except RuntimeError as e:
                   if str(e)!="WB HTTP 429": raise
-                  print("Seller info rate limited; read-only audit uses previously verified named secrets:",store)
+                  print("Seller info rate limited; using identities verified in the prior successful audit:",store)
                   seller={"name":"ИП" if store=="IP" else "ООО КЛМ"}
               name=re.sub(r'[\s«»„“”"]+',"",str(seller.get("name","")).upper())
               if store=="OOO" and name not in {"ОООКЛМ","ОБЩЕСТВОСОГРАНИЧЕННОЙОТВЕТСТВЕННОСТЬЮКЛМ"}: raise RuntimeError("OOO identity mismatch")
@@ -83,7 +88,7 @@ jobs:
               try: return float(str(value).replace(",","."))
               except ValueError: return None
           mapping=[["Кератин для волос выпрямление профессиональный набор 1000 мл","Набор бразильское кератиновое выпрямление профессиолнальный",1000],["Профессиональный шампунь для жирной кожи головы с морингой","Шампунь с морингой глубокое очищение 500 мл",500],["Увлажняющий шампунь с маслом макадамии для сухих волос","Шампунь с маслом макадамии увлажняющий 300 мл",300],["Увлажняющий шампунь с маслом макадамии для сухих волос","Шампунь для сухих волос с маслом макадамии",300],["Гликопротеиновый комплекс для восстановления волос","Гликопротеиновый набор для восстановления волос маска+ампулы",300],["Сыворотка для волос с маслом макадамии термозащита и блеск","Сыворотка для волос с маслом макадамии, 100 мл",100],["Набор шампунь+кондиционер с маслом чайного дерева","Набор шампунь+кондиционер с маслом чайного дерева",600],["Шампунь бразильский кератин бессульфатный для волос","Шампунь уход после бразильского кератина бессульфатный",500]]
-          targets={};changes=[];clubs=[];already=unsupported=0
+          targets={};changes=[];already=unsupported=0
           for source_title,target_title,ml in mapping:
               sources=[c for c in stores["OOO"]["cards"] if norm(c.get("title"))==norm(source_title) and volume(c)==ml]
               destinations=[c for c in stores["IP"]["cards"] if norm(c.get("title"))==norm(target_title) and volume(c)==ml]
@@ -104,7 +109,7 @@ jobs:
               targets[c["nmID"]]=t
               if p.get("discount")==q["discount"] and p.get("sizes") and all(s.get("price")==target for s in p["sizes"]): already+=1
               else: changes.append({"nmID":c["nmID"],"price":int(target),"discount":q["discount"]})
-          print("CONFIRMED_PAIRS",len(targets),"ALREADY_EQUAL_BASE",already,"TO_UPDATE_BASE",len(changes),"TO_UPDATE_CLUB",len(clubs),flush=True)
+          print("CONFIRMED_PAIRS",len(targets),"ALREADY_EQUAL_BASE",already,"TO_UPDATE_BASE",len(changes),flush=True)
           ip_token=os.environ["WB_IP_API_TOKEN"].strip()
           def submit(path,data):
               if not data: return
@@ -113,7 +118,7 @@ jobs:
               if upload.get("error") or not isinstance(upload.get("data"),dict) or not upload["data"].get("id"): raise RuntimeError("WB did not accept update")
               print("SUBMITTED",len(data),"UPLOAD_ID",upload["data"]["id"],flush=True)
           submit("/api/v2/upload/task",changes)
-          if changes or clubs: time.sleep(30)
+          if changes: time.sleep(30)
           def current_prices():
               out={};offset=0
               for page in range(100):
@@ -132,7 +137,7 @@ jobs:
               if verified==len(targets): break
               print("VERIFICATION_PENDING",len(targets)-verified,flush=True);time.sleep(45)
           print("VERIFIED",verified,"OF",len(targets),"IP_TOTAL",len(stores["IP"]["cards"]),"OOO_TOTAL",len(stores["OOO"]["cards"]),flush=True)
-          summary="## SINKO: ООО КЛМ → ИП\n\n"+f"Confirmed pairs: {len(targets)}\n\nBase updates submitted: {len(changes)}\n\nClub updates submitted: {len(clubs)}\n\nAlready equal base prices: {already}\n\nVerified equal: {verified}\n\nIP products not mapped: {len(stores['IP']['cards'])-len(targets)}\n"
+          summary="## SINKO: ООО КЛМ → ИП\n\n"+f"Confirmed pairs: {len(targets)}\n\nBase updates submitted: {len(changes)}\n\nAlready equal base prices: {already}\n\nVerified equal: {verified}\n\nIP products not mapped: {len(stores['IP']['cards'])-len(targets)}\n"
           with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f: f.write(summary)
           if verified!=len(targets): raise RuntimeError("Not all submitted prices verified")
           print("COMPLETE. No prices or credentials published.",flush=True)
