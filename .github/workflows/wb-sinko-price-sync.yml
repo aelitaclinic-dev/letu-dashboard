@@ -10,8 +10,9 @@ concurrency:
   cancel-in-progress: false
 jobs:
   audit:
+    if: github.event_name == 'push' && github.event.head_commit.message == 'Synchronize authorized SINKO seller prices from KLM to IP once'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 55
     steps:
       - name: Read current seller identities, SINKO cards and prices
         env:
@@ -24,10 +25,17 @@ jobs:
               def redirect_request(self, *args): return None
           opener = urllib.request.build_opener(NoRedirect())
           def req(token, url, body=None):
-              r=urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(), headers={"Authorization":token,"Content-Type":"application/json"}, method="GET" if body is None else "POST")
-              try:
-                  with opener.open(r,timeout=45) as f: return json.load(f)
-              except urllib.error.HTTPError as e: raise RuntimeError("WB HTTP "+str(e.code)) from None
+              deadline=time.monotonic()+2200
+              while True:
+                  r=urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(), headers={"Authorization":token,"Content-Type":"application/json"}, method="GET" if body is None else "POST")
+                  try:
+                      with opener.open(r,timeout=45) as f: return json.load(f)
+                  except urllib.error.HTTPError as e:
+                      if e.code!=429: raise RuntimeError("WB HTTP "+str(e.code)) from None
+                      delay=max(2,int(e.headers.get("X-Ratelimit-Retry",e.headers.get("Retry-After","60"))))
+                      if time.monotonic()+delay>deadline: raise RuntimeError("WB rate limit exceeds bounded wait") from None
+                      print("WB rate limit: waiting",delay,"seconds",flush=True)
+                      for elapsed in range(0,delay,30): time.sleep(min(30,delay-elapsed))
           stores={}
           for store in ("IP","OOO"):
               token=os.environ["WB_"+store+"_API_TOKEN"].strip()
@@ -69,7 +77,8 @@ jobs:
           def norm(s):
               return re.sub(r"\\s+"," ",str(s or "").strip().casefold())
           methods={"barcode":0,"vendor":0,"title":0}
-          matched=unmatched=ambiguous=changed=0
+          matched=unmatched=ambiguous=changed=already=unsupported=0
+          changes=[]; targets={}; pairs=[]
           for c in stores["IP"]["cards"]:
               candidates=[d for d in stores["OOO"]["cards"] if barcode_set(c)&barcode_set(d)]
               method="barcode"
@@ -82,13 +91,56 @@ jobs:
               if not candidates: unmatched+=1; continue
               if len(candidates)!=1: ambiguous+=1; continue
               d=candidates[0]
+              if c.get("subjectID")!=d.get("subjectID"): ambiguous+=1; continue
+              def discriminators(card):
+                  return {norm(x.get("name")):sorted(norm(v) for v in (x["value"] if isinstance(x.get("value"),list) else [x.get("value")])) for x in card.get("characteristics",[]) if any(s in norm(x.get("name")) for s in ("объем","объём","количество предметов","номер тона","тон краски","процент","концентрац"))}
+              x,y=discriminators(c),discriminators(d)
+              if any(x[k]!=y[k] for k in x.keys()&y.keys()): ambiguous+=1; continue
               p=stores["IP"]["prices"].get(str(c["nmID"]))
               q=stores["OOO"]["prices"].get(str(d["nmID"]))
-              if not p or not q: unmatched+=1; continue
-              matched+=1
-              methods[method]+=1
-              if p.get("discount")!=q.get("discount") or sorted(s["price"] for s in p["sizes"])!=sorted(s["price"] for s in q["sizes"]): changed+=1
-          print("Matching methods:",json.dumps(methods))
-          print("Prices differ:",changed)
-          print("Unmatched:",unmatched,"Ambiguous:",ambiguous)
-          print("READ ONLY. No prices changed. No identities, SKUs or prices exported.")
+              if not p or not q: unsupported+=1; continue
+              if p.get("currencyIsoCode4217")!="RUB" or q.get("currencyIsoCode4217")!="RUB": unsupported+=1; continue
+              source_prices={s.get("price") for s in q.get("sizes",[])}
+              if len(source_prices)!=1 or not isinstance(q.get("discount"),int): unsupported+=1; continue
+              target=next(iter(source_prices))
+              if not isinstance(target,(int,float)) or int(target)!=target or target<=0 or not 0<=q["discount"]<100: unsupported+=1; continue
+              if p.get("editableSizePrice") or p.get("editablePriceSize"): unsupported+=1; continue
+              matched+=1; methods[method]+=1
+              targets[c["nmID"]]={"price":int(target),"discount":q["discount"]}
+              pairs.append((c["nmID"],d["nmID"]))
+              if p.get("discount")==q["discount"] and all(s.get("price")==target for s in p.get("sizes",[])):
+                  already+=1
+              else:
+                  changes.append({"nmID":c["nmID"],"price":int(target),"discount":q["discount"]})
+          print("MATCHES",json.dumps(methods),flush=True)
+          print("MATCHED",matched,"ALREADY_EQUAL",already,"TO_UPDATE",len(changes),"UNMATCHED",unmatched,"AMBIGUOUS",ambiguous,"UNSUPPORTED",unsupported,flush=True)
+          if not matched: raise RuntimeError("No unambiguous product pairs; no changes submitted")
+          ip_token=os.environ["WB_IP_API_TOKEN"].strip()
+          if changes:
+              time.sleep(1)
+              upload=req(ip_token,"https://discounts-prices-api.wildberries.ru/api/v2/upload/task",{"data":changes})
+              if upload.get("error") or not isinstance(upload.get("data"),dict) or not upload["data"].get("id"):
+                  raise RuntimeError("WB did not accept price update")
+              print("SUBMITTED",len(changes),"UPLOAD_ID",upload["data"]["id"],flush=True)
+              time.sleep(30)
+          def current_prices():
+              out={}; offset=0
+              for page in range(100):
+                  result=req(ip_token,"https://discounts-prices-api.wildberries.ru/api/v2/list/goods/filter?limit=1000&offset="+str(offset))
+                  batch=result.get("data",{}).get("listGoods")
+                  if result.get("error") or not isinstance(batch,list): raise RuntimeError("Invalid verification response")
+                  out.update({p["nmID"]:p for p in batch})
+                  if len(batch)<1000: return out
+                  offset+=1000; time.sleep(1)
+              raise RuntimeError("Verification pagination incomplete")
+          for attempt in range(5):
+              actual=current_prices()
+              verified=sum(1 for nm,t in targets.items() if nm in actual and actual[nm].get("discount")==t["discount"] and actual[nm].get("sizes") and all(s.get("price")==t["price"] for s in actual[nm]["sizes"]))
+              if verified==matched: break
+              print("Verification pending",matched-verified,flush=True)
+              time.sleep(45)
+          print("VERIFIED",verified,"OF",matched,flush=True)
+          summary="## SINKO: ООО КЛМ → ИП\n\n"+"\\n".join(["IP SINKO cards: "+str(len(stores["IP"]["cards"])),"OOO SINKO cards: "+str(len(stores["OOO"]["cards"])),"Matched: "+str(matched),"Already equal: "+str(already),"Submitted updates: "+str(len(changes)),"Verified equal: "+str(verified),"Unmatched: "+str(unmatched),"Ambiguous: "+str(ambiguous),"Unsupported: "+str(unsupported)])+"\n"
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f: f.write(summary)
+          if verified!=matched: raise RuntimeError("Not all submitted prices verified; check upload status")
+          print("COMPLETE: price and seller discount verified. No product data or prices published.",flush=True)
