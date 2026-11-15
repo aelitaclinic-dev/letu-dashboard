@@ -187,8 +187,9 @@ def cashflow_rows(client, start, end):
             raise SyncError('Invalid cash-flow pagination')
         for row in data['cash_flows']:
             period = row.get('period', {})
-            key = period.get('id')
-            if key in seen or key is None:
+            # period.id is not unique in Ozon's historical reports.
+            key = (period.get('begin'), period.get('end'), row.get('currency_code'))
+            if key in seen or not all(key):
                 raise SyncError('Duplicate cash-flow period')
             seen.add(key)
             if row.get('currency_code') not in ('RUB', 'RUR'):
@@ -263,7 +264,7 @@ def stocks(client, products):
     skus = sorted({sku for p in products.values() for sku in p['skus']})
     for page in range(100):
         data = client.post('/v2/product/info/stocks-by-warehouse/fbs',
-                           {'limit':1000, 'cursor':cursor})
+                           {'limit':1000, 'cursor':cursor, 'sku':skus})
         if not isinstance(data.get('products'),list) or not isinstance(data.get('has_next'),bool):
             raise SyncError('Invalid FBS warehouse stock page')
         for item in data['products']:
