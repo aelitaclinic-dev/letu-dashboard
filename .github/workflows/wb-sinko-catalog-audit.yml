@@ -47,3 +47,17 @@ jobs:
           print("CATALOG MATCH COUNTS",json.dumps(stats),flush=True)
           print("IP",len(stores["IP"]),"OOO",len(stores["OOO"]))
           print("READ ONLY; no product identifiers, titles, seller details or prices exported.")
+          def signature(c):
+              text=norm(c.get("title")).replace("ё","е")
+              text=re.sub(r"(?<=\\d)\\s*(?:ml|мл)\\b"," мл",text)
+              words=set(re.findall(r"[a-zа-я0-9]+",text))
+              return words-set("sinko styling синко стайлинг для волос профессиональный профессиональная профессиональное средство уход".split())
+          def vendor(c):
+              return re.sub(r"[._\\-\\s]+(?:ooo|ip|клм|ооо|ип)$","",norm(c.get("vendorCode")))
+          more={"signature":0,"vendor_suffix":0,"unmatched":0,"ambiguous":0}
+          for c in stores["IP"]:
+              match=[d for d in stores["OOO"] if vendor(c) and vendor(c)==vendor(d)];method="vendor_suffix"
+              if not match:
+                  match=[d for d in stores["OOO"] if signature(c) and signature(c)==signature(d)];method="signature"
+              more["unmatched" if not match else "ambiguous" if len(match)!=1 else method]+=1
+          print("NORMALIZED MATCH COUNTS",json.dumps(more))
