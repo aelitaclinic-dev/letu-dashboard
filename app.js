@@ -70,7 +70,8 @@
     var wbTo = wb && [wb.sales, wb.orders].filter(function (v) { return v && v.state === "ready"; }).map(function (v) { return v.to; }).sort().pop();
     var payoutTo = location.hash.indexOf("/payouts") >= 0 && wbPayoutReady(WB_FINANCE_SNAPSHOT && WB_FINANCE_SNAPSHOT.payouts)
       ? WB_FINANCE_SNAPSHOT.payouts.to : null;
-    let to = query.get("to") || [wbTo && wbTo > DATA.asOf ? wbTo : DATA.asOf, payoutTo].filter(Boolean).sort().pop() || "2026-10-28";
+    var ozonTo = window.OzonDashboard && window.OzonDashboard.asOf();
+    let to = query.get("to") || [ozonTo, wbTo && wbTo > DATA.asOf ? wbTo : DATA.asOf, payoutTo].filter(Boolean).sort().pop() || "2026-10-28";
     const brand = query.get("brand") || "";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
       from = "2026-01-01";
@@ -2968,6 +2969,7 @@
     var financeWindow = windowPhrase(selected, "useFinance", "financeStart", "financeEnd");
     var partial = selected.some(function (row) { return row.financeState === "partial"; });
     function tile(id, name, monogram, connected, storeText) {
+      if (id === "ozon" && window.OzonDashboard) return window.OzonDashboard.tile(state);
       var loadedWB = id === "wb" && wbStore();
       var wbRows = loadedWB ? wbSelected(loadedWB.sales, state) : null;
       var tileAmount = loadedWB ? wbNet(wbRows) : revenue;
@@ -2986,17 +2988,18 @@
     }
     return marketHeading("MA DISTRIBUTION / ОБЗОР", "Бизнес на одном экране", "Выберите площадку, чтобы перейти к продажам, прибыли и магазинам.")
       + marketPeriodForm(state)
-      + "<div class='market-overview-meta'><span><i class='live-dot'></i> " + (wbStore() ? "2" : "1") + " из 3 площадок с данными</span><span>ИП и ООО — раздельный учёт</span></div>"
+      + "<div class='market-overview-meta'><span><i class='live-dot'></i> " + (1 + (wbStore() ? 1 : 0) + (window.OzonDashboard && window.OzonDashboard.ready() ? 1 : 0)) + " из 3 площадок с данными</span><span>ИП и ООО — раздельный учёт</span></div>"
       + "<section class='market-tiles' aria-label='Маркетплейсы'>" + tile("letu", "Л’Этуаль", "Л’", true, "ИП · Барская Регина Александровна")
       + tile("wb", "Wildberries", "WB", false, "2 магазина · ИП и ООО") + tile("ozon", "Ozon", "O", false, "2 магазина · ИП и ООО") + "</section>"
       + (window.PurchaseBook ? window.PurchaseBook.homeCard() : "")
       + "<section class='market-overview-bottom'><div class='market-note'><span class='market-eyebrow'>ПОЛНОТА ОБЗОРА</span><h3>Л’Этуаль и подключение площадок</h3>"
-      + "<p>" + (wbStore() ? "Данные Wildberries ИП доступны отдельно. В сводке ИП указаны подключённые источники. Кабинет ООО и Ozon ещё не подключены." : "Данные Wildberries и Ozon ещё не загружены.") + " Общий итог бизнеса появится после проверки сопоставимости данных. Отсутствующие данные не считаются нулевыми продажами.</p></div>"
+      + "<p>" + (wbStore() ? "Данные Wildberries ИП доступны отдельно. В сводке ИП указаны подключённые источники. Подключение Ozon ООО «КЛМ» показано в отдельной карточке." : "Данные Wildberries и Ozon ещё не загружены.") + " Общий итог бизнеса появится после проверки сопоставимости данных. Отсутствующие данные не считаются нулевыми продажами.</p></div>"
       + "<a class='market-expense-link' href='#expenses'><span class='market-eyebrow'>ОБЩИЙ УЧЁТ</span><h3>Расходы ИП / ООО <span aria-hidden='true'>↗</span></h3>"
       + "<p>Закупки, упаковка, зарплата, документы и другие расходы бизнеса — в одном разделе.</p><span class='market-open'>Открыть расходы</span></a></section>";
   }
 
   function renderMarketplace(channel, store, section, state) {
+    if (channel === "ozon" && window.OzonDashboard) return window.OzonDashboard.render(section, state, store);
     var name = channel === "wb" ? "Wildberries" : "Ozon";
     var storeName = store === "all" ? "Все магазины" : (store === "ip" ? "ИП" : "ООО");
     var sections = [
@@ -3152,6 +3155,7 @@
     });
   }
 
+  window.addEventListener("ozondataready", render);
   window.addEventListener("hashchange", render);
   window.addEventListener("popstate", render);
   render();

@@ -1,10 +1,20 @@
 name: Ozon ООО — годовые отчёты
 on:
   workflow_dispatch:
+    inputs:
+      publish_public_aggregates:
+        description: Публиковать сводные продажи, остатки и суммы выплат на ОБЩЕДОСТУПНОМ сайте
+        type: boolean
+        default: false
+        required: true
   push:
     branches: [main]
-    paths: ['.github/workflows/ozon-ooo-sync.yml', 'scripts/ozon_sync.py']
-permissions: {}
+    paths:
+      - .github/workflows/ozon-ooo-sync.yml
+      - scripts/ozon_sync.py
+      - tests/test_ozon_sync.py
+permissions:
+  contents: write
 concurrency:
   group: ozon-ooo-annual-sync
   cancel-in-progress: false
@@ -12,46 +22,31 @@ jobs:
   sync:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
-      - name: Проверить структуру отчётов без персональных данных
+      - uses: actions/checkout@v4
+      - name: Проверить расчёты
+        run: python -m unittest discover -s tests -p 'test_ozon_*.py'
+      - name: Проверить источники без сохранения и вывода сумм
+        if: inputs.publish_public_aggregates != true
         env:
           OZON_OOO_CLIENT_ID: ${{ secrets.OZON_OOO_CLIENT_ID }}
           OZON_OOO_API_KEY: ${{ secrets.OZON_OOO_API_KEY }}
-        shell: python
+        run: python scripts/ozon_sync.py
+      - name: Сформировать только разрешённые сводные данные
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_public_aggregates == true
+        env:
+          OZON_OOO_CLIENT_ID: ${{ secrets.OZON_OOO_CLIENT_ID }}
+          OZON_OOO_API_KEY: ${{ secrets.OZON_OOO_API_KEY }}
+          OZON_PUBLICATION_APPROVED: confirmed
+        run: python scripts/ozon_sync.py --publish
+      - name: Опубликовать сводные показатели без документов и реквизитов
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_public_aggregates == true
         run: |
-          import datetime as dt
-          import json, os, urllib.request, urllib.error
-          class NoRedirect(urllib.request.HTTPRedirectHandler):
-              def redirect_request(self, *args): return None
-          opener=urllib.request.build_opener(NoRedirect())
-          client=os.environ["OZON_OOO_CLIENT_ID"].strip()
-          key=os.environ["OZON_OOO_API_KEY"].strip()
-          def shape(value, depth=0):
-              if depth>10: return "..."
-              if isinstance(value,dict): return {k:shape(v,depth+1) for k,v in value.items()}
-              if isinstance(value,list): return {"list_count":len(value),"sample":shape(value[0],depth+1) if value else None}
-              if isinstance(value,str): return "<string>"
-              return type(value).__name__
-          def req(path,body):
-              r=urllib.request.Request("https://api-seller.ozon.ru"+path,data=json.dumps(body).encode(),headers={"Client-Id":client,"Api-Key":key,"Content-Type":"application/json"},method="POST")
-              try:
-                  with opener.open(r,timeout=30) as f: d=json.load(f)
-                  print(json.dumps({"endpoint":path,"http":200,"schema":shape(d)},ensure_ascii=False),flush=True)
-                  return d
-              except urllib.error.HTTPError as e:
-                  msg=""
-                  try: msg=str(json.load(e).get("message",""))[:400].replace(key,"[redacted]").replace(client,"[redacted]")
-                  except Exception: pass
-                  print(json.dumps({"endpoint":path,"http":e.code,"message":msg},ensure_ascii=False),flush=True)
-              except Exception as e: print(json.dumps({"endpoint":path,"error":type(e).__name__}),flush=True)
-          now=dt.datetime.now(dt.timezone(dt.timedelta(hours=3))).date()
-          req("/v1/finance/cash-flow-statement/list",{"date":{"from":"2026-01-01T00:00:00+03:00","to":now.isoformat()+"T23:59:59+03:00"},"page":1,"page_size":100,"with_details":True})
-          req("/v2/finance/realization",{"month":now.month,"year":now.year})
-          req("/v1/finance/accrual/types",{})
-          catalog=req("/v3/product/list",{"filter":{"visibility":"ALL"},"limit":100}).get("result",{}).get("items",[])
-          import time
-          time.sleep(5)
-          req("/v1/analytics/stocks",{"skus":[item["sku"] for item in catalog if item.get("sku")]})
-          req("/v2/product/info/stocks-by-warehouse/fbs",{"limit":1000,"cursor":"","sku":[item["sku"] for item in catalog if item.get("sku")]})
-          
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ozon-data.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Update approved Ozon KLM accounting aggregates'
+          git pull --rebase origin main
+          git push origin HEAD:main
