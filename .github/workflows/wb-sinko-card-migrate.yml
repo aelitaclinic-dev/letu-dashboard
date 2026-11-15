@@ -91,22 +91,6 @@ jobs:
           
           NEWCODES=["C151616","C151613","C151612","C151609","SKLC200","C151615","C151617","C151620","SKSC300A","C151624","C151610","SKTO30","SKTS100","SKPS220","C151621","C151622","SKTC300","C151623","SET-C151611-C151610","SET-C151609-C151610","C151619"]
           
-          for p in PLAN:
-              if p["sku"] not in NEWCODES:continue
-              found=[d for d in dest if d.get("vendorCode")==p["sku"]]
-              if not found:continue
-              if len(found)!=1 or volume(found[0])!=p["ml"]:raise RuntimeError("New card does not resolve uniquely")
-              d=found[0];c=byid[p["sourceIds"][0]]
-              photos=[ph.get("big") or ph.get("c516x688") for ph in c.get("photos",[]) if ph.get("big") or ph.get("c516x688")]
-              if not d.get("photos"):call("OOO","/content/v3/media/save",{"nmId":d["nmID"],"data":photos})
-              print("MEDIA_ACCEPTED",p["sku"],len(photos),flush=True)
-          actual=cards("OOO")
-          for p in PLAN:
-              if p["sku"] not in NEWCODES:continue
-              found=[d for d in actual if d.get("vendorCode")==p["sku"]]
-              if not found:continue
-              d=found[0];src=byid[p["sourceIds"][0]]
-              print("FINAL_REPORT",json.dumps({"sku":p["sku"],"sourceId":src["nmID"],"targetId":d["nmID"],"title":d["title"],"ml":volume(d),"category":d.get("subjectName"),"photos":len(d.get("photos",[])),"expectedPhotos":len(src.get("photos",[])),"status":"created_verified" if len(d.get("photos",[]))==len(src.get("photos",[])) else "media_pending"},ensure_ascii=False),flush=True)
           errors=call("OOO","/content/v2/cards/error/list",{"cursor":{"limit":100},"order":{"ascending":False}})
           for batch in errors.get("data",{}).get("items",[]):
               for sku in set(NEWCODES)&set(batch.get("vendorCodes",[])):
