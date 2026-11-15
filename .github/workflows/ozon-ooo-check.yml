@@ -1,0 +1,83 @@
+name: Ozon ООО — проверка подключения
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/ozon-ooo-check.yml']
+
+permissions: {}
+
+concurrency:
+  group: ozon-ooo-connection-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main'
+    name: Проверить авторизацию и чтение товаров
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Проверить Ozon Seller API без вывода ключа
+        env:
+          OZON_OOO_CLIENT_ID: ${{ secrets.OZON_OOO_CLIENT_ID }}
+          OZON_OOO_API_KEY: ${{ secrets.OZON_OOO_API_KEY }}
+        shell: python
+        run: |
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+
+          def report(message, success=False):
+              print(message)
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+                  summary.write("## Проверка Ozon: секреты ООО «КЛМ»\n\n" + message + "\n")
+              sys.exit(0 if success else 1)
+
+          client_id = os.environ.get("OZON_OOO_CLIENT_ID", "").strip()
+          api_key = os.environ.get("OZON_OOO_API_KEY", "").strip()
+          missing = [name for name, value in (
+              ("OZON_OOO_CLIENT_ID", client_id),
+              ("OZON_OOO_API_KEY", api_key),
+          ) if not value]
+          if missing:
+              report("Не найдены секреты GitHub Actions: " + ", ".join(missing) + ".")
+          if not client_id.isascii() or not client_id.isdigit():
+              report("В OZON_OOO_CLIENT_ID должен быть числовой Client ID из Ozon.")
+          if any(ord(ch) < 33 or ord(ch) > 126 for ch in api_key):
+              report("В OZON_OOO_API_KEY есть пробелы или недопустимые символы. Проверьте копирование ключа.")
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, request, file, code, message, headers, new_url):
+                  return None
+
+          request = urllib.request.Request(
+              "https://api-seller.ozon.ru/v3/product/list",
+              data=json.dumps({"filter": {"visibility": "ALL"}, "last_id": "", "limit": 1}).encode("utf-8"),
+              headers={"Client-Id": client_id, "Api-Key": api_key, "Content-Type": "application/json"},
+              method="POST",
+          )
+          try:
+              with urllib.request.build_opener(NoRedirect()).open(request, timeout=30) as response:
+                  data = json.load(response)
+          except urllib.error.HTTPError as error:
+              hints = {
+                  401: "Проверьте Client ID, API-ключ и срок действия ключа.",
+                  403: "Проверьте роли ключа, разрешённые сети и соответствие Client ID кабинету.",
+                  429: "Превышен лимит запросов Ozon. Повторите проверку позже.",
+              }
+              report("Ozon вернул HTTP " + str(error.code) + ". " + hints.get(error.code, "Проверка не завершена."))
+          except (OSError, ValueError):
+              report("Ошибка сети или формата ответа Ozon. Проверка не завершена.")
+
+          result = data.get("result") if isinstance(data, dict) else None
+          if not isinstance(result, dict) or not isinstance(result.get("items"), list):
+              report("Ozon не вернул ожидаемый список товаров. Проверка не пройдена.")
+          total = result.get("total_items", result.get("total"))
+          detail = ""
+          if isinstance(total, int) and not isinstance(total, bool) and total >= 0:
+              detail = " Товаров по фильтру ALL: " + str(total) + "."
+          report("Подключение работает: Ozon принял Client ID и API-ключ, чтение списка товаров доступно (HTTP 200)." + detail, success=True)
