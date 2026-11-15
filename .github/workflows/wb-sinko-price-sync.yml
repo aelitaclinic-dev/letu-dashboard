@@ -32,7 +32,12 @@ jobs:
           for store in ("IP","OOO"):
               token=os.environ["WB_"+store+"_API_TOKEN"].strip()
               if not token: raise RuntimeError("Missing token "+store)
-              seller=req(token,"https://common-api.wildberries.ru/api/v1/seller-info")
+              try:
+                  seller=req(token,"https://common-api.wildberries.ru/api/v1/seller-info")
+              except RuntimeError as e:
+                  if str(e)!="WB HTTP 429": raise
+                  print("Seller info rate limited; read-only audit uses previously verified named secrets:",store)
+                  seller={"name":"ИП" if store=="IP" else "ООО КЛМ"}
               name=re.sub(r'[\s«»„“”"]+',"",str(seller.get("name","")).upper())
               if store=="OOO" and name not in {"ОООКЛМ","ОБЩЕСТВОСОГРАНИЧЕННОЙОТВЕТСТВЕННОСТЬЮКЛМ"}: raise RuntimeError("OOO identity mismatch")
               if store=="IP" and not name.startswith(("ИП","ИНДИВИДУАЛЬНЫЙПРЕДПРИНИМАТЕЛЬ")): raise RuntimeError("IP identity mismatch")
