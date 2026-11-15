@@ -39,14 +39,17 @@ jobs:
 
           client_id = os.environ.get("OZON_OOO_CLIENT_ID", "").strip()
           api_key = os.environ.get("OZON_OOO_API_KEY", "").strip()
-          missing = [name for name, value in (
-              ("OZON_OOO_CLIENT_ID", client_id),
-              ("OZON_OOO_API_KEY", api_key),
-          ) if not value]
-          if missing:
-              report("Не найдены секреты GitHub Actions: " + ", ".join(missing) + ".")
-          if not client_id.isascii() or not client_id.isdigit():
-              report("В OZON_OOO_CLIENT_ID должен быть числовой Client ID из Ozon.")
+          problems = []
+          if not client_id:
+              problems.append("OZON_OOO_CLIENT_ID отсутствует.")
+          elif not client_id.isascii() or not client_id.isdigit():
+              problems.append("OZON_OOO_CLIENT_ID найден, но значение не является числовым Client ID. Если здесь сохранён API-ключ, перенесите его в OZON_OOO_API_KEY, а сюда внесите Client ID из Ozon.")
+          else:
+              print("OZON_OOO_CLIENT_ID найден: формат числового идентификатора подтверждён.")
+          if not api_key:
+              problems.append("OZON_OOO_API_KEY отсутствует.")
+          if problems:
+              report(" ".join(problems) + " Для запроса к Ozon нужны оба значения.")
           if any(ord(ch) < 33 or ord(ch) > 126 for ch in api_key):
               report("В OZON_OOO_API_KEY есть пробелы или недопустимые символы. Проверьте копирование ключа.")
 
