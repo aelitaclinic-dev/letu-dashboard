@@ -17,7 +17,7 @@ on:
 permissions:
   contents: write
 env:
-  OZON_RUN_PUBLICATION: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_public_aggregates == true) || (github.event_name == 'push' && github.event.head_commit.message == 'Publish authorized Ozon KLM annual aggregates') }}
+  OZON_RUN_PUBLICATION: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_public_aggregates == true) || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Publish authorized Ozon KLM annual aggregates')) }}
 concurrency:
   group: ozon-ooo-annual-sync
   cancel-in-progress: false
