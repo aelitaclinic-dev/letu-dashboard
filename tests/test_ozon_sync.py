@@ -65,6 +65,41 @@ class OzonTests(unittest.TestCase):
             ozon.kop(Decimal('1.001'))
         self.assertEqual(ozon.kop(Decimal('-1.01')), -101)
 
+    def test_fee_buckets_and_nested_commission(self):
+        self.assertEqual(ozon.fee_bucket('Штраф за опоздание'), 'fines')
+        self.assertEqual(ozon.fee_bucket('Компенсация за утерю'), 'compensation')
+        found = []
+        ozon.walk_fees({'posting': {'products': [{'commission': {'sale_commission': Decimal('-12.50')},
+            'delivery': {'services': [{'type_id': 9, 'accrued': {'amount': Decimal('-3.00'), 'currency_code': 'RUB'}}]}}]}}, found)
+        amounts = dict(found)
+        self.assertEqual(amounts['sale_commission'], -1250)
+        self.assertEqual(amounts[9], -300)
+
+    def test_posting_duplicates_fail_and_status_is_not_a_sale(self):
+        posting = dict(posting_number='1', created_at='2026-11-02T10:00:00+03:00', status='awaiting_deliver',
+                       products=[dict(offer_id='SKU1', name='A', quantity=2, price='100.00')])
+        class Once:
+            def post(self, endpoint, body):
+                return dict(result=dict(postings=[posting], has_next=False))
+        months = ozon.collect_postings(Once(), '/v3/posting/fbs/list', 'FBS/rFBS', '2026-01-01', '2026-11-16')
+        self.assertEqual(months[0]['orderedQty'], 2)
+        self.assertEqual(months[0]['deliveredQty'], 0)
+        self.assertEqual(months[0]['inProgressQty'], 2)
+        class Dup:
+            def post(self, endpoint, body):
+                return dict(result=dict(postings=[posting, posting], has_next=False))
+        with self.assertRaises(ozon.SyncError):
+            ozon.collect_postings(Dup(), '/v3/posting/fbs/list', 'FBS/rFBS', '2026-01-01', '2026-11-16')
+
+    def test_accrual_cursor_repeat_fails(self):
+        class Client:
+            def post(self, endpoint, body):
+                if endpoint.endswith('/types'):
+                    return dict(types=[dict(id=1, name='Комиссия')])
+                return dict(accruals=[dict(accrual_id=1, date='2026-11-01')], last_id='same')
+        with self.assertRaises(ozon.SyncError):
+            ozon.collect_accruals(Client(), '2026-11-01', '2026-11-01', {1: 'Комиссия'})
+
     def test_cashflow_duplicate_pages_fail(self):
         flow = dict(period=dict(id=1,begin='2026-01-01',end='2026-01-15'), currency_code='RUB',
             orders_amount=0,returns_amount=0,commission_amount=0,services_amount=0,item_delivery_and_return_amount=0)
