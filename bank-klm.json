@@ -104,26 +104,26 @@
     {
       "id": "bank-klm-2026-tax-collection-a",
       "date": "2026-09-22",
-      "category": "fines",
-      "title": "ФНС — предполагаемый штраф за несвоевременную отчётность",
+      "category": "unclassified",
+      "title": "ФНС — взыскание по решению от 21.09.2026 № 21634, ст. 46 НК РФ",
       "amountKop": 102223,
-      "state": "classification_assumed",
+      "state": "needs_classification",
       "liabilityMonth": null,
       "expenseId": "bank-klm-2026-tax-collection-a",
       "candidateExpenseIds": [],
-      "classificationSource": "Предположение пользователя от 16.11.2026; основание начисления не проверено"
+      "classificationSource": "По решению о взыскании от 21.09.2026 № 21634 по ст. 46 НК РФ. Общая сумма двух списаний — 1 022,35 ₽. Основание взыскания уточнено пользователем; вид задолженности (налог, взносы, пени или штраф) не установлен."
     },
     {
       "id": "bank-klm-2026-tax-collection-b",
       "date": "2026-09-23",
-      "category": "fines",
-      "title": "ФНС — предполагаемый штраф за несвоевременную отчётность",
+      "category": "unclassified",
+      "title": "ФНС — взыскание по решению от 21.09.2026 № 21634, ст. 46 НК РФ",
       "amountKop": 12,
-      "state": "classification_assumed",
+      "state": "needs_classification",
       "liabilityMonth": null,
       "expenseId": "bank-klm-2026-tax-collection-b",
       "candidateExpenseIds": [],
-      "classificationSource": "Предположение пользователя от 16.11.2026; основание начисления не проверено"
+      "classificationSource": "По решению о взыскании от 21.09.2026 № 21634 по ст. 46 НК РФ. Общая сумма двух списаний — 1 022,35 ₽. Основание взыскания уточнено пользователем; вид задолженности (налог, взносы, пени или штраф) не установлен."
     },
     {
       "id": "bank-klm-2026-delivery",

@@ -28,7 +28,13 @@ assert(bank.every(r=>r.entity==='ooo'&&r.payerEntity==='ooo'&&r.beneficiaryEntit
 assert.equal(records.filter(r=>/^decl-ooo-2026-/.test(r.id)).length,2);
 assert.equal(bank.filter(r=>r.category==='declarations').length,1);
 assert.equal(bank.find(r=>r.id.endsWith('-enp')).amountKop,813000);
-assert.equal(bank.filter(r=>r.category==='fines').reduce((s,r)=>s+r.amountKop,0),302235);
+assert.equal(bank.filter(r=>r.category==='fines').reduce((s,r)=>s+r.amountKop,0),200000);
 assert.equal(bank.filter(r=>r.category==='bank-fees').reduce((s,r)=>s+r.amountKop,0),30000);
 assert.equal(data.markingPaymentsKop,0);
 console.log('Bank: exact reconciliation, founder funding, payout coverage, privacy, unknowns and declaration deduplication passed');
+
+const collection=bank.filter(r=>r.id.includes('-tax-collection-'));
+assert.equal(collection.length,2);assert.equal(collection.reduce((s,r)=>s+r.amountKop,0),102235);
+assert(collection.every(r=>r.category==='unclassified'&&r.title.includes('21634')&&r.title.includes('21.09.2026')&&r.needs.includes('paymentNature')));
+for(const r of collection){const statement=data.outflows.find(b=>b.id===r.id);assert.equal(statement.amountKop,r.amountKop);assert.equal(statement.category,r.category);assert.equal(statement.title,r.title);}
+assert(!api.render(all).includes('Предполагаемый штраф ФНС'));
