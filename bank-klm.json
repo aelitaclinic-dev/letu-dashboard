@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "owner": "ooo",
+  "seller": "ООО «КЛМ»",
+  "fromDate": "2026-08-01",
+  "toDate": "2026-11-15",
+  "source": "Банковская выписка ООО «КЛМ»",
+  "confirmedAt": "2026-11-15T13:17:00+03:00",
+  "openingKop": 82000,
+  "closingKop": 4896861,
+  "incomingKop": 11479626,
+  "outgoingKop": 6664765,
+  "inflows": [
+    {
+      "id": "bank-klm-founder-2026-08-15-200000",
+      "date": "2026-08-15",
+      "kind": "founder_funding",
+      "amountKop": 200000
+    },
+    {
+      "id": "bank-klm-founder-2026-08-19-200000",
+      "date": "2026-08-19",
+      "kind": "founder_funding",
+      "amountKop": 200000
+    },
+    {
+      "id": "bank-klm-founder-2026-09-03-3150000",
+      "date": "2026-09-03",
+      "kind": "founder_funding",
+      "amountKop": 3150000
+    },
+    {
+      "id": "bank-klm-founder-2026-10-08-2500000",
+      "date": "2026-10-08",
+      "kind": "founder_funding",
+      "amountKop": 2500000
+    },
+    {
+      "id": "bank-klm-founder-2026-10-18-4000000",
+      "date": "2026-10-18",
+      "kind": "founder_funding",
+      "amountKop": 4000000
+    },
+    {
+      "id": "bank-klm-founder-2026-10-18-1000000",
+      "date": "2026-10-18",
+      "kind": "founder_funding",
+      "amountKop": 1000000
+    },
+    {
+      "id": "bank-klm-wb-20261105",
+      "date": "2026-11-05",
+      "kind": "marketplace_payout",
+      "channel": "wb-ooo",
+      "amountKop": 429626
+    }
+  ],
+  "outflows": [
+    {
+      "id": "bank-klm-2026-sms-aug",
+      "date": "2026-08-15",
+      "category": "bank-fees",
+      "title": "СМС-информирование банка",
+      "amountKop": 7500,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-sms-aug",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-public-payment",
+      "date": "2026-08-20",
+      "category": "fines",
+      "title": "Штраф за несвоевременную сдачу отчётности",
+      "amountKop": 200000,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-public-payment",
+      "candidateExpenseIds": [],
+      "classificationSource": "Пояснение пользователя от 16.11.2026"
+    },
+    {
+      "id": "bank-klm-2026-sms-sep",
+      "date": "2026-09-03",
+      "category": "bank-fees",
+      "title": "СМС-информирование банка",
+      "amountKop": 7500,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-sms-sep",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-insurance",
+      "date": "2026-09-03",
+      "category": "taxes",
+      "title": "Страховые взносы за июль 2026",
+      "amountKop": 3189530,
+      "state": "booked",
+      "liabilityMonth": "2026-07",
+      "expenseId": "bank-klm-2026-insurance",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-tax-collection-a",
+      "date": "2026-09-22",
+      "category": "fines",
+      "title": "ФНС — предполагаемый штраф за несвоевременную отчётность",
+      "amountKop": 102223,
+      "state": "classification_assumed",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-tax-collection-a",
+      "candidateExpenseIds": [],
+      "classificationSource": "Предположение пользователя от 16.11.2026; основание начисления не проверено"
+    },
+    {
+      "id": "bank-klm-2026-tax-collection-b",
+      "date": "2026-09-23",
+      "category": "fines",
+      "title": "ФНС — предполагаемый штраф за несвоевременную отчётность",
+      "amountKop": 12,
+      "state": "classification_assumed",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-tax-collection-b",
+      "candidateExpenseIds": [],
+      "classificationSource": "Предположение пользователя от 16.11.2026; основание начисления не проверено"
+    },
+    {
+      "id": "bank-klm-2026-delivery",
+      "date": "2026-10-07",
+      "category": "courier",
+      "title": "Яндекс.Доставка",
+      "amountKop": 30000,
+      "state": "needs_channel",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-delivery",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-sms-oct",
+      "date": "2026-10-07",
+      "category": "bank-fees",
+      "title": "СМС-информирование банка",
+      "amountKop": 7500,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-sms-oct",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-enp",
+      "date": "2026-10-18",
+      "category": "taxes",
+      "title": "Страховые взносы за сотрудника, сентябрь 2026",
+      "amountKop": 813000,
+      "state": "booked",
+      "liabilityMonth": "2026-09",
+      "expenseId": "bank-klm-2026-enp",
+      "candidateExpenseIds": [],
+      "classificationSource": "Пояснение пользователя от 16.11.2026"
+    },
+    {
+      "id": "bank-klm-2026-sms-nov",
+      "date": "2026-11-05",
+      "category": "bank-fees",
+      "title": "СМС-информирование банка",
+      "amountKop": 7500,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-sms-nov",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-declaration",
+      "date": "2026-11-11",
+      "category": "declarations",
+      "title": "Техпромсерт — новая декларация на кератин и протокол испытаний",
+      "amountKop": 2300000,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-declaration",
+      "candidateExpenseIds": [],
+      "classificationSource": "Пользователь подтвердил: новая, третья декларация"
+    }
+  ],
+  "confirmedPayouts": [
+    {
+      "channel": "ozon-ooo",
+      "amountKop": 0
+    },
+    {
+      "channel": "wb-ooo",
+      "amountKop": 429626
+    }
+  ],
+  "markingPaymentsKop": 0,
+  "markingNote": "В этой выписке платежей оператору «Честного знака» нет.",
+  "rules": [
+    {
+      "counterparty": "Техпромсерт",
+      "category": "declarations"
+    },
+    {
+      "counterparty": "Техпромсервис",
+      "category": "declarations"
+    },
+    {
+      "counterparty": "Оператор «Честного знака»",
+      "category": "marking"
+    }
+  ],
+  "priorDeclarations": [
+    {
+      "expenseId": "decl-ooo-2026-1",
+      "paidMonth": "2026-09",
+      "amountKop": 2300000,
+      "title": "Декларация соответствия, первая",
+      "bankConfirmed": false,
+      "note": "Ранее внесено в журнал. В данной выписке соответствующий платёж не найден."
+    },
+    {
+      "expenseId": "decl-ooo-2026-2",
+      "paidMonth": "2026-09",
+      "amountKop": 2300000,
+      "title": "Декларация соответствия, вторая",
+      "bankConfirmed": false,
+      "note": "Ранее внесено в журнал. В данной выписке соответствующий платёж не найден."
+    }
+  ],
+  "classificationUpdatedOn": "2026-11-16"
+}

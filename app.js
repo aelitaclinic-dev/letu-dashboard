@@ -1993,6 +1993,7 @@
   var EXPENSE_KEY = "ma-distribution-expenses-v1";
   var expenseEntity = "all";
   var expenseEditing = null;
+  var expenseRouteKey = null;
   var expenseFilters = { category: "", channel: "", status: "", from: "2026-01", to: "2026-11" };
 
   function expenseBook() {
@@ -2282,9 +2283,16 @@
 
   function renderExpenses() {
     var book = expenseBook();
+    var expenseRoute = location.hash.replace(/^#/, '').split('/');
+    var routeKey = expenseRoute.join('/');
+    if (expenseRouteKey !== routeKey) {
+      expenseFilters.category = (book.categories || []).some(function(c) { return c.id === expenseRoute[1]; }) ? expenseRoute[1] : '';
+      expenseEntity = ['ip','ooo'].indexOf(expenseRoute[2]) >= 0 ? expenseRoute[2] : 'all';
+      expenseRouteKey = routeKey;
+    }
     var rows = loadExpenses();
     var filters = expenseFilters;
-    var summary = expenseSummary(rows, filters.from, filters.to);
+    var summary;
     var shown = rows.filter(function (row) {
       if (expenseEntity !== "all" && row.entity !== expenseEntity) return false;
       if (filters.category && row.category !== filters.category) return false;
@@ -2294,6 +2302,7 @@
       if (filters.status === "incomplete" && !expenseRowIncomplete(row)) return false;
       return true;
     });
+    summary = expenseSummary(shown, filters.from, filters.to);
     var switcher = ["all", "ip", "ooo"].map(function (id) {
       var text = id === "all" ? "Все" : entityLabel(id);
       return "<button type='button' data-expense-entity='" + id + "'" + (expenseEntity === id ? "" : " class='secondary'") + ">" + esc(text) + "</button>";
@@ -2306,7 +2315,7 @@
       else if (item.plannedKop) planned = expenseAmount(item.plannedKop);
       var paidText = item.paidKop ? expenseAmount(item.paidKop) : (item.paidOutsideKop ? "В этом периоде оплат нет" : "Нет записей");
       return "<div class='profit-business'><h3>" + esc(entityLabel(id)) + "</h3>"
-        + "<p><b>Фактически оплачено за период:</b> " + esc(paidText) + (item.paidMonthUnknown ? ". Месяц части оплат нужно уточнить." : "") + "</p>"
+        + "<p><b>Оплачено по журналу за период:</b> " + esc(paidText) + (item.paidMonthUnknown ? ". Месяц части оплат нужно уточнить." : "") + "</p>"
         + "<p><b>Учтено в расходах периода:</b> " + esc(item.accountedKop == null ? "Не определены" : money(item.accountedKop)) + "</p>"
         + "<p><b>Планируемые:</b> " + esc(planned) + "</p>"
         + "<p><b>Не хватает данных:</b> " + esc(String(item.incomplete)) + "</p>"
@@ -2329,6 +2338,7 @@
         + "<span>Площадка: " + esc(labelOf(book.channels, row.channelScope)) + "</span>"
         + (row.brand || row.goods ? "<span>Товары: " + esc([row.brand, row.goods].filter(Boolean).join(", ")) + "</span>" : "")
         + "<span>Статус: " + esc(row.status === "planned" ? "Планируется" : "Оплачен") + "</span>"
+        + (row.bankConfirmed ? "<span>Платёж подтверждён банковской выпиской ООО</span>" : "")
         + "<span>В прибыли: " + esc(profitText) + "</span>"
         + (row.comment ? "<span>" + esc(row.comment) + "</span>" : "")
         + "<span><button type='button' class='secondary' data-expense-edit='" + esc(row.id) + "'>Изменить</button></span>"
@@ -2339,6 +2349,8 @@
     }).join("");
     return "<section id='expenses'><div class='unit-heading'><h2>Расходы бизнеса</h2><span class='unit-date'>ИП и ООО отдельно</span></div>"
       + "<div class='unit-intro'><strong>Здесь платежи и расходы периода не смешиваются.</strong> ИП и ООО не складываются в одну прибыль. " + esc(book.note || "") + " Новые записи сохраняются только в этом браузере. Цены, карточки и остатки в магазинах не меняются.</div>"
+      + (window.BankLedger && expenseEntity !== "ip" ? window.BankLedger.expensePanel(filters.category) : "")
+      + "<nav class='market-sections' aria-label='Страницы расходов'><a href='#expenses'>Все расходы</a>" + book.categories.filter(function(c) { return ["declarations","bank-fees","taxes","courier","marking","unclassified","fines"].indexOf(c.id) >= 0; }).map(function(c) { return "<a href='#expenses/" + esc(c.id) + "/ooo'>" + esc(c.label) + "</a>"; }).join("") + "</nav>"
       + "<div class='profit-presets'>" + switcher + "</div>"
       + "<form id='expense-filters' class='filters'>"
       + "<label>С месяца<select id='expense-from'>" + expenseMonthOptions(filters.from, false) + "</select></label>"
@@ -2347,7 +2359,7 @@
       + "<label>Площадка<select id='expense-channel'>" + expenseOptions(book.channels, filters.channel, "Все площадки") + "</select></label>"
       + "<label>Статус<select id='expense-status'><option value=''" + (filters.status === "" ? " selected" : "") + ">Все</option><option value='paid'" + (filters.status === "paid" ? " selected" : "") + ">Оплачен</option><option value='planned'" + (filters.status === "planned" ? " selected" : "") + ">Планируется</option><option value='incomplete'" + (filters.status === "incomplete" ? " selected" : "") + ">Не хватает данных</option></select></label>"
       + "<button type='submit'>Показать</button></form>"
-      + "<div class='expense-totals'>" + totalCard("ip") + totalCard("ooo") + "</div>"
+      + "<div class='expense-totals'>" + (expenseEntity === "all" ? totalCard("ip") + totalCard("ooo") : totalCard(expenseEntity)) + "</div>"
       + "<p><button type='button' id='expense-add'>Добавить расход</button> <button type='button' class='secondary' id='expense-reset'>Убрать мои правки</button></p>"
       + expenseForm()
       + "<div class='profit-skus expense-list'>" + (list || "<p>В этом фильтре записей нет.</p>") + "</div>"
@@ -2999,6 +3011,7 @@
   }
 
   function renderMarketplace(channel, store, section, state) {
+    if (channel === "wb" && store === "ooo" && section === "payouts" && window.BankLedger) return window.BankLedger.renderWB(state);
     if (channel === "ozon" && window.OzonDashboard) return window.OzonDashboard.render(section, state, store);
     var name = channel === "wb" ? "Wildberries" : "Ozon";
     var storeName = store === "all" ? "Все магазины" : (store === "ip" ? "ИП" : "ООО");
@@ -3041,18 +3054,20 @@
   function updateMarketNavigation(hash, channel) {
     var expensePage = hash === "expenses" || hash.indexOf("expenses/") === 0;
     var directPage = hash === "direct-orders";
+    var bankPage = hash === "bank" || hash.indexOf("bank/") === 0;
     var purchasePage = hash === "purchases" || hash.indexOf("purchases/") === 0 || directPage;
     var overview = !hash || hash === "overview";
-    var isLetu = !overview && !channel && !expensePage && !purchasePage;
+    var isLetu = !overview && !channel && !expensePage && !purchasePage && !bankPage;
     document.querySelector("nav.menu").hidden = !isLetu;
     document.getElementById("freshness").hidden = !isLetu;
     document.getElementById("page-context").textContent = overview ? "Все площадки · единый обзор бизнеса"
+      : bankPage ? "Банк ООО «КЛМ» · сверка выписки и расходов"
       : directPage ? "Прямые заказы сторонних клиентов · лично или через переписку"
       : purchasePage ? "Закупки, поставки и собственные склады · ИП и ООО"
       : expensePage ? "Общие расходы бизнеса · раздельный учёт ИП и ООО"
       : channel ? (channel === "wb" ? "Wildberries" : "Ozon") + " · кабинеты ИП и ООО"
       : "Л’Этуаль · ИП Барская Регина Александровна";
-    var current = overview ? "#overview" : purchasePage ? "#purchases" : expensePage ? "#expenses" : channel ? "#" + channel + "/all/summary" : "#letu";
+    var current = overview ? "#overview" : bankPage ? "#bank/ooo" : purchasePage ? "#purchases" : expensePage ? "#expenses" : channel ? "#" + channel + "/all/summary" : "#letu";
     document.querySelectorAll(".market-nav a").forEach(function (link) {
       var on = link.getAttribute("href") === current;
       link.classList.toggle("on", on);
@@ -3063,7 +3078,7 @@
     footer.textContent = directPage
       ? "Журнал прямых заказов. Общий файл открывается на любом устройстве. Правки этой страницы сохраняются в браузере и остаются после обновления."
       : purchasePage ? "Личный журнал закупок и складских движений. Записи сохраняются в текущем браузере. Сохраните резервную копию для переноса на другое устройство." : footer.dataset.originalText;
-    document.title = "MA Distribution — " + (overview ? "обзор бизнеса" : directPage ? "прямые заказы клиентов" : purchasePage ? "закупки и склад" : expensePage ? "расходы ИП / ООО" : channel ? (channel === "wb" ? "Wildberries" : "Ozon") : "Л’Этуаль");
+    document.title = "MA Distribution — " + (overview ? "обзор бизнеса" : bankPage ? "банк ООО КЛМ" : directPage ? "прямые заказы клиентов" : purchasePage ? "закупки и склад" : expensePage ? "расходы ИП / ООО" : channel ? (channel === "wb" ? "Wildberries" : "Ozon") : "Л’Этуаль");
   }
 
   function render() {
@@ -3099,6 +3114,7 @@
         window.scrollTo({top: 0, left: 0, behavior: "instant"});
       }
     }
+    else if (route[0] === "bank" && window.BankLedger) screen.innerHTML = window.BankLedger.render(state);
     else if (channel) screen.innerHTML = renderMarketplace(channel, ["all", "ip", "ooo"].indexOf(route[1]) >= 0 ? route[1] : "all", route[2] || "summary", state);
     else if (hash.indexOf("m/") === 0) screen.innerHTML = renderMonth(hash.slice(2), state);
     else if (hash === "unit") screen.innerHTML = renderUnitPage(state);
@@ -3155,6 +3171,7 @@
     });
   }
 
+  window.addEventListener("bankdataready", render);
   window.addEventListener("ozondataready", render);
   window.addEventListener("hashchange", render);
   window.addEventListener("popstate", render);
