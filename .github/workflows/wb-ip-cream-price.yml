@@ -1,0 +1,96 @@
+name: WB IP cream single card price
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/wb-ip-cream-price.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: wb-ip-single-price
+  cancel-in-progress: false
+jobs:
+  price:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+      - name: Calculate and verify authorized single card price
+        env:
+          WB_IP_API_TOKEN: ${{ secrets.WB_IP_API_TOKEN }}
+        shell: python
+        run: |
+          import os,json,time,math,urllib.request,urllib.error
+          from decimal import Decimal, ROUND_CEILING
+          TOKEN=os.environ["WB_IP_API_TOKEN"].strip()
+          NM=1249888316
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,*a):return None
+          opener=urllib.request.build_opener(NoRedirect())
+          def api(host,path,body=None):
+              deadline=time.monotonic()+2200
+              while True:
+                  req=urllib.request.Request("https://"+host+path,data=None if body is None else json.dumps(body).encode(),headers={"Authorization":TOKEN,"Content-Type":"application/json"},method="GET" if body is None else "POST")
+                  try:
+                      with opener.open(req,timeout=60) as f:r=json.load(f)
+                      if isinstance(r,dict) and r.get("error"):raise RuntimeError("WB reported an error")
+                      return r
+                  except urllib.error.HTTPError as e:
+                      if e.code!=429:raise RuntimeError("WB HTTP "+str(e.code)) from None
+                      delay=max(2,int(e.headers.get("X-Ratelimit-Retry",e.headers.get("Retry-After","60"))))+2
+                      if time.monotonic()+delay>deadline:raise RuntimeError("WB rate limit exceeds bounded wait") from None
+                      print("RATE_LIMIT_WAIT",delay,flush=True)
+                      time.sleep(delay)
+          cards=[];cursor={"limit":100}
+          for page in range(100):
+              r=api("content-api.wildberries.ru","/content/v2/get/cards/list",{"settings":{"cursor":cursor,"filter":{"withPhoto":-1}}})
+              cards+=r.get("cards",[])
+              cur=r["cursor"]
+              if cur.get("total",0)<100:break
+              cursor={"limit":100,"nmID":cur["nmID"],"updatedAt":cur["updatedAt"]}
+          else:raise RuntimeError("Incomplete catalog")
+          matches=[c for c in cards if c.get("nmID")==NM]
+          if len(matches)!=1:raise RuntimeError("Target card missing")
+          card=matches[0]
+          if "sinko" not in card.get("brand","").lower() or "крем" not in card.get("title","").lower():raise RuntimeError("Product identity mismatch")
+          vol=[c["value"] for c in card.get("characteristics",[]) if c.get("name","").lower().replace("ё","е")=="объем товара"]
+          if len(vol)!=1:raise RuntimeError("Volume missing")
+          v=vol[0][0] if isinstance(vol[0],list) and len(vol[0])==1 else vol[0]
+          if float(str(v).replace(",","."))!=300:raise RuntimeError("Volume mismatch")
+          subject=card["subjectID"]
+          tariffs=api("common-api.wildberries.ru","/api/v1/tariffs/commission?locale=ru")
+          rates=[Decimal(str(x["kgvpMarketplace"]))/100 for x in tariffs["report"] if x["subjectID"]==subject]
+          if len(rates)!=1 or not Decimal("0.40")<=rates[0]<=Decimal("0.46"):raise RuntimeError("Unexpected commission")
+          commission=rates[0]
+          print("CONFIRMED_CARD",NM,"SUBJECT",subject,"COMMISSION_PERCENT",commission*100,flush=True)
+          with open("purchase-receipt-2026-06-29.json",encoding="utf-8") as f:orders=json.load(f)["orders"]
+          order=next(o for o in orders if o["id"]=="invoice-PI0220260629-20260629")
+          line=next(l for l in order["lines"] if l["sku"]=="SKTC300")
+          goods=sum(l["qty"]*l["priceMinor"] for l in order["lines"])
+          cost=Decimal(line["priceMinor"])/100*Decimal(order["rateUnits"])/10000+Decimal(order["deliveryKop"])/100*Decimal(line["priceMinor"])/Decimal(goods)
+          fixed=cost+Decimal(97)+Decimal(200)
+          denominator=1-commission-Decimal(".07")-Decimal(".10")-Decimal(".25")
+          price=int(((fixed/denominator+10)/100).to_integral_value(rounding=ROUND_CEILING)*100-10)
+          if not 3000<=price<=5500:raise RuntimeError("Price outside expected range")
+          def current():
+              r=api("discounts-prices-api.wildberries.ru","/api/v2/list/goods/filter?limit=1000&offset=0")
+              rows=r.get("data",{}).get("listGoods",[])
+              found=[x for x in rows if x.get("nmID")==NM]
+              if len(found)!=1:raise RuntimeError("Target price missing")
+              return found[0]
+          def equal(p):
+              return p.get("discount")==0 and p.get("sizes") and all(Decimal(str(s.get("price")))==price for s in p["sizes"])
+          p=current()
+          if p.get("currencyIsoCode4217")!="RUB" or p.get("editableSizePrice") or p.get("editablePriceSize"):raise RuntimeError("Unsupported price configuration")
+          if not equal(p):
+              result=api("discounts-prices-api.wildberries.ru","/api/v2/upload/task",{"data":[{"nmID":NM,"price":price,"discount":0}]})
+              if not result.get("data",{}).get("id"):raise RuntimeError("Upload not accepted")
+              print("UPDATE_ACCEPTED_ONE_CARD",flush=True)
+              time.sleep(30)
+          for attempt in range(4):
+              if equal(current()):
+                  print("VERIFIED_PRICE_AND_DISCOUNT_ONE_CARD",NM,flush=True)
+                  break
+              time.sleep(45)
+          else:raise RuntimeError("Price not verified")
+          
