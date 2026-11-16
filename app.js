@@ -4,6 +4,19 @@
   const NO_CASH = "Нет подтверждающих данных";
   const MISSING = "Нет данных";
   const FUTURE = "Период ещё не наступил";
+  const TODAY = new Intl.DateTimeFormat("en-CA", {timeZone: "Europe/Moscow", year: "numeric", month: "2-digit", day: "2-digit"}).format(new Date());
+  // A past snapshot's placeholder never makes a month in progress a future month.
+  if (DATA) {
+    [DATA.months, DATA.profit && DATA.profit.months].forEach(function (rows) {
+      (rows || []).forEach(function (row) {
+        if (!row.start || row.start > TODAY) return;
+        Object.keys(row).forEach(function (key) {
+          if (/State$/.test(key) && row[key] === "future") row[key] = "missing";
+        });
+        if (row.view && row.view.status === "future") row.view.status = "missing";
+      });
+    });
+  }
   const MONTH_NAME = {
     "01": "Январь", "02": "Февраль", "03": "Март", "04": "Апрель",
     "05": "Май", "06": "Июнь", "07": "Июль", "08": "Август",
@@ -1515,6 +1528,7 @@
       : "";
     return "<p class='muted'>" + esc(DATA.entity) + ". " + esc(DATA.taxNote) + " Сейчас открыт кабинет Л’Этуаль.</p>"
       + filterForm(state)
+      + letuReportNotice(state)
       + "<section id='period'><p class='lead' id='paid'>Крупные цифры ниже — заказы, начисления и деньги, которые уже пришли по отчётам выбранных дат.</p>"
       + "<div class='grid cards'>" + cards + "</div></section>"
       + "<h2>Графики</h2>" + orderChart(chosen, state.brand) + accrualCharts(chosen)
@@ -2972,6 +2986,19 @@
       + "</h2><p>" + esc(description) + "</p></div>";
   }
 
+  function letuReportNotice(state) {
+    var loaded = function (value) { return value === "month" || value === "partial"; };
+    var missing = DATA.months.filter(function (row) {
+      return row.start <= TODAY && row.start <= state.to && row.end >= state.from
+        && !loaded(row.movementState) && !loaded(row.financeState);
+    });
+    if (!missing.length) return "";
+    return "<section class='market-note' aria-label='Актуальность отчётов Л’Этуаль'><h3>Л’Этуаль: отчёты ещё не загружены</h3>"
+      + "<p>" + esc(missing.map(function (row) { return monthTitle(row.month); }).join(", "))
+      + ". Последняя загруженная выгрузка Л’Этуаль — " + esc(dayText(DATA.asOf))
+      + ". За эти месяцы суммы продаж, начислений и прибыли пока не подтверждены. Прочерк означает отсутствие данных.</p></section>";
+  }
+
   function renderOverview(state) {
     var selected = screenMonths(state.from, state.to).filter(function (row) { return row.useFinance; });
     var profitRows = ((DATA.profit && DATA.profit.months) || []).filter(function (row) {
@@ -3000,6 +3027,7 @@
     }
     return marketHeading("MA DISTRIBUTION / ОБЗОР", "Бизнес на одном экране", "Выберите площадку, чтобы перейти к продажам, прибыли и магазинам.")
       + marketPeriodForm(state)
+      + letuReportNotice(state)
       + "<div class='market-overview-meta'><span><i class='live-dot'></i> " + (1 + (wbStore() ? 1 : 0) + (window.OzonDashboard && window.OzonDashboard.ready() ? 1 : 0)) + " из 3 площадок с данными</span><span>ИП и ООО — раздельный учёт</span></div>"
       + "<section class='market-tiles' aria-label='Маркетплейсы'>" + tile("letu", "Л’Этуаль", "Л’", true, "ИП · Барская Регина Александровна")
       + tile("wb", "Wildberries", "WB", false, "2 магазина · ИП и ООО") + tile("ozon", "Ozon", "O", false, "2 магазина · ИП и ООО") + "</section>"
@@ -3067,7 +3095,7 @@
       : expensePage ? "Общие расходы бизнеса · раздельный учёт ИП и ООО"
       : channel ? (channel === "wb" ? "Wildberries" : "Ozon") + " · кабинеты ИП и ООО"
       : "Л’Этуаль · ИП Барская Регина Александровна";
-    var current = overview ? "#overview" : bankPage ? "#bank/ooo" : purchasePage ? "#purchases" : expensePage ? "#expenses" : channel ? "#" + channel + "/all/summary" : "#letu";
+    var current = overview ? "#overview" : hash === "unit" ? "#unit" : bankPage ? "#bank/ooo" : purchasePage ? "#purchases" : expensePage ? "#expenses" : channel ? "#" + channel + "/all/summary" : "#letu";
     document.querySelectorAll(".market-nav a").forEach(function (link) {
       var on = link.getAttribute("href") === current;
       link.classList.toggle("on", on);
@@ -3092,7 +3120,7 @@
       return;
     }
     if (visible) visible.textContent = "Данные на " + DATA.asOfLabel + " · период 01.01.2026–" + dayText(DATA.asOf);
-    if (more) more.textContent = DATA.freshness;
+    if (more) more.textContent = (DATA.freshness || "").replace(/[^.]*ещё не наступили\.\s*/g, "");
     const state = params();
     const hash = location.hash.replace(/^#/, "");
     const route = hash.split("/");

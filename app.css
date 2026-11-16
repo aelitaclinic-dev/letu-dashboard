@@ -154,6 +154,8 @@ header.top h1 {
   box-shadow: inset 0 -0.36em 0 var(--apricot);
 }
 header.top p { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+header.top .brand-home { color: inherit; text-decoration: none; }
+header.top .brand-home:hover { color: var(--accent); }
 nav.menu {
   display: flex;
   gap: 8px;
