@@ -195,8 +195,11 @@ def cashflow_rows(client, start, end):
             if row.get('currency_code') not in ('RUB', 'RUR'):
                 raise SyncError('Unsupported cash-flow currency')
             begin, stop = str(period.get('begin', ''))[:10], str(period.get('end', ''))[:10]
-            if not start <= begin <= stop <= end:
-                raise SyncError('Cash-flow period outside requested year')
+            if not begin or not stop or begin > stop:
+                raise SyncError('Invalid cash-flow period')
+            # Open settlement weeks can end after the requested toDate; keep overlap.
+            if stop < start or begin > end:
+                continue
             rows.append(dict(fromDate=begin, toDate=stop,
                 ordersKop=kop(row.get('orders_amount')), returnsKop=kop(row.get('returns_amount')),
                 commissionKop=kop(row.get('commission_amount')), servicesKop=kop(row.get('services_amount')),
@@ -206,16 +209,18 @@ def cashflow_rows(client, start, end):
         for row in data['details']:
             period = row.get('period', {})
             begin, stop = str(period.get('begin', ''))[:10], str(period.get('end', ''))[:10]
-            if not start <= begin <= stop <= end or not isinstance(row.get('payments'), list):
+            if not begin or not stop or begin > stop or not isinstance(row.get('payments'), list):
                 raise SyncError('Invalid cash-flow detail period')
+            if stop < start or begin > end:
+                continue
             payment_rows = []
             payments = 0
             for item in row['payments']:
                 amount = rub_money(item, 'payment')
                 payments += amount
                 day = str(item.get('date') or item.get('payment_date') or stop)[:10]
-                if not start <= day <= end:
-                    raise SyncError('Cash-flow payment date outside requested year')
+                if not day or day < begin or day > stop:
+                    raise SyncError('Cash-flow payment date outside its period')
                 payment_rows.append(dict(date=day, amountKop=amount))
             details.append(dict(fromDate=begin, toDate=stop, reportedPaymentsKop=payments,
                 openingKop=kop(row.get('begin_balance_amount')), closingKop=kop(row.get('end_balance_amount')),
@@ -379,17 +384,25 @@ def walk_fees(node, found):
 
 def accrual_types(client):
     data = client.post('/v1/finance/accrual/types', {})
-    rows = data.get('types') if isinstance(data.get('types'), list) else data.get('result')
+    rows = data.get('types')
+    if rows is None:
+        rows = data.get('accrual_types')
+    if rows is None:
+        rows = data.get('result')
     if isinstance(rows, dict):
-        rows = rows.get('types')
+        rows = rows.get('types') or rows.get('accrual_types') or rows.get('items')
+    if rows is None:
+        return {}
     if not isinstance(rows, list):
         raise SyncError('Invalid accrual type catalog')
     catalog = {}
     for row in rows:
+        if not isinstance(row, dict):
+            raise SyncError('Invalid accrual type catalog')
         type_id = row.get('id', row.get('type_id'))
         if type_id is None or type_id in catalog:
             raise SyncError('Missing or duplicate accrual type')
-        catalog[type_id] = str(row.get('name') or row.get('title') or type_id)[:160]
+        catalog[type_id] = str(row.get('name') or row.get('title') or row.get('description') or type_id)[:160]
     return catalog
 
 
@@ -501,18 +514,25 @@ def add_ops(target, group, article, name, qty, amount):
         product[group + 'Kop'] += amount
 
 
+def posting_request(endpoint, since, until, offset):
+    body = {
+        'dir': 'ASC',
+        'filter': {'since': since, 'to': until},
+        'limit': 1000,
+        'offset': offset,
+    }
+    # FBS accepts analytics/financial toggles; FBO rejects unknown with-keys with HTTP 400.
+    if endpoint.startswith('/v3/posting/fbs/'):
+        body['with'] = {'analytics_data': False, 'financial_data': False}
+    return body
+
+
 def collect_postings(client, endpoint, scheme, start, end):
     seen, months, offset = set(), {}, 0
     since = start + 'T00:00:00+03:00'
     until = end + 'T23:59:59+03:00'
     for page in range(200):
-        data = client.post(endpoint, {
-            'dir': 'ASC',
-            'filter': {'since': since, 'to': until},
-            'limit': 1000,
-            'offset': offset,
-            'with': {'analytics_data': False, 'financial_data': False},
-        })
+        data = client.post(endpoint, posting_request(endpoint, since, until, offset))
         result = data.get('result', data)
         rows = result.get('postings') if isinstance(result, dict) else None
         has_next = result.get('has_next') if isinstance(result, dict) else False
@@ -632,7 +652,11 @@ def collect(client, year, today):
         snapshot['operations'] = unavailable(error)
     attach_operations(snapshot)
     try:
-        snapshot['accruals'] = collect_accruals(client, snapshot['fromDate'], snapshot['toDate'], accrual_types(client))
+        try:
+            catalog = accrual_types(client)
+        except SyncError:
+            catalog = {}
+        snapshot['accruals'] = collect_accruals(client, snapshot['fromDate'], snapshot['toDate'], catalog)
     except SyncError as error:
         snapshot['accruals'] = unavailable(error)
     attach_accruals(snapshot)

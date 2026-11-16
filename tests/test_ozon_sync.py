@@ -109,6 +109,24 @@ class OzonTests(unittest.TestCase):
         with self.assertRaises(ozon.SyncError):
             ozon.cashflow_rows(Client(),'2026-01-01','2026-11-15')
 
+    def test_cashflow_keeps_open_week_past_requested_end(self):
+        flow = dict(period=dict(id=9,begin='2026-11-16',end='2026-11-22'), currency_code='RUB',
+            orders_amount=0,returns_amount=0,commission_amount=0,services_amount=0,item_delivery_and_return_amount=0)
+        detail = dict(period=dict(begin='2026-11-16',end='2026-11-22'), payments=[],
+            begin_balance_amount=0, end_balance_amount=0)
+        class Client:
+            def post(self, *args):
+                return dict(result=dict(page_count=1,cash_flows=[flow],details=[detail]))
+        result = ozon.cashflow_rows(Client(),'2026-01-01','2026-11-16')
+        self.assertEqual(result['state'], 'ready')
+        self.assertEqual(result['periods'][0]['toDate'], '2026-11-22')
+
+    def test_accrual_types_empty_result_is_usable_catalog(self):
+        class Client:
+            def post(self, *args):
+                return dict(result=None)
+        self.assertEqual(ozon.accrual_types(Client()), {})
+
 
 if __name__ == '__main__':
     unittest.main()
