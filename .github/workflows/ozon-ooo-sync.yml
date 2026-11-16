@@ -1,4 +1,5 @@
 name: Ozon ООО — годовые отчёты
+# Publication gated by commit message or workflow_dispatch input
 on:
   workflow_dispatch:
     inputs:
