@@ -2,15 +2,50 @@
   "schemaVersion": 1,
   "owner": "ooo",
   "seller": "ООО «КЛМ»",
-  "fromDate": "2026-08-01",
-  "toDate": "2026-11-15",
+  "fromDate": "2026-01-01",
+  "toDate": "2026-11-16",
   "source": "Банковская выписка ООО «КЛМ»",
-  "confirmedAt": "2026-11-15T13:17:00+03:00",
-  "openingKop": 82000,
+  "confirmedAt": "2026-11-16T17:46:00+03:00",
+  "openingKop": 0,
   "closingKop": 4896861,
-  "incomingKop": 11479626,
-  "outgoingKop": 6664765,
+  "incomingKop": 19529626,
+  "outgoingKop": 14632765,
   "inflows": [
+    {
+      "id": "bank-klm-founder-2026-04-11-1000000",
+      "date": "2026-04-11",
+      "kind": "founder_funding",
+      "amountKop": 1000000,
+      "title": "Вклад в уставный капитал"
+    },
+    {
+      "id": "bank-klm-founder-2026-04-11-2100000",
+      "date": "2026-04-11",
+      "kind": "founder_funding",
+      "amountKop": 2100000,
+      "title": "Финансовая помощь учредителя"
+    },
+    {
+      "id": "bank-klm-founder-2026-07-07-2350000",
+      "date": "2026-07-07",
+      "kind": "founder_funding",
+      "amountKop": 2350000,
+      "title": "Вклад учредителя в имущество"
+    },
+    {
+      "id": "bank-klm-founder-2026-07-13-2300000",
+      "date": "2026-07-13",
+      "kind": "founder_funding",
+      "amountKop": 2300000,
+      "title": "Взнос учредителя"
+    },
+    {
+      "id": "bank-klm-founder-2026-07-31-300000",
+      "date": "2026-07-31",
+      "kind": "founder_funding",
+      "amountKop": 300000,
+      "title": "Взнос учредителя"
+    },
     {
       "id": "bank-klm-founder-2026-08-15-200000",
       "date": "2026-08-15",
@@ -56,6 +91,105 @@
     }
   ],
   "outflows": [
+    {
+      "id": "bank-klm-2026-sms-apr",
+      "date": "2026-04-11",
+      "category": "bank-fees",
+      "title": "СМС-информирование банка",
+      "amountKop": 7500,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-sms-apr",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-insurance-apr",
+      "date": "2026-04-11",
+      "category": "taxes",
+      "title": "ЕНП — страховые взносы",
+      "amountKop": 2500000,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-insurance-apr",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-wb-license",
+      "date": "2026-04-11",
+      "category": "services",
+      "title": "Wildberries ООО — лицензионный платёж",
+      "amountKop": 500000,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-wb-license",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-marking-jul",
+      "date": "2026-07-02",
+      "category": "marking",
+      "title": "Честный знак — предоплата за услуги маркировки",
+      "amountKop": 50000,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-marking-jul",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-sms-jul",
+      "date": "2026-07-02",
+      "category": "bank-fees",
+      "title": "СМС-информирование банка",
+      "amountKop": 7500,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-sms-jul",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-declaration-jul-1",
+      "date": "2026-07-07",
+      "category": "declarations",
+      "title": "Техпромсерт — первая декларация",
+      "amountKop": 2300000,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "decl-ooo-2026-1",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-declaration-jul-2",
+      "date": "2026-07-13",
+      "category": "declarations",
+      "title": "Техпромсерт — вторая декларация",
+      "amountKop": 2300000,
+      "state": "booked",
+      "liabilityMonth": null,
+      "expenseId": "decl-ooo-2026-2",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-wb-debt",
+      "date": "2026-07-23",
+      "category": "unclassified",
+      "title": "Wildberries ООО — погашение задолженности по оферте",
+      "amountKop": 3000,
+      "state": "needs_classification",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-wb-debt",
+      "candidateExpenseIds": []
+    },
+    {
+      "id": "bank-klm-2026-fau-nia",
+      "date": "2026-07-31",
+      "category": "unclassified",
+      "title": "ФАУ НИА — предоплата по договору оферты",
+      "amountKop": 300000,
+      "state": "needs_classification",
+      "liabilityMonth": null,
+      "expenseId": "bank-klm-2026-fau-nia",
+      "candidateExpenseIds": []
+    },
     {
       "id": "bank-klm-2026-sms-aug",
       "date": "2026-08-15",
@@ -193,8 +327,8 @@
       "amountKop": 429626
     }
   ],
-  "markingPaymentsKop": 0,
-  "markingNote": "В этой выписке платежей оператору «Честного знака» нет.",
+  "markingPaymentsKop": 50000,
+  "markingNote": "02.07.2026 перечислено 500,00 ₽ ООО «ОПЕРАТОР-ЦРПТ» — предоплата за услуги маркировки. Это пополнение лицевого счёта «Честного знака»; количество заказанных и использованных кодов выписка не подтверждает.",
   "rules": [
     {
       "counterparty": "Техпромсерт",
@@ -212,20 +346,32 @@
   "priorDeclarations": [
     {
       "expenseId": "decl-ooo-2026-1",
-      "paidMonth": "2026-09",
+      "paidMonth": "2026-07",
       "amountKop": 2300000,
       "title": "Декларация соответствия, первая",
-      "bankConfirmed": false,
-      "note": "Ранее внесено в журнал. В данной выписке соответствующий платёж не найден."
+      "bankConfirmed": true,
+      "note": "Оплата «Техпромсерт» подтверждена годовой выпиской. Ранее указанный в журнале сентябрь исправлен на июль; запись связана с банковским платежом без дубля.",
+      "date": "2026-07-07",
+      "includedInOutflows": true
     },
     {
       "expenseId": "decl-ooo-2026-2",
-      "paidMonth": "2026-09",
+      "paidMonth": "2026-07",
       "amountKop": 2300000,
       "title": "Декларация соответствия, вторая",
-      "bankConfirmed": false,
-      "note": "Ранее внесено в журнал. В данной выписке соответствующий платёж не найден."
+      "bankConfirmed": true,
+      "note": "Оплата «Техпромсерт» подтверждена годовой выпиской. Ранее указанный в журнале сентябрь исправлен на июль; запись связана с банковским платежом без дубля.",
+      "date": "2026-07-13",
+      "includedInOutflows": true
     }
   ],
-  "classificationUpdatedOn": "2026-11-16"
+  "classificationUpdatedOn": "2026-11-16",
+  "reconciliationUpdate": {
+    "previousFromDate": "2026-08-01",
+    "previousToDate": "2026-11-15",
+    "addedBankOutflowsKop": 7968000,
+    "matchedExistingExpensesKop": 4600000,
+    "newJournalPaymentsKop": 3368000,
+    "addedBankOutflowsCount": 9
+  }
 }

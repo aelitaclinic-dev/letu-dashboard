@@ -2350,7 +2350,7 @@
     return "<section id='expenses'><div class='unit-heading'><h2>Расходы бизнеса</h2><span class='unit-date'>ИП и ООО отдельно</span></div>"
       + "<div class='unit-intro'><strong>Здесь платежи и расходы периода не смешиваются.</strong> ИП и ООО не складываются в одну прибыль. " + esc(book.note || "") + " Новые записи сохраняются только в этом браузере. Цены, карточки и остатки в магазинах не меняются.</div>"
       + (window.BankLedger && expenseEntity !== "ip" ? window.BankLedger.expensePanel(filters.category) : "")
-      + "<nav class='market-sections' aria-label='Страницы расходов'><a href='#expenses'>Все расходы</a>" + book.categories.filter(function(c) { return ["declarations","bank-fees","taxes","courier","marking","unclassified","fines"].indexOf(c.id) >= 0; }).map(function(c) { return "<a href='#expenses/" + esc(c.id) + "/ooo'>" + esc(c.label) + "</a>"; }).join("") + "</nav>"
+      + "<nav class='market-sections' aria-label='Страницы расходов'><a href='#expenses'>Все расходы</a>" + book.categories.filter(function(c) { return ["declarations","bank-fees","taxes","courier","marking","services","unclassified","fines"].indexOf(c.id) >= 0; }).map(function(c) { return "<a href='#expenses/" + esc(c.id) + "/ooo'>" + esc(c.label) + "</a>"; }).join("") + "</nav>"
       + "<div class='profit-presets'>" + switcher + "</div>"
       + "<form id='expense-filters' class='filters'>"
       + "<label>С месяца<select id='expense-from'>" + expenseMonthOptions(filters.from, false) + "</select></label>"
