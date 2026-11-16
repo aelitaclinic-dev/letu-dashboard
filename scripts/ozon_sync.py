@@ -653,10 +653,11 @@ def collect(client, year, today):
     attach_operations(snapshot)
     try:
         try:
-            catalog = accrual_types(client)
+            accrual_catalog = accrual_types(client)
         except SyncError:
-            catalog = {}
-        snapshot['accruals'] = collect_accruals(client, snapshot['fromDate'], snapshot['toDate'], catalog)
+            accrual_catalog = {}
+        snapshot['accruals'] = collect_accruals(
+            client, snapshot['fromDate'], snapshot['toDate'], accrual_catalog)
     except SyncError as error:
         snapshot['accruals'] = unavailable(error)
     attach_accruals(snapshot)
