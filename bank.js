@@ -9,7 +9,8 @@
   function money(v){return Number.isSafeInteger(v)?(v/100).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₽':'Нет данных';}
   function day(v){return String(v||'').slice(0,10).split('-').reverse().join('.');}
   function sum(rows){return rows.reduce(function(a,r){return a+r.amountKop;},0);}
-  function declarationTotal(){return sum(data.outflows.filter(function(r){return r.category==='declarations';}))+sum((data.priorDeclarations||[]).filter(function(r){return !r.includedInOutflows;}));}
+  function declarationTotal(){return sum(data.outflows.filter(function(r){return r.category==='declarations'&&r.expenseKind!=='state-duty';}))+sum((data.priorDeclarations||[]).filter(function(r){return !r.includedInOutflows;}));}
+  function declarationDutyNote(){var duties=sum(data.outflows.filter(function(r){return r.category==='declarations'&&r.expenseKind==='state-duty';}));return duties?'<p>Госпошлина за две предыдущие декларации — <b>'+money(duties)+'</b>, оплачена 31.07.2026 (ФАУ НИА). Общие расходы на декларации и госпошлину — <b>'+money(declarationTotal()+duties)+'</b>. Госпошлина учтена одной отдельной записью.</p>':'';}
   function table(head,rows){return '<div class="ozon-table-wrap"><table class="ozon-table"><thead><tr>'+head.map(function(h){return '<th>'+esc(h)+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(v){return '<td>'+esc(v)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>';}
   function card(title,value,note){return '<div class="market-empty-metric"><span>'+esc(title)+'</span><strong>'+esc(value)+'</strong><small>'+esc(note)+'</small></div>';}
   function evidence(channel,state){
@@ -25,7 +26,7 @@
     var rows=data.outflows.filter(function(r){return !category||r.category===category;});
     var pending=rows.filter(function(r){return r.state==='needs_expense_match';});
     return '<section class="market-note"><h3>Банк ООО «КЛМ»: '+day(data.fromDate)+'–'+day(data.toDate)+'</h3><p>Списания '+(category?'по этой категории':'по выписке')+': <b>'+money(sum(rows))+'</b>. Это движение денег, а не автоматически признанный расход прибыли. <a href="#bank/ooo">Открыть сверку счёта →</a></p>'
-      +(category==='declarations'?'<p><b>Все три декларации по журналу: '+money(declarationTotal())+'.</b> Две прежние оплачены 07.07 и 13.07.2026 — по 23 000 ₽; новая на кератин — 11.11.2026, 23 000 ₽. Все три оплаты подтверждены годовой выпиской. Прежние записи связаны с платежами без повторного учёта; сентябрь исправлен на июль.</p>':'')
+      +(category==='declarations'?'<p><b>Все три декларации по журналу: '+money(declarationTotal())+'.</b> Две прежние оплачены 07.07 и 13.07.2026 — по 23 000 ₽; новая на кератин — 11.11.2026, 23 000 ₽. Все три оплаты подтверждены годовой выпиской. Прежние записи связаны с платежами без повторного учёта; сентябрь исправлен на июль.</p>'+declarationDutyNote():'')
       +(category==='marking'?'<p>'+esc(data.markingNote)+'</p>':'')+'</section>';
   }
   function render(state){
@@ -44,7 +45,7 @@
     html+='<h3>Куда разнесены списания</h3><nav class="market-sections" aria-label="Категории расходов ООО">'+Object.keys(labels).map(function(k){return '<a href="#expenses/'+k+'/ooo">'+esc(labels[k])+'</a>';}).join('')+'</nav>';
     html+=table(['Дата','Платёж','Категория','Сумма','Сверка'],data.outflows.map(function(r){return [day(r.date),r.title,labels[r.category],money(r.amountKop),states[r.state]];}));
     html+='<p class="ozon-caption">Налоги и взносы показаны как оплата обязательств. Период признания и распределение между площадками не выдумываются. Новая декларация на кератин внесена отдельно от двух прежних. Взыскание ФНС на 1 022,35 ₽ указано по решению от 21.09.2026 № 21634, ст. 46 НК РФ. Вид задолженности требует уточнения; к штрафам за отчётность платёж не отнесён.</p>';
-    html+='<h3>Декларации прошлых периодов</h3>'+table(['Запись','Дата оплаты','Сумма','Подтверждение'],(data.priorDeclarations||[]).map(function(r){return [r.title,r.date?day(r.date):r.paidMonth,money(r.amountKop),r.note];}))+'<p>Всего по трём декларациям: <b>'+money(declarationTotal())+'</b>. Все три входят в списания по выписке и не прибавляются к ним повторно.</p>';
+    html+='<h3>Декларации прошлых периодов</h3>'+table(['Запись','Дата оплаты','Сумма','Подтверждение'],(data.priorDeclarations||[]).map(function(r){return [r.title,r.date?day(r.date):r.paidMonth,money(r.amountKop),r.note];}))+'<p>Всего по трём декларациям: <b>'+money(declarationTotal())+'</b>. Все три входят в списания по выписке и не прибавляются к ним повторно.</p>'+declarationDutyNote();
     html+='<h3>Маркировка</h3><p>'+esc(data.markingNote)+'</p>';
     return html;
   }

@@ -182,13 +182,19 @@
     {
       "id": "bank-klm-2026-fau-nia",
       "date": "2026-07-31",
-      "category": "unclassified",
-      "title": "ФАУ НИА — предоплата по договору оферты",
+      "category": "declarations",
+      "title": "ФАУ НИА — госпошлина за две предыдущие декларации",
       "amountKop": 300000,
-      "state": "needs_classification",
+      "state": "booked",
       "liabilityMonth": null,
       "expenseId": "bank-klm-2026-fau-nia",
-      "candidateExpenseIds": []
+      "candidateExpenseIds": [],
+      "expenseKind": "state-duty",
+      "classificationSource": "Назначение подтверждено пользователем 16.11.2026: госпошлина за две предыдущие декларации.",
+      "relatedExpenseIds": [
+        "decl-ooo-2026-1",
+        "decl-ooo-2026-2"
+      ]
     },
     {
       "id": "bank-klm-2026-sms-aug",
