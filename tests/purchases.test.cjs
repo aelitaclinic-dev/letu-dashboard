@@ -64,3 +64,25 @@ assert.equal(landed.freightUnitKop, 700);
 assert.equal(landed.landedUnitKop, 87052);
 assert.equal(api.skuLanded('MISSING', {schemaVersion: 1, orders: [], movements: []}), null);
 console.log('Passed: purchase versus prepared unit costs; no double freight; unknown and ambiguous costs stay unfilled.');
+
+const packedOrder = {...draft, deliveryCurrency:'RUB', deliveryMinor:null, deliveryKop:null,
+  lines:[{...draft.lines[0], priceMinor:null}, {...draft.lines[0], sku:'SKU-Y', qty:2, priceMinor:null}]};
+const packing = {schemaVersion:1, orders:[packedOrder], movements:[]};
+api.validate(packing);
+const packedCost = api.cost(packedOrder);
+assert.equal(packedCost.qty, 5);
+assert.equal(packedCost.nativeGoodsMinor, null);
+assert.equal(packedCost.delivery, null);
+assert.equal(packedCost.total, null);
+assert.equal(api.ledger(packing).stock.length, 0);
+assert.equal(api.skuLanded('SKU-X', packing), null);
+assert.equal(api.mergeShared(api.mergeShared(null, packedOrder).record, packedOrder).changed, false);
+
+const partial = {...packedOrder, rateUnits:140000, deliveryMinor:0,
+  lines:[{...packedOrder.lines[0], priceMinor:0}, packedOrder.lines[1]]};
+assert.equal(api.cost(partial).lines[0].goodsKop, 0);
+assert.equal(api.cost(partial).lines[1].goodsKop, null);
+assert.equal(api.cost(partial).total, null);
+assert.throws(() => api.validate({schemaVersion:1, movements:[], orders:[
+  {...partial, receivedDate:partial.date, status:'received'}
+]}), /цену товара/);
