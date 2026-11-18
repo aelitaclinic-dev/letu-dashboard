@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Добавить поставку — MA Distribution</title>
+<link rel="stylesheet" href="app.css?v=20261116-navigation">
+<link rel="stylesheet" href="purchases.css?v=20261112-order-numbers">
+<style>
+  .import-panel { max-width: 34rem; margin: 8vh auto; padding: 1.5rem; }
+  .import-panel h1 { margin: 0.5rem 0; font-size: 1.65rem; }
+  .import-panel button { display: block; min-height: 44px; margin: 1rem 0; }
+  .import-panel button[hidden] { display: none; }
+  .import-panel a { text-decoration: underline; }
+</style>
+</head>
+<body>
+<main class="pb-editor import-panel">
+  <p class="market-eyebrow">MA DISTRIBUTION / ЗАКУПКИ И СКЛАД</p>
+  <h1>Добавить поставку</h1>
+  <p id="import-status" role="status">Открываем данные поставки…</p>
+  <button class="pb-primary" id="import-button" type="button" hidden>Добавить в журнал</button>
+  <a href="./#purchases">Открыть журнал закупок</a>
+</main>
+<script src="purchases.js?v=20261118-packing-list"></script>
+<script>
+'use strict';
+(async () => {
+  const payload = location.hash.slice(1);
+  const status = document.getElementById('import-status');
+  const button = document.getElementById('import-button');
+  if (!/^[A-Za-z0-9_-]{1,8192}$/.test(payload)) {
+    status.textContent = 'Откройте полную ссылку на поставку или добавьте её из файла в журнале.';
+    return;
+  }
+  history.replaceState(null, '', location.pathname);
+
+  try {
+    const bytes = Uint8Array.from(atob(payload.replace(/-/g, '+').replace(/_/g, '/')), char => char.charCodeAt(0));
+    const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+    const decoder = new TextDecoder('utf-8', {fatal: true});
+    let json = '';
+    let totalBytes = 0;
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      totalBytes += value.length;
+      if (totalBytes > 65536) {
+        await reader.cancel();
+        throw new Error('Слишком большой файл поставки.');
+      }
+      json += decoder.decode(value, {stream: true});
+    }
+    const data = JSON.parse(json + decoder.decode());
+    if (data.kind !== 'purchase-import' || data.orders?.length !== 1) {
+      throw new Error('В ссылке должна быть одна поставка.');
+    }
+    const book = window.PurchaseBook.core;
+    book.validate({schemaVersion: data.schemaVersion, orders: data.orders, movements: []});
+    const [order] = data.orders;
+    status.textContent = (order.reference || 'Поставка') + ' · ' +
+      book.cost(order).qty.toLocaleString('ru-RU') + ' ед. Запись сохранится в этом браузере.';
+    button.hidden = false;
+    button.addEventListener('click', () => {
+      button.disabled = true;
+      try {
+        book.appendShared(data);
+        if (!book.database()?.orders.some(saved => saved.id === order.id)) {
+          throw new Error('Журнал недоступен.');
+        }
+        location.replace('./#purchases');
+      } catch (error) {
+        status.textContent = 'Браузер не смог сохранить поставку. Откройте дашборд в Safari и повторите.';
+        button.disabled = false;
+      }
+    });
+  } catch (error) {
+    status.textContent = 'Ссылка не открылась. Эту поставку можно добавить из файла в журнале.';
+  }
+})();
+</script>
+</body>
+</html>
