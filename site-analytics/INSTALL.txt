@@ -1,0 +1,47 @@
+Установка целей и двухдневного отчёта сайта maat-impera.ru
+Счётчик 99820405 уже стоит плагином Yandex Metrica. Его, Google Site Kit, Jetpack и Вебвизор не трогать.
+
+1. Код на WordPress
+Админка https://maat-impera.ru/wp-admin/ → Плагины → Добавить новый → Загрузить плагин.
+Запакуйте папку site-analytics/wordpress/maat-metrika-goals в zip так, чтобы внутри архива сразу лежал файл maat-metrika-goals.php.
+Включите плагин «MAAT Metrika Goals». Форму Fluent Forms № 3 не перенастраивать: плагин только слушает уже существующую отправку.
+
+Проверено по разметке сайта и файлу form-submission.js версии 6.2.7.
+Успех — событие fluentform_submission_success, в ответе есть data.result.
+Ошибка заполнения и сбой запроса эту цель не вызывают.
+Кнопка «Скачать прайс» — это отправка формы, не выдача файла.
+Файл открывается ссылкой на странице /price_download/. Для него цель price_download_click, в отчёте строка «Клик по скачиванию».
+
+2. Цели в кабинете Метрики
+Кабинет https://metrika.yandex.ru/list → счётчик 99820405 → Цели.
+Нужны JavaScript-события с точными идентификаторами:
+price_block_view, price_cta_click, price_form_start, price_form_success, price_download_click,
+contacts_view, contact_phone_click, contact_email_click, contact_messenger_click,
+а также engage_15_home, engage_30_home, engage_60_home и такие же для catalog, sinko, product, contacts.
+Скрипт отчёта создаёт недостающие сам, если у токена есть право записи.
+
+Дата начала сбора — день, когда цель появилась в счётчике. Старые визиты в новую цель не попадут.
+
+3. Токен
+Создайте OAuth-приложение на https://oauth.yandex.ru/ с правами metrika:read и metrika:write.
+metrika:read нужен, чтобы читать визиты и цели.
+metrika:write нужен, чтобы создать недостающие цели. Для одного только чтения отчёт тоже строится, но новые цели останутся пустыми.
+Токен положите в GitHub: репозиторий aelitaclinic-dev/letu-dashboard → Settings → Secrets and variables → Actions → New repository secret.
+Имя секрета: YANDEX_METRIKA_TOKEN.
+В чат токен не отправлять.
+
+4. Расписание
+Файл .github/workflows/maat-metrika-report.yml запускается каждый день в 09:00 по Москве.
+Отчёт пишется только когда закрылось новое окно из двух календарных дней. Повтор за те же даты файл не дублирует.
+Если Actions выключены: Settings → Actions → General → Allow all actions, затем включить workflow.
+Ручной запуск: Actions → «Отчёт сайта MAAT» → Run workflow.
+Планировщик живёт на GitHub и не зависит от открытого Cursor.
+
+5. Где читать
+После попадания в main: https://aelitaclinic-dev.github.io/letu-dashboard/#site
+История лежит в site-analytics/history и в site-analytics/published.json.
+На публичный магазин maat-impera.ru отчёт не выводится. Страница дашборда открыта по той же ссылке, что и остальная сводка, отдельного входа у неё нет.
+
+6. Заявки из мессенджера
+Их на сайте нет. В существующий учёт, форму прайса или журнал прямых заказов, добавить одно поле «Откуда узнали о нас?» с вариантом «Рекомендация мастера».
+Эти заявки держать отдельно от визитов.

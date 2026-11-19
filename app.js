@@ -3084,8 +3084,9 @@
     var directPage = hash === "direct-orders";
     var bankPage = hash === "bank" || hash.indexOf("bank/") === 0;
     var purchasePage = hash === "purchases" || hash.indexOf("purchases/") === 0 || directPage;
+    var sitePage = hash === "site" || hash.indexOf("site/") === 0;
     var overview = !hash || hash === "overview";
-    var isLetu = !overview && !channel && !expensePage && !purchasePage && !bankPage;
+    var isLetu = !overview && !channel && !expensePage && !purchasePage && !bankPage && !sitePage;
     document.querySelector("nav.menu").hidden = !isLetu;
     document.getElementById("freshness").hidden = !isLetu;
     document.getElementById("page-context").textContent = overview ? "Все площадки · единый обзор бизнеса"
@@ -3093,9 +3094,10 @@
       : directPage ? "Прямые заказы сторонних клиентов · лично или через переписку"
       : purchasePage ? "Закупки, поставки и собственные склады · ИП и ООО"
       : expensePage ? "Общие расходы бизнеса · раздельный учёт ИП и ООО"
+      : sitePage ? "Сайт maat-impera.ru · посещения и цели"
       : channel ? (channel === "wb" ? "Wildberries" : "Ozon") + " · кабинеты ИП и ООО"
       : "Л’Этуаль · ИП Барская Регина Александровна";
-    var current = overview ? "#overview" : hash === "unit" ? "#unit" : bankPage ? "#bank/ooo" : purchasePage ? "#purchases" : expensePage ? "#expenses" : channel ? "#" + channel + "/all/summary" : "#letu";
+    var current = overview ? "#overview" : hash === "unit" ? "#unit" : sitePage ? "#site" : bankPage ? "#bank/ooo" : purchasePage ? "#purchases" : expensePage ? "#expenses" : channel ? "#" + channel + "/all/summary" : "#letu";
     document.querySelectorAll(".market-nav a").forEach(function (link) {
       var on = link.getAttribute("href") === current;
       link.classList.toggle("on", on);
@@ -3105,8 +3107,10 @@
     if (!footer.dataset.originalText) footer.dataset.originalText = footer.textContent;
     footer.textContent = directPage
       ? "Журнал прямых заказов. Общий файл открывается на любом устройстве. Правки этой страницы сохраняются в браузере и остаются после обновления."
-      : purchasePage ? "Личный журнал закупок и складских движений. Записи сохраняются в текущем браузере. Сохраните резервную копию для переноса на другое устройство." : footer.dataset.originalText;
-    document.title = "MA Distribution — " + (overview ? "обзор бизнеса" : bankPage ? "банк ООО КЛМ" : directPage ? "прямые заказы клиентов" : purchasePage ? "закупки и склад" : expensePage ? "расходы ИП / ООО" : channel ? (channel === "wb" ? "Wildberries" : "Ozon") : "Л’Этуаль");
+      : purchasePage ? "Личный журнал закупок и складских движений. Записи сохраняются в текущем браузере. Сохраните резервную копию для переноса на другое устройство."
+      : sitePage ? "Сводка посещений сайта. Имена, телефоны и почта сюда не попадают. Заявки из мессенджера с визитами не складываются."
+      : footer.dataset.originalText;
+    document.title = "MA Distribution — " + (overview ? "обзор бизнеса" : bankPage ? "банк ООО КЛМ" : directPage ? "прямые заказы клиентов" : purchasePage ? "закупки и склад" : expensePage ? "расходы ИП / ООО" : sitePage ? "сайт" : channel ? (channel === "wb" ? "Wildberries" : "Ozon") : "Л’Этуаль");
   }
 
   function render() {
@@ -3148,6 +3152,10 @@
     else if (hash === "unit") screen.innerHTML = renderUnitPage(state);
     else if (hash === "profit" || hash.indexOf("profit/") === 0) screen.innerHTML = renderProfitPage();
     else if (hash === "expenses" || hash.indexOf("expenses/") === 0) screen.innerHTML = renderExpenses();
+    else if (hash === "site" || hash.indexOf("site/") === 0) {
+      screen.innerHTML = window.SiteAnalytics ? window.SiteAnalytics.render() : "<section class='panel'><h2>Сайт</h2><p>Сводка не загрузилась.</p></section>";
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
     else screen.innerHTML = renderHome(state);
     markNav(hash);
     if (channel === "wb") bindWBAnnual();
@@ -3199,8 +3207,10 @@
     });
   }
 
+  window.MaatDashboardRerender = render;
   window.addEventListener("bankdataready", render);
   window.addEventListener("ozondataready", render);
+  window.addEventListener("sitedataready", render);
   window.addEventListener("hashchange", render);
   window.addEventListener("popstate", render);
   render();

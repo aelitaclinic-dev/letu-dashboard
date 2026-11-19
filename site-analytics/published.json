@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "counterId": 99820405,
+  "live": false,
+  "notice": "Просмотры уже идут в счётчик 99820405. Отчёт по API не собран: секрет YANDEX_METRIKA_TOKEN не задан. Цифры посещений здесь не подставлены.",
+  "goals": [
+    {"id": "price_block_view", "label": "Прайс: блок появился в видимой области", "collectionStart": null},
+    {"id": "price_cta_click", "label": "Прайс: нажатие «Получить прайс»", "collectionStart": null},
+    {"id": "price_form_start", "label": "Прайс: первое заполнение формы № 3", "collectionStart": null},
+    {"id": "price_form_success", "label": "Прайс: Fluent Forms подтвердил заявку", "collectionStart": null},
+    {"id": "price_download_click", "label": "Прайс: клик по скачиванию файла", "collectionStart": null},
+    {"id": "contacts_view", "label": "Контакты: просмотр /contacs/", "collectionStart": null},
+    {"id": "contact_phone_click", "label": "Контакт: телефон", "collectionStart": null},
+    {"id": "contact_email_click", "label": "Контакт: почта", "collectionStart": null},
+    {"id": "contact_messenger_click", "label": "Контакт: мессенджер", "collectionStart": null}
+  ],
+  "messenger": {
+    "tracked": false,
+    "note": "Учёта заявок из мессенджера на сайте нет. В форме прайса и в журнале прямых заказов нет поля «Откуда узнали о нас?». Имеет смысл добавить один вариант «Рекомендация мастера». Такие заявки не складываются с визитами на сайт."
+  },
+  "history": []
+}
