@@ -91,8 +91,18 @@
   function movementEditor(m){const stocks=ledger(state.db).stock.filter(x=>x.qty>0);return '<section class="pb-editor" id="pb-editor" tabindex="-1"><div class="pb-panel-title"><div><p class="market-eyebrow">СКЛАДСКОЙ УЧЁТ</p><h3>Движение товара</h3></div><button class="pb-quiet" data-action="close-editor">Закрыть ✕</button></div><form id="pb-movement-form"><div class="pb-form-grid"><label>Товар и склад-источник<select name="stock" required><option value="">Выберите остаток</option>'+stocks.map(b=>'<option value="'+esc(b.key)+'"'+(b.key===m.stock?' selected':'')+'>'+esc(entityName(b.entity)+' · '+b.warehouse+' · '+b.sku+' — '+b.name+' · '+b.qty+' шт.')+'</option>').join('')+'</select></label><label>Операция<select name="type">'+options(Object.entries(types),m.type||'issue')+'</select></label>'+field('Количество, шт.','qty',m.qty||'','number','required min="1" step="1"')+field('Дата операции','date',m.date||today(),'date','required max="'+today()+'"')+field('Склад назначения (для перемещения)','target',m.target||'','text','list="pb-warehouses"')+field('Основание / куда отгружаем','note',m.note||'','text','placeholder="Например, поставка WB ИП" maxlength="2000"')+'</div><p class="pb-help">Стоимость списания и перемещения рассчитывается по средней себестоимости на дату операции. Остатки меняются в этом складском журнале.</p><p class="pb-error" id="pb-form-error" role="alert"></p><div class="pb-editor-actions"><span>Отгрузка на площадку уменьшает остаток вашего склада.</span><button class="pb-primary" type="submit">Сохранить движение</button></div></form></section>';}
   function expenseDetail(o){return o.expenses?.length?'<section class="pb-order-detail"><h4>Расходы поставки</h4>'+table(['Дата','Статья расхода','Сумма'],o.expenses.map(e=>'<tr><td>'+day(e.date)+'</td><td>'+esc(e.label)+'</td><td>'+money(e.amountKop)+'</td></tr>'))+'<p class="pb-help">Итого '+money(o.expenses.reduce((n,e)=>n+e.amountKop,0))+'. Включены в себестоимость партии один раз.</p></section>':'';}
   function orderDetail(o){const f=fullCost(o);return '<details class="pb-order-detail"><summary>Состав и себестоимость · '+o.lines.length+' поз.</summary>'+table(['Товар / артикул','Количество','Закупка / шт., RUB','Себестоимость с расходами / шт., RUB','Что учтено'],f.lines.map(l=>'<tr><td><strong>'+esc(l.name)+'</strong><small>'+esc(l.sku)+' · '+esc(l.brand)+' · '+nativeMoney(l.priceMinor,o.currency)+'/шт.</small></td><td>'+num(l.qty)+'</td><td><b>'+money(l.purchaseUnitKop)+'</b></td><td><b>'+money(l.fullUnitKop)+'</b><small>по учтённым статьям · расчёт</small></td><td>'+(l.preparation?esc(l.preparation.source)+'<small>Подготовка: '+money(l.preparation.knownKop)+'/шт.; '+l.preparation.parts.map(p=>esc(p.label)+': '+(p.excluded?'не применяется':money(p.amountKop))).join('; ')+'</small>'+(l.preparation.missing.length?'<small>Уточнить: '+esc(l.preparation.missing.join(', '))+'</small>':''):'Нет однозначной модели подготовки')+'<small>Доставка и расходы партии: '+money(l.shippingKop)+' на строку</small></td></tr>'))+'<p class="pb-help">Закупка = цена за штуку × курс '+(o.rateUnits==null?'не указан':num(o.rateUnits/10000)+' ₽ за 1 '+o.currency)+'. Расходы партии распределены '+(o.allocation==='value'?'по стоимости':'по количеству')+' товаров. Общая себестоимость дополнительно включает известные расходы подготовки к продаже из действующей модели. Плановая подготовка не увеличивает складскую стоимость принятого товара и не списывается как оплаченный расход.</p>'+(o.note?'<p>'+esc(o.note)+'</p>':'')+'</details>';}
+  function partialGoods(o) {
+    const priced = o.lines.filter(l => l.priceMinor != null);
+    if (!priced.length || priced.length === o.lines.length) return null;
+    const knownMinor = priced.reduce((n, l) => safe(n + safe(l.qty * l.priceMinor)), 0);
+    const rate = o.currency === 'RUB' ? 10000 : o.rateUnits;
+    const rub = Number.isSafeInteger(rate) && rate > 0
+      ? money(roundRatio(BigInt(knownMinor) * BigInt(rate), 10000n))
+      : '— ₽';
+    return {native: nativeMoney(knownMinor, o.currency), rub, priced: priced.length, total: o.lines.length};
+  }
   function orderCard(o) {
-    const c = cost(o);
+    const c = cost(o), partial = partialGoods(o);
     const brands = [...new Set(o.lines.map(line => line.brand).filter(Boolean))];
     const brand = brands.join(' / ') || 'Закупка';
     const reference = (o.reference || '').startsWith(brand + ' · ')
@@ -109,8 +119,9 @@
       + '<p class="pb-compact-arrival">' + arrival + ' <span>· ' + num(c.qty) + ' шт. · ' + o.lines.length + ' поз.</span></p>'
       + (o.packingList ? '<p class="pb-compact-arrival">' + num(o.packingList.cartons) + ' коробок · ' + num(o.packingList.grossKg) + ' кг брутто · ' + num(o.packingList.cbm) + ' м³ по листу</p>' : '')
       + '<div class="pb-compact-values"><div><small>Закупка товара</small>'
-      + '<strong>' + nativeMoney(c.nativeGoodsMinor, o.currency) + '</strong>'
-      + (o.currency !== 'RUB' ? '<b>' + (c.goods == null ? '— ₽' : money(c.goods)) + '</b><small>' + rate + '</small>' : '')
+      + '<strong>' + (partial ? 'от ' + partial.native : nativeMoney(c.nativeGoodsMinor, o.currency)) + '</strong>'
+      + (o.currency !== 'RUB' ? '<b>' + (partial ? 'от ' + partial.rub : (c.goods == null ? '— ₽' : money(c.goods))) + '</b><small>' + rate + '</small>' : '')
+      + (partial ? '<small>Предварительно по прайсу: ' + partial.priced + ' из ' + partial.total + ' позиций; оставшиеся цены уточняются. Не итог инвойса.</small>' : '')
       + '</div><div><small>Доставка и расходы</small><strong>' + displayDelivery(o,c) + '</strong></div></div>'
       + '<div class="pb-compact-total"><span>Товар + расходы</span><strong>' + orderTotal(o,c) + '</strong></div>'
       + '<details class="pb-order-detail pb-compact-details"><summary>Расходы поставки</summary>'
