@@ -168,5 +168,64 @@ class ClientTest(unittest.TestCase):
         self.assertIn("ids=99820405", seen["url"])
 
 
+class ApiShapeTest(unittest.TestCase):
+    def test_goal_totals_list_does_not_replace_visit_summary(self):
+        class FakeClient:
+            def stat(self, metrics, date1, date2, dimensions=None, filters=None):
+                if metrics and str(metrics[0]).startswith("ym:s:goal"):
+                    return {"totals": [4, 5, 1, 2], "data": [], "sampled": False}
+                if dimensions and "lastTrafficSource" in dimensions[0]:
+                    return {
+                        "totals": [7],
+                        "data": [{
+                            "dimensions": [{"id": "direct"}, {"name": ""}, {"name": ""}],
+                            "metrics": [7],
+                        }],
+                        "sampled": False,
+                    }
+                if dimensions and "startURL" in dimensions[0]:
+                    return {
+                        "totals": [7],
+                        "data": [{"dimensions": [{"name": "https://maat-impera.ru/?utm=1"}], "metrics": [7]}],
+                        "sampled": False,
+                    }
+                if filters:
+                    return {"totals": [2, 3], "data": [], "sampled": False}
+                return {"totals": [5, 7, 11, 40], "data": [], "sampled": False}
+
+        status = {
+            "price_block_view": {"found": True, "id": 100},
+            "price_form_start": {"found": True, "id": 101},
+        }
+        collected = report.collect_period(FakeClient(), date(2026, 11, 17), date(2026, 11, 18), status)
+        self.assertIsInstance(collected["totals"], dict)
+        self.assertEqual(collected["totals"]["users"], 5)
+        self.assertEqual(collected["totals"]["visits"], 7)
+        self.assertEqual(collected["goals"]["price_block_view"], {"visits": 4, "reaches": 5})
+        self.assertEqual(collected["goals"]["price_form_start"], {"visits": 1, "reaches": 2})
+        built = report.build_report(
+            (date(2026, 11, 17), date(2026, 11, 18)),
+            (date(2026, 11, 15), date(2026, 11, 16)),
+            collected,
+            {"totals": [1, 2, 3, 4], "sources": [], "pages": {}, "goals": {}},
+            None,
+            status,
+        )
+        self.assertEqual(built["totals"]["visits"], 7)
+        self.assertEqual(built["previousTotals"], {})
+        self.assertEqual(built["visitDuration"]["seconds"], 40)
+        self.assertIsNone(built["visitDuration"]["previousSeconds"])
+        self.assertEqual(built["entrances"][0]["url"], "https://maat-impera.ru/")
+
+    def test_list_instead_of_report_object_is_a_clear_error(self):
+        class ListClient:
+            def stat(self, *_args, **_kwargs):
+                return [1, 2, 3]
+
+        with self.assertRaises(RuntimeError) as caught:
+            report.collect_period(ListClient(), date(2026, 11, 17), date(2026, 11, 18), {})
+        self.assertIn("список", str(caught.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
