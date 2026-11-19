@@ -126,10 +126,10 @@
     var engaged = Object.create(null);
     var stopped = false;
 
-    function reach(goal, place) {
+    function reach(goal, place, identity) {
       var path = sanitizePath(win.location && win.location.pathname);
       var params = goalParams(path, place);
-      var key = goal + "|" + params.page + "|" + params.place;
+      var key = goal + "|" + params.page + "|" + params.place + "|" + String(identity || "");
       if (sent[key]) return false;
       sent[key] = true;
       if (typeof win.ym === "function") win.ym(COUNTER, "reachGoal", goal, { page: params.page, place: params.place });
@@ -154,7 +154,7 @@
       var link = node && node.closest ? node.closest("a[href]") : null;
       if (!link) return;
       var goal = classifyContact(link.getAttribute("href"));
-      if (goal) reach(goal, placeOf(link, win.location.pathname));
+      if (goal) reach(goal, placeOf(link, win.location.pathname), link.getAttribute("href"));
     }
 
     function onFocus(event) {
