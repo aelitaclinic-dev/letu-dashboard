@@ -831,7 +831,7 @@
     },
     {
       "id": "packing-PI0220261026-20261118",
-      "sourceRevision": 2,
+      "sourceRevision": 3,
       "entity": "unknown",
       "reference": "SINKO STYLING · отгрузка 18.11.2026 · NM-5276",
       "supplier": "Guangzhou YOGI Enterprise Co., Ltd.",
@@ -844,7 +844,7 @@
       "expectedDate": "",
       "warehouse": "",
       "currency": "CNY",
-      "rateUnits": null,
+      "rateUnits": 135500,
       "deliveryCurrency": "RUB",
       "deliveryMinor": null,
       "deliveryKop": null,
@@ -858,205 +858,223 @@
         "cbm": 0.4,
         "source": "Packing List (装箱单), 2026-11-10"
       },
-      "note": "Упаковочный лист Guangzhou YOGI от 10.11.2026; отправлена 18.11.2026 по сообщению пользователя. 26 строк, 373 учётные единицы, включая 80 белых/золотых помп без артикулов и 20 помп SKUKB. Итого 11 смешанных коробок, вес брутто 120 кг, объём 0,4 м³, маркировка NM-5276. В колонке CNT/PCS указана вместимость стандартной коробки, а QTY — фактическое количество в этой смешанной отгрузке: не умножать одно на другое. Для белых и золотых помп созданы временные учётные артикулы NO-SKU, так как у поставщика в документе артикул не указан. Закупочные цены, курс оплаты, международная доставка, доставка до Москвы, владелец товара, склад и дата прибытия не подтверждены: не подставлять нули, цены из других инвойсов и оценочные расходы. Поставка пока НЕ принята на склад. Уточнение объёма по артикулам C151616, C151617, C151618: 250 мл подтверждено пользователем по китайскому прайсу. В упаковочном листе указано 300 мл, ошибка описания; количество и цены не изменены.",
+      "note": "Упаковочный лист Guangzhou YOGI от 10.11.2026; отправлена 18.11.2026 по сообщению пользователя. 26 строк, 373 учётные единицы, включая 80 белых/золотых помп без артикулов и 20 помп SKUKB. Итого 11 смешанных коробок, вес брутто 120 кг, объём 0,4 м³, маркировка NM-5276. В колонке CNT/PCS указана вместимость стандартной коробки, а QTY — фактическое количество в этой смешанной отгрузке: не умножать одно на другое. Для белых и золотых помп созданы временные учётные артикулы NO-SKU, так как у поставщика в документе артикул не указан. Закупочные цены, курс оплаты, международная доставка, доставка до Москвы, владелец товара, склад и дата прибытия не подтверждены: не подставлять нули, цены из других инвойсов и оценочные расходы. Поставка пока НЕ принята на склад. Уточнение объёма по артикулам C151616, C151617, C151618: 250 мл подтверждено пользователем по китайскому прайсу. В упаковочном листе указано 300 мл, ошибка описания; количество и цены не изменены. Оценочные закупочные цены 22 товарных позиций заполнены по китайскому прайс-листу SINKO; subtotal 3266,05 CNY (44 254,98 RUB по подтверждённому пользователем курсу 13,55 ₽/CNY). Это предварительный расчёт, НЕ сумма нового инвойса. 20 шт. SKUK502 — бесплатная по смыслу досылка оплаченной ранее недостачи, оценку не обнулять и не оплачивать дважды. Стоимость 100 помп (40+40+20) и доставка не подтверждены, остаются null, итог всей партии не рассчитан.",
       "lines": [
         {
           "sku": "C151616",
           "name": "Argan Oil Nourishing Shampoo, 250 мл",
           "brand": "SINKO STYLING",
           "qty": 15,
-          "priceMinor": null,
+          "priceMinor": 900,
           "sourceLine": 9,
           "packSpec": "250ml*36",
           "pcsPerCarton": 36,
-          "cartonsOnPackingList": 1
+          "cartonsOnPackingList": 1,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151617",
           "name": "Argan Oil Nourishing Conditioner, 250 мл",
           "brand": "SINKO STYLING",
           "qty": 15,
-          "priceMinor": null,
+          "priceMinor": 1280,
           "sourceLine": 10,
           "packSpec": "250ml*36",
           "pcsPerCarton": 36,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151618",
           "name": "Moringa Deep Cleanse Shampoo, 250 мл",
           "brand": "SINKO STYLING",
           "qty": 15,
-          "priceMinor": null,
+          "priceMinor": 950,
           "sourceLine": 11,
           "packSpec": "250ml*36",
           "pcsPerCarton": 36,
-          "cartonsOnPackingList": 1
+          "cartonsOnPackingList": 1,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151612",
           "name": "Keratin Repair Serum",
           "brand": "SINKO STYLING",
           "qty": 15,
-          "priceMinor": null,
+          "priceMinor": 1450,
           "sourceLine": 12,
           "packSpec": "100ml*48",
           "pcsPerCarton": 48,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151613",
           "name": "Travel size",
           "brand": "SINKO STYLING",
           "qty": 15,
-          "priceMinor": null,
+          "priceMinor": 1350,
           "sourceLine": 13,
           "packSpec": "80ml*3*44",
           "pcsPerCarton": 44,
-          "cartonsOnPackingList": 1
+          "cartonsOnPackingList": 1,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151619",
           "name": "Tea tree nourishing shampoo",
           "brand": "SINKO STYLING",
           "qty": 15,
-          "priceMinor": null,
+          "priceMinor": 1250,
           "sourceLine": 14,
           "packSpec": "300ml*36",
           "pcsPerCarton": 36,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151621",
           "name": "Tea tree nourishing mask",
           "brand": "SINKO STYLING",
           "qty": 15,
-          "priceMinor": null,
+          "priceMinor": 1575,
           "sourceLine": 15,
           "packSpec": "300ml",
           "pcsPerCarton": 48,
-          "cartonsOnPackingList": 1
+          "cartonsOnPackingList": 1,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151623",
           "name": "Organic Ginger Shampoo",
           "brand": "SINKO STYLING",
           "qty": 21,
-          "priceMinor": null,
+          "priceMinor": 950,
           "sourceLine": 16,
           "packSpec": "300ml*36",
           "pcsPerCarton": 36,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151622",
           "name": "Organic Ginger Hair Mask",
           "brand": "SINKO STYLING",
           "qty": 21,
-          "priceMinor": null,
+          "priceMinor": 1800,
           "sourceLine": 17,
           "packSpec": "300ml",
           "pcsPerCarton": 48,
-          "cartonsOnPackingList": 1
+          "cartonsOnPackingList": 1,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C102246",
           "name": "Sinko Advanced natural style & straightening cream(for resistance hair)",
           "brand": "SINKO STYLING",
           "qty": 5,
-          "priceMinor": null,
+          "priceMinor": 2650,
           "sourceLine": 18,
           "packSpec": "800ml*2*12",
           "pcsPerCarton": 12,
-          "cartonsOnPackingList": 1
+          "cartonsOnPackingList": 1,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C102258",
           "name": "Sinko styling natural styling cream(for resistance hair)",
           "brand": "SINKO STYLING",
           "qty": 5,
-          "priceMinor": null,
+          "priceMinor": 2650,
           "sourceLine": 19,
           "packSpec": "800ml*2*12",
           "pcsPerCarton": 12,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151605",
           "name": "Splex No.0(colagen)",
           "brand": "SINKO STYLING",
           "qty": 5,
-          "priceMinor": null,
+          "priceMinor": 1553,
           "sourceLine": 20,
           "packSpec": "450ml*40",
           "pcsPerCarton": 40,
-          "cartonsOnPackingList": 1
+          "cartonsOnPackingList": 1,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151603",
           "name": "Splex No.1(treatment for damaged hair)",
           "brand": "SINKO STYLING",
           "qty": 5,
-          "priceMinor": null,
+          "priceMinor": 1972,
           "sourceLine": 21,
           "packSpec": "450ml*40",
           "pcsPerCarton": 40,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151607",
           "name": "Splex No.1(treatment for heathy hair)",
           "brand": "SINKO STYLING",
           "qty": 5,
-          "priceMinor": null,
+          "priceMinor": 1972,
           "sourceLine": 22,
           "packSpec": "450ml*40",
           "pcsPerCarton": 40,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "C151604",
           "name": "Splex No.2(fixer)",
           "brand": "SINKO STYLING",
           "qty": 5,
-          "priceMinor": null,
+          "priceMinor": 599,
           "sourceLine": 23,
           "packSpec": "450ml*40",
           "pcsPerCarton": 40,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "D200106",
           "name": "Sinko Styling 9in1 Straightening Cream ( One step rebonding )",
           "brand": "SINKO STYLING",
           "qty": 6,
-          "priceMinor": null,
+          "priceMinor": 1200,
           "sourceLine": 24,
           "packSpec": "450ml*40",
           "pcsPerCarton": 40,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "D200115",
           "name": "Sinko Crystalizeing Hair Straightening Cream Hair NO.1",
           "brand": "SINKO STYLING",
           "qty": 5,
-          "priceMinor": null,
+          "priceMinor": 850,
           "sourceLine": 25,
           "packSpec": "450ml*40",
           "pcsPerCarton": 40,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "D200128",
           "name": "Sinko Neutralizer For Curly Hair NO.2",
           "brand": "SINKO STYLING",
           "qty": 5,
-          "priceMinor": null,
+          "priceMinor": 500,
           "sourceLine": 26,
           "packSpec": "450ml*40",
           "pcsPerCarton": 40,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "NO-SKU-WHITE-PUMP-PI0220261026",
@@ -1067,7 +1085,8 @@
           "sourceLine": 27,
           "packSpec": null,
           "pcsPerCarton": 40,
-          "cartonsOnPackingList": 1
+          "cartonsOnPackingList": 1,
+          "priceNote": "Цена комплектующей в прайсе производителя не найдена; ожидает документального подтверждения."
         },
         {
           "sku": "NO-SKU-GOLD-PUMP-PI0220261026",
@@ -1078,51 +1097,56 @@
           "sourceLine": 28,
           "packSpec": null,
           "pcsPerCarton": 40,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceNote": "Цена комплектующей в прайсе производителя не найдена; ожидает документального подтверждения."
         },
         {
           "sku": "SKTC300",
           "name": "Tea tree Curly Defining cream",
           "brand": "SINKO STYLING",
           "qty": 15,
-          "priceMinor": null,
+          "priceMinor": 1340,
           "sourceLine": 29,
           "packSpec": "300ml*48",
           "pcsPerCarton": 48,
-          "cartonsOnPackingList": 1
+          "cartonsOnPackingList": 1,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "SKLC200",
           "name": "LEAVE IN CREAM PROTECTION AND HAIR TREATMENT",
           "brand": "SINKO STYLING",
           "qty": 15,
-          "priceMinor": null,
+          "priceMinor": 1050,
           "sourceLine": 30,
           "packSpec": "200ml*48",
           "pcsPerCarton": 48,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "SKAS300",
           "name": "Sinko Styling MORINGA ANTI-DANDRUFF SHAMPOO 300ml",
           "brand": "SINKO STYLING",
           "qty": 15,
-          "priceMinor": null,
+          "priceMinor": 1050,
           "sourceLine": 31,
           "packSpec": "300ml*36",
           "pcsPerCarton": 36,
-          "cartonsOnPackingList": 1
+          "cartonsOnPackingList": 1,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "SKMS300",
           "name": "Sinko Styling MACADAMIA OIL HYDRATING NOURISHING SHAMPOO 300ml",
           "brand": "SINKO STYLING",
           "qty": 15,
-          "priceMinor": null,
+          "priceMinor": 1000,
           "sourceLine": 32,
           "packSpec": "300ml*36",
           "pcsPerCarton": 36,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceSource": "Китайский прайс производителя «ПРАЙС СИНКО от китайцев.pdf» (цена по артикулу; не новый инвойс)"
         },
         {
           "sku": "SKUK502",
@@ -1133,7 +1157,9 @@
           "sourceLine": 33,
           "packSpec": "500*36",
           "pcsPerCarton": 36,
-          "cartonsOnPackingList": 1
+          "cartonsOnPackingList": 1,
+          "referencePriceMinor": 6168,
+          "priceNote": "Досылка 20 шт. недостачи из ранее оплаченной партии (поступление 02.11.2026); не включать в новую закупку как повторную оплату. Себестоимость при приёмке сверить с прежней партией."
         },
         {
           "sku": "SKUKB",
@@ -1144,9 +1170,11 @@
           "sourceLine": 34,
           "packSpec": null,
           "pcsPerCarton": null,
-          "cartonsOnPackingList": null
+          "cartonsOnPackingList": null,
+          "priceNote": "Цена комплектующей в прайсе производителя не найдена; ожидает документального подтверждения."
         }
-      ]
+      ],
+      "pricingSource": "Supplier price list (historical reference); payment rate RUB/CNY 13.55 confirmed by user 19.11.2026"
     }
   ]
 }
