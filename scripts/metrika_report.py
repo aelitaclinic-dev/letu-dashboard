@@ -138,7 +138,9 @@ def classify_source(traffic: str, engine: str, utm: str) -> str:
 
 def sum_sources(rows: list[dict]) -> list[dict]:
     totals = {key: 0 for key in SOURCE_ORDER}
-    for row in rows:
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
         totals[classify_source(row.get("traffic", ""), row.get("engine", ""), row.get("utm", ""))] += int(row.get("visits") or 0)
     return [{"id": key, "label": SOURCE_LABELS[key], "visits": totals[key]} for key in SOURCE_ORDER]
 
@@ -193,6 +195,11 @@ def page_sequences(hits: list[dict], limit: int = 3) -> list[dict]:
                 counts[key] = counts.get(key, 0) + 1
     ranked = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:limit]
     return [{"path": list(path), "visits": visits} for path, visits in ranked]
+
+
+def _record(value) -> dict:
+    """Ответ Метрики для итогов — список чисел. Словарём считаем только объект."""
+    return value if isinstance(value, dict) else {}
 
 
 def _number(value):
@@ -280,14 +287,16 @@ def _goal_visits(report: dict, goal: str):
 
 
 def build_report(period: tuple[date, date], previous: tuple[date, date], current: dict, prior: dict, logs: dict | None, goal_status: dict) -> dict:
-    current = current or {}
-    prior = prior or {}
+    current = current if isinstance(current, dict) else {}
+    prior = prior if isinstance(prior, dict) else {}
+    current_totals = _record(current.get("totals"))
+    prior_totals = _record(prior.get("totals"))
     source_rows = sum_sources(current.get("sources") or [])
     prior_sources = {row["id"]: row["visits"] for row in sum_sources(prior.get("sources") or [])}
     for row in source_rows:
         row["previous"] = prior_sources.get(row["id"], 0)
     source_sum = sum(row["visits"] for row in source_rows)
-    total_visits = _number((current.get("totals") or {}).get("visits"))
+    total_visits = _number(current_totals.get("visits"))
     source_gap = None if total_visits is None else int(total_visits) - source_sum
     logs = logs or {}
     events = logs.get("events")
@@ -301,20 +310,20 @@ def build_report(period: tuple[date, date], previous: tuple[date, date], current
     else:
         funnel_note = "API отдал отдельные итоги целей. Долю одного итога от другого как конверсию воронки не считаю."
         for goal, label in FUNNEL:
-            found = (goal_status.get(goal) or {})
-            value = (current.get("goals") or {}).get(goal)
+            found = _record(goal_status.get(goal))
+            value = _record(_record(current.get("goals")).get(goal))
             stages.append({
                 "id": goal,
                 "label": label,
-                "visits": None if not found.get("found") else (value or {}).get("visits"),
-                "reaches": None if not found.get("found") else (value or {}).get("reaches"),
+                "visits": None if not found.get("found") else value.get("visits"),
+                "reaches": None if not found.get("found") else value.get("reaches"),
                 "shareOfPrevious": None,
                 "error": None if found.get("found") else "Цель в счётчике ещё не создана. Сбор не начат.",
             })
     separate = []
     for goal, label in (("price_cta_click", "Нажатие «Получить прайс»"), ("price_download_click", "Клик по скачиванию")):
-        found = goal_status.get(goal) or {}
-        value = (current.get("goals") or {}).get(goal) or {}
+        found = _record(goal_status.get(goal))
+        value = _record(_record(current.get("goals")).get(goal))
         separate.append({
             "id": goal,
             "label": label if goal == "price_cta_click" else "Клик по скачиванию",
@@ -326,7 +335,7 @@ def build_report(period: tuple[date, date], previous: tuple[date, date], current
         })
     pages = []
     for page, label, _filter in PAGES:
-        item = (current.get("pages") or {}).get(page) or {}
+        item = _record(_record(current.get("pages")).get(page))
         outcome = (logs.get("page_outcomes") or {}).get(page) if logs.get("page_outcomes") is not None else None
         pages.append({
             "id": page,
@@ -340,12 +349,12 @@ def build_report(period: tuple[date, date], previous: tuple[date, date], current
         })
     engagement_rows = []
     for page, label, _filter in PAGES:
-        views = ((current.get("pages") or {}).get(page) or {}).get("pageviews")
+        views = _record(_record(current.get("pages")).get(page)).get("pageviews")
         row = {"page": label, "pageviews": views, "seconds": {}}
         for seconds in (15, 30, 60):
             goal = f"engage_{seconds}_{page}"
-            found = goal_status.get(goal) or {}
-            value = (current.get("goals") or {}).get(goal) or {}
+            found = _record(goal_status.get(goal))
+            value = _record(_record(current.get("goals")).get(goal))
             reaches = None if not found.get("found") else value.get("reaches")
             share = None
             note = None
@@ -367,8 +376,8 @@ def build_report(period: tuple[date, date], previous: tuple[date, date], current
         ("contact_email_click", "email"),
         ("contact_messenger_click", "messenger"),
     ):
-        found = goal_status.get(goal) or {}
-        value = (current.get("goals") or {}).get(goal) or {}
+        found = _record(goal_status.get(goal))
+        value = _record(_record(current.get("goals")).get(goal))
         contacts[key] = {
             "id": goal,
             "visits": None if not found.get("found") else value.get("visits"),
@@ -383,8 +392,8 @@ def build_report(period: tuple[date, date], previous: tuple[date, date], current
         "period": {"start": period[0].isoformat(), "end": period[1].isoformat()},
         "previousPeriod": {"start": previous[0].isoformat(), "end": previous[1].isoformat()},
         "generatedAt": datetime.now(MOSCOW).isoformat(timespec="seconds"),
-        "totals": current.get("totals") or {},
-        "previousTotals": prior.get("totals") or {},
+        "totals": current_totals,
+        "previousTotals": prior_totals,
         "sources": source_rows,
         "sourceGap": source_gap,
         "entrances": current.get("entrances") or [],
@@ -396,8 +405,8 @@ def build_report(period: tuple[date, date], previous: tuple[date, date], current
         "pages": pages,
         "visitDuration": {
             "label": "Средняя длительность визита",
-            "seconds": (current.get("totals") or {}).get("avgDurationSeconds"),
-            "previousSeconds": (prior.get("totals") or {}).get("avgDurationSeconds"),
+            "seconds": current_totals.get("avgDurationSeconds"),
+            "previousSeconds": prior_totals.get("avgDurationSeconds"),
         },
         "engagement": {
             "label": "Оценка вовлечённости",
@@ -548,9 +557,11 @@ def sync_goals(client: MetrikaClient, registry: dict, today: date) -> dict:
 
 
 def _dim(dimensions: list, index: int) -> str:
-    if index >= len(dimensions):
+    if not isinstance(dimensions, list) or index >= len(dimensions):
         return ""
     item = dimensions[index] or {}
+    if not isinstance(item, dict):
+        return "" if item in (None, "null") else str(item)
     value = item.get("id")
     if value in (None, "", "null"):
         value = item.get("name")
@@ -559,48 +570,75 @@ def _dim(dimensions: list, index: int) -> str:
     return str(value)
 
 
+def _stat_object(body, label: str) -> dict:
+    if isinstance(body, dict):
+        return body
+    raise RuntimeError(f"Метрика отдала список вместо объекта «{label}». Итоги не разобраны.")
+
+
+def _metric_list(body: dict, label: str) -> list:
+    raw = body.get("totals")
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        return raw
+    raise RuntimeError(f"Поле totals в ответе «{label}» не список чисел.")
+
+
 def collect_period(client: MetrikaClient, start: date, end: date, goal_status: dict) -> dict:
     date1, date2 = start.isoformat(), end.isoformat()
     errors = []
-    totals_body = client.stat(["ym:s:users", "ym:s:visits", "ym:s:pageviews", "ym:s:avgVisitDurationSeconds"], date1, date2)
-    totals_row = totals_body.get("totals") or [None, None, None, None]
-    totals = {
+    summary_body = _stat_object(
+        client.stat(["ym:s:users", "ym:s:visits", "ym:s:pageviews", "ym:s:avgVisitDurationSeconds"], date1, date2),
+        "итоги визитов",
+    )
+    totals_row = _metric_list(summary_body, "итоги визитов") or [None, None, None, None]
+    summary = {
         "users": totals_row[0] if len(totals_row) > 0 else None,
         "visits": totals_row[1] if len(totals_row) > 1 else None,
         "pageviews": totals_row[2] if len(totals_row) > 2 else None,
         "avgDurationSeconds": totals_row[3] if len(totals_row) > 3 else None,
-        "sampled": bool(totals_body.get("sampled")),
+        "sampled": bool(summary_body.get("sampled")),
     }
-    source_body = client.stat(
+    source_body = _stat_object(client.stat(
         ["ym:s:visits"], date1, date2,
         ["ym:s:lastTrafficSource", "ym:s:lastSearchEngineRoot", "ym:s:lastUTMCampaign"],
-    )
+    ), "источники")
     sources = []
     for row in source_body.get("data") or []:
+        if not isinstance(row, dict):
+            errors.append("Строка источника в ответе Метрики не объект.")
+            continue
         dimensions = row.get("dimensions") or []
+        metrics = row.get("metrics") if isinstance(row.get("metrics"), list) else [0]
         sources.append({
             "traffic": _dim(dimensions, 0),
             "engine": _dim(dimensions, 1),
             "utm": _dim(dimensions, 2),
-            "visits": (row.get("metrics") or [0])[0],
+            "visits": metrics[0] if metrics else 0,
         })
-    entrance_body = client.stat(["ym:s:visits"], date1, date2, ["ym:s:startURL"])
+    entrance_body = _stat_object(client.stat(["ym:s:visits"], date1, date2, ["ym:s:startURL"]), "страницы входа")
     entrances = []
     for row in (entrance_body.get("data") or [])[:8]:
-        dimensions = row.get("dimensions") or [{}]
-        url = (dimensions[0] or {}).get("name") or ""
-        entrances.append({"url": str(url).split("?")[0], "visits": (row.get("metrics") or [0])[0]})
+        if not isinstance(row, dict):
+            errors.append("Строка страницы входа в ответе Метрики не объект.")
+            continue
+        dimensions = row.get("dimensions") if isinstance(row.get("dimensions"), list) else [{}]
+        first = dimensions[0] if dimensions else {}
+        url = first.get("name") if isinstance(first, dict) else ""
+        metrics = row.get("metrics") if isinstance(row.get("metrics"), list) else [0]
+        entrances.append({"url": str(url or "").split("?")[0], "visits": metrics[0] if metrics else 0})
     pages = {}
     for page, _label, filters in PAGES:
         try:
-            body = client.stat(["ym:s:visits", "ym:s:pageviews"], date1, date2, filters=filters)
-            metrics = body.get("totals") or [None, None]
+            body = _stat_object(client.stat(["ym:s:visits", "ym:s:pageviews"], date1, date2, filters=filters), page)
+            metrics = _metric_list(body, page) or [None, None]
             pages[page] = {"visits": metrics[0] if metrics else None, "pageviews": metrics[1] if len(metrics) > 1 else None}
         except RuntimeError as error:
             errors.append(f"{page}: {error}")
             pages[page] = {"visits": None, "pageviews": None, "error": str(error)}
     goals = {}
-    pairs = [(identifier, item["id"]) for identifier, item in goal_status.items() if item.get("found") and item.get("id")]
+    pairs = [(identifier, item["id"]) for identifier, item in goal_status.items() if isinstance(item, dict) and item.get("found") and item.get("id")]
     for offset in range(0, len(pairs), 10):
         chunk = pairs[offset:offset + 10]
         metrics = []
@@ -608,17 +646,17 @@ def collect_period(client: MetrikaClient, start: date, end: date, goal_status: d
             metrics.append(f"ym:s:goal{goal_id}visits")
             metrics.append(f"ym:s:goal{goal_id}reaches")
         try:
-            body = client.stat(metrics, date1, date2)
+            body = _stat_object(client.stat(metrics, date1, date2), "цели")
+            goal_totals = _metric_list(body, "цели")
         except RuntimeError as error:
             errors.append(str(error))
             continue
-        totals = body.get("totals") or []
         for index, (identifier, _goal_id) in enumerate(chunk):
             goals[identifier] = {
-                "visits": totals[index * 2] if len(totals) > index * 2 else None,
-                "reaches": totals[index * 2 + 1] if len(totals) > index * 2 + 1 else None,
+                "visits": goal_totals[index * 2] if len(goal_totals) > index * 2 else None,
+                "reaches": goal_totals[index * 2 + 1] if len(goal_totals) > index * 2 + 1 else None,
             }
-    return {"totals": totals, "sources": sources, "entrances": entrances, "pages": pages, "goals": goals, "errors": errors}
+    return {"totals": summary, "sources": sources, "entrances": entrances, "pages": pages, "goals": goals, "errors": errors}
 
 
 def run(client, today: date, history_dir: Path, publish_path: Path, registry_path: Path, notice_without_token: str | None = None) -> dict:
