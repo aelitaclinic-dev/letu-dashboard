@@ -1,22 +1,467 @@
 {
   "schemaVersion": 1,
   "counterId": 99820405,
-  "live": false,
-  "notice": "Просмотры уже идут в счётчик 99820405. Отчёт по API не собран: секрет YANDEX_METRIKA_TOKEN не задан. Цифры посещений здесь не подставлены.",
+  "live": true,
+  "notice": "Сводка посещений сайта. Имена, телефоны, почта и параметры форм сюда не попадают.",
   "goals": [
-    {"id": "price_block_view", "label": "Прайс: блок появился в видимой области", "collectionStart": null},
-    {"id": "price_cta_click", "label": "Прайс: нажатие «Получить прайс»", "collectionStart": null},
-    {"id": "price_form_start", "label": "Прайс: первое заполнение формы № 3", "collectionStart": null},
-    {"id": "price_form_success", "label": "Прайс: Fluent Forms подтвердил заявку", "collectionStart": null},
-    {"id": "price_download_click", "label": "Прайс: клик по скачиванию файла", "collectionStart": null},
-    {"id": "contacts_view", "label": "Контакты: просмотр /contacs/", "collectionStart": null},
-    {"id": "contact_phone_click", "label": "Контакт: телефон", "collectionStart": null},
-    {"id": "contact_email_click", "label": "Контакт: почта", "collectionStart": null},
-    {"id": "contact_messenger_click", "label": "Контакт: мессенджер", "collectionStart": null}
+    {
+      "id": "price_block_view",
+      "label": "Прайс: блок появился в видимой области",
+      "collectionStart": null
+    },
+    {
+      "id": "price_cta_click",
+      "label": "Прайс: нажатие «Получить прайс»",
+      "collectionStart": null
+    },
+    {
+      "id": "price_form_start",
+      "label": "Прайс: первое заполнение формы № 3",
+      "collectionStart": null
+    },
+    {
+      "id": "price_form_success",
+      "label": "Прайс: Fluent Forms подтвердил заявку",
+      "collectionStart": null
+    },
+    {
+      "id": "price_download_click",
+      "label": "Прайс: клик по скачиванию файла",
+      "collectionStart": null
+    },
+    {
+      "id": "contacts_view",
+      "label": "Контакты: просмотр /contacs/",
+      "collectionStart": null
+    },
+    {
+      "id": "contact_phone_click",
+      "label": "Контакт: телефон",
+      "collectionStart": null
+    },
+    {
+      "id": "contact_email_click",
+      "label": "Контакт: почта",
+      "collectionStart": null
+    },
+    {
+      "id": "contact_messenger_click",
+      "label": "Контакт: мессенджер",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_15_home",
+      "label": "Оценка вовлечённости: 15 с видимой вкладки, home",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_15_catalog",
+      "label": "Оценка вовлечённости: 15 с видимой вкладки, catalog",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_15_sinko",
+      "label": "Оценка вовлечённости: 15 с видимой вкладки, sinko",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_15_product",
+      "label": "Оценка вовлечённости: 15 с видимой вкладки, product",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_15_contacts",
+      "label": "Оценка вовлечённости: 15 с видимой вкладки, contacts",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_30_home",
+      "label": "Оценка вовлечённости: 30 с видимой вкладки, home",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_30_catalog",
+      "label": "Оценка вовлечённости: 30 с видимой вкладки, catalog",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_30_sinko",
+      "label": "Оценка вовлечённости: 30 с видимой вкладки, sinko",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_30_product",
+      "label": "Оценка вовлечённости: 30 с видимой вкладки, product",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_30_contacts",
+      "label": "Оценка вовлечённости: 30 с видимой вкладки, contacts",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_60_home",
+      "label": "Оценка вовлечённости: 60 с видимой вкладки, home",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_60_catalog",
+      "label": "Оценка вовлечённости: 60 с видимой вкладки, catalog",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_60_sinko",
+      "label": "Оценка вовлечённости: 60 с видимой вкладки, sinko",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_60_product",
+      "label": "Оценка вовлечённости: 60 с видимой вкладки, product",
+      "collectionStart": null
+    },
+    {
+      "id": "engage_60_contacts",
+      "label": "Оценка вовлечённости: 60 с видимой вкладки, contacts",
+      "collectionStart": null
+    }
   ],
   "messenger": {
     "tracked": false,
     "note": "Учёта заявок из мессенджера на сайте нет. В форме прайса и в журнале прямых заказов нет поля «Откуда узнали о нас?». Имеет смысл добавить один вариант «Рекомендация мастера». Такие заявки не складываются с визитами на сайт."
   },
-  "history": []
+  "history": [
+    {
+      "schemaVersion": 1,
+      "sample": false,
+      "counterId": 99820405,
+      "id": "2026-11-17_2026-11-18",
+      "period": {
+        "start": "2026-11-17",
+        "end": "2026-11-18"
+      },
+      "previousPeriod": {
+        "start": "2026-11-15",
+        "end": "2026-11-16"
+      },
+      "generatedAt": "2026-11-20T00:11:38+03:00",
+      "totals": {
+        "users": 6.0,
+        "visits": 7.0,
+        "pageviews": 9.0,
+        "avgDurationSeconds": 13.85714286,
+        "sampled": false
+      },
+      "previousTotals": {
+        "users": 10.0,
+        "visits": 10.0,
+        "pageviews": 17.0,
+        "avgDurationSeconds": 3.8,
+        "sampled": false
+      },
+      "sources": [
+        {
+          "id": "yandex",
+          "label": "Яндекс",
+          "visits": 0,
+          "previous": 0
+        },
+        {
+          "id": "social",
+          "label": "Соцсети",
+          "visits": 0,
+          "previous": 0
+        },
+        {
+          "id": "referral",
+          "label": "Переходы с других сайтов",
+          "visits": 0,
+          "previous": 0
+        },
+        {
+          "id": "direct",
+          "label": "Прямые визиты",
+          "visits": 7,
+          "previous": 10
+        },
+        {
+          "id": "utm",
+          "label": "Кампании с UTM",
+          "visits": 0,
+          "previous": 0
+        },
+        {
+          "id": "other_search",
+          "label": "Другие поисковые системы",
+          "visits": 0,
+          "previous": 0
+        },
+        {
+          "id": "unknown",
+          "label": "Неизвестный источник",
+          "visits": 0,
+          "previous": 0
+        }
+      ],
+      "sourceGap": 0,
+      "entrances": [
+        {
+          "url": "https://maat-impera.ru/",
+          "visits": 6.0
+        },
+        {
+          "url": "https://maat-impera.ru/contacs/",
+          "visits": 1.0
+        }
+      ],
+      "sequences": {
+        "available": false,
+        "rows": [],
+        "reason": "Журнал просмотров Метрики недоступен, типичные последовательности не восстанавливаю."
+      },
+      "pages": [
+        {
+          "id": "home",
+          "label": "Главная",
+          "visits": 6.0,
+          "pageviews": 8.0,
+          "reachedPrice": null,
+          "reachedContacts": null,
+          "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+        },
+        {
+          "id": "catalog",
+          "label": "Каталог",
+          "visits": 1.0,
+          "pageviews": 3.0,
+          "reachedPrice": null,
+          "reachedContacts": null,
+          "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+        },
+        {
+          "id": "sinko",
+          "label": "SINKO STYLING",
+          "visits": 0.0,
+          "pageviews": 0.0,
+          "reachedPrice": null,
+          "reachedContacts": null,
+          "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+        },
+        {
+          "id": "product",
+          "label": "Карточки товаров",
+          "visits": 0.0,
+          "pageviews": 0.0,
+          "reachedPrice": null,
+          "reachedContacts": null,
+          "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+        },
+        {
+          "id": "contacts",
+          "label": "Контакты",
+          "visits": 1.0,
+          "pageviews": 1.0,
+          "reachedPrice": null,
+          "reachedContacts": null,
+          "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+        }
+      ],
+      "visitDuration": {
+        "label": "Средняя длительность визита",
+        "seconds": 13.85714286,
+        "previousSeconds": 3.8
+      },
+      "engagement": {
+        "label": "Оценка вовлечённости",
+        "note": "Секунды видимой вкладки на целевой странице. Это не длительность визита и с ней не складывается.",
+        "rows": [
+          {
+            "page": "Главная",
+            "pageviews": 8.0,
+            "seconds": {
+              "15": {
+                "reaches": 0.0,
+                "shareOfPageviews": 0.0,
+                "error": null
+              },
+              "30": {
+                "reaches": 0.0,
+                "shareOfPageviews": 0.0,
+                "error": null
+              },
+              "60": {
+                "reaches": 0.0,
+                "shareOfPageviews": 0.0,
+                "error": null
+              }
+            }
+          },
+          {
+            "page": "Каталог",
+            "pageviews": 3.0,
+            "seconds": {
+              "15": {
+                "reaches": 0.0,
+                "shareOfPageviews": 0.0,
+                "error": null
+              },
+              "30": {
+                "reaches": 0.0,
+                "shareOfPageviews": 0.0,
+                "error": null
+              },
+              "60": {
+                "reaches": 0.0,
+                "shareOfPageviews": 0.0,
+                "error": null
+              }
+            }
+          },
+          {
+            "page": "SINKO STYLING",
+            "pageviews": 0.0,
+            "seconds": {
+              "15": {
+                "reaches": 0.0,
+                "shareOfPageviews": null,
+                "error": null
+              },
+              "30": {
+                "reaches": 0.0,
+                "shareOfPageviews": null,
+                "error": null
+              },
+              "60": {
+                "reaches": 0.0,
+                "shareOfPageviews": null,
+                "error": null
+              }
+            }
+          },
+          {
+            "page": "Карточки товаров",
+            "pageviews": 0.0,
+            "seconds": {
+              "15": {
+                "reaches": 0.0,
+                "shareOfPageviews": null,
+                "error": null
+              },
+              "30": {
+                "reaches": 0.0,
+                "shareOfPageviews": null,
+                "error": null
+              },
+              "60": {
+                "reaches": 0.0,
+                "shareOfPageviews": null,
+                "error": null
+              }
+            }
+          },
+          {
+            "page": "Контакты",
+            "pageviews": 1.0,
+            "seconds": {
+              "15": {
+                "reaches": 0.0,
+                "shareOfPageviews": 0.0,
+                "error": null
+              },
+              "30": {
+                "reaches": 0.0,
+                "shareOfPageviews": 0.0,
+                "error": null
+              },
+              "60": {
+                "reaches": 0.0,
+                "shareOfPageviews": 0.0,
+                "error": null
+              }
+            }
+          }
+        ]
+      },
+      "funnel": {
+        "mode": "separate_goal_totals",
+        "note": "API отдал отдельные итоги целей. Долю одного итога от другого как конверсию воронки не считаю.",
+        "stages": [
+          {
+            "id": "price_block_view",
+            "label": "Увидели блок прайса",
+            "visits": 0.0,
+            "reaches": 0.0,
+            "shareOfPrevious": null,
+            "error": null
+          },
+          {
+            "id": "price_form_start",
+            "label": "Начали форму",
+            "visits": 0.0,
+            "reaches": 0.0,
+            "shareOfPrevious": null,
+            "error": null
+          },
+          {
+            "id": "price_form_success",
+            "label": "Отправили заявку",
+            "visits": 0.0,
+            "reaches": 0.0,
+            "shareOfPrevious": null,
+            "error": null
+          }
+        ],
+        "separate": [
+          {
+            "id": "price_cta_click",
+            "label": "Нажатие «Получить прайс»",
+            "visits": 0.0,
+            "reaches": 0.0,
+            "error": null,
+            "note": "До формы можно дойти скроллом, поэтому клик по кнопке не входит в воронку."
+          },
+          {
+            "id": "price_download_click",
+            "label": "Клик по скачиванию",
+            "visits": 0.0,
+            "reaches": 0.0,
+            "error": null,
+            "note": "Сайт подтверждает только клик по ссылке на файл, не саму выдачу. Это не шаг воронки заявки."
+          }
+        ]
+      },
+      "contacts": {
+        "page": {
+          "id": "contacts_view",
+          "visits": 0.0,
+          "reaches": 0.0,
+          "error": null
+        },
+        "phone": {
+          "id": "contact_phone_click",
+          "visits": 0.0,
+          "reaches": 0.0,
+          "error": null
+        },
+        "email": {
+          "id": "contact_email_click",
+          "visits": 0.0,
+          "reaches": 0.0,
+          "error": null
+        },
+        "messenger": {
+          "id": "contact_messenger_click",
+          "visits": 0.0,
+          "reaches": 0.0,
+          "error": null
+        }
+      },
+      "errors": [],
+      "apiError": null,
+      "conclusions": [
+        "Визиты: 7.0 против 10.0 за предыдущие два дня, на 3.0 меньше. Трафик небольшой, рядом с любой долей смотрите абсолютное число.",
+        "Порядок этапов по одним визитам API не отдал. Отдельные итоги целей на конверсию воронки не делю.",
+        "Подтверждённых заявок прайса 0.0. Клики по кнопке и по файлу смотреть отдельными строками, не как шаг воронки."
+      ]
+    }
+  ]
 }

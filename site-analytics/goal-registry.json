@@ -1,0 +1,122 @@
+{
+  "price_block_view": {
+    "metrikaId": 684820510,
+    "createdOn": null,
+    "existed": true
+  },
+  "price_cta_click": {
+    "metrikaId": 684820530,
+    "createdOn": null,
+    "existed": true
+  },
+  "price_form_start": {
+    "metrikaId": 684820550,
+    "createdOn": null,
+    "existed": true
+  },
+  "price_form_success": {
+    "metrikaId": 684820567,
+    "createdOn": null,
+    "existed": true
+  },
+  "price_download_click": {
+    "metrikaId": 684820584,
+    "createdOn": null,
+    "existed": true
+  },
+  "contacts_view": {
+    "metrikaId": 684820605,
+    "createdOn": null,
+    "existed": true
+  },
+  "contact_phone_click": {
+    "metrikaId": 684820622,
+    "createdOn": null,
+    "existed": true
+  },
+  "contact_email_click": {
+    "metrikaId": 684820641,
+    "createdOn": null,
+    "existed": true
+  },
+  "contact_messenger_click": {
+    "metrikaId": 684820660,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_15_home": {
+    "metrikaId": 684820676,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_15_catalog": {
+    "metrikaId": 684820709,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_15_sinko": {
+    "metrikaId": 684820724,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_15_product": {
+    "metrikaId": 684820740,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_15_contacts": {
+    "metrikaId": 684820762,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_30_home": {
+    "metrikaId": 684820781,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_30_catalog": {
+    "metrikaId": 684820797,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_30_sinko": {
+    "metrikaId": 684820816,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_30_product": {
+    "metrikaId": 684820835,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_30_contacts": {
+    "metrikaId": 684820851,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_60_home": {
+    "metrikaId": 684820870,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_60_catalog": {
+    "metrikaId": 684820886,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_60_sinko": {
+    "metrikaId": 684820902,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_60_product": {
+    "metrikaId": 684820919,
+    "createdOn": null,
+    "existed": true
+  },
+  "engage_60_contacts": {
+    "metrikaId": 684820938,
+    "createdOn": null,
+    "existed": true
+  }
+}
