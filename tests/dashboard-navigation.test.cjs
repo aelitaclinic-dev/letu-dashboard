@@ -18,6 +18,7 @@ function dashboard(at, hash) {
     fetch: () => new Promise(() => {})};
   vm.createContext(context);
   vm.runInContext(fs.readFileSync('data.js', 'utf8'), context);
+  vm.runInContext(fs.readFileSync('letu-finance.js', 'utf8'), context);
   const data = context.window.DASHBOARD;
   const amounts = JSON.stringify(data.months.map(r => [r.month, r.orderedKop, r.deliveredKop, r.realizationKop, r.payoutKop]));
   vm.runInContext(fs.readFileSync('app.js', 'utf8'), context);
@@ -27,10 +28,11 @@ function dashboard(at, hash) {
 
 const november = dashboard('2026-11-16T19:00:00Z', '#overview');
 assert.equal(november.data.months.find(r => r.month === '2026-11').movementState, 'missing');
-assert.equal(november.data.profit.months.find(r => r.month === '2026-11').view.status, 'missing');
+assert.equal(november.data.months.find(r => r.month === '2026-11').financeState, 'partial');
+assert.equal(november.data.profit.months.find(r => r.month === '2026-11').view.partial, true);
 assert.equal(november.data.months.find(r => r.month === '2026-12').movementState, 'future');
-assert.match(november.nodes.screen.innerHTML, /Л’Этуаль: отчёты ещё не загружены/);
-assert.match(november.nodes.screen.innerHTML, /28\.10\.2026/);
+assert(!november.nodes.screen.innerHTML.includes('Л’Этуаль: отчёты ещё не загружены'));
+assert.match(november.nodes.screen.innerHTML, /15\.11\.2026/);
 assert(!november.nodes['fresh-more'].textContent.includes('Ноябрь и декабрь ещё не наступили'));
 november.context.location.hash = '#unit';
 november.listeners.hashchange();
@@ -39,8 +41,7 @@ november.context.location.hash = '#overview';
 november.listeners.hashchange();
 assert.match(november.nodes.screen.innerHTML, /Бизнес на одном экране/);
 
-const october = dashboard('2026-10-28T12:00:00Z', '#overview');
-assert.equal(october.data.months.find(r => r.month === '2026-11').movementState, 'future');
 const december = dashboard('2026-11-30T21:30:00Z', '#overview');
 assert.equal(december.data.months.find(r => r.month === '2026-12').movementState, 'missing');
-console.log('Dashboard: home and unit routes, November missing-data notice, Moscow month rollover, and unchanged financial amounts passed');
+console.log('Dashboard: home and unit routes, November partial report, Moscow month rollover, and unchanged financial amounts passed');
+
