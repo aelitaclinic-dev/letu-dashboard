@@ -1985,7 +1985,10 @@
     var missingBlock = "<h3>Товары без себестоимости</h3><p class='muted'>Список за выбранные месяцы. Поездки, декларации, плёнка и прочие расходы этот пробел не закрывают.</p>"
       + (missingRows ? "<ul class='unit-check-list'>" + missingRows + "</ul>" : "<p>В выбранных месяцах таких товаров нет.</p>");
     var registers = DATA.profit.registers || {};
-    var tripRows = (registers.trips || []).map(function (trip) {
+    var tripRows = (registers.trips || []).filter(function (trip) {
+      var month = String(trip.date || "").slice(0, 7);
+      return month >= bounds.from && month <= bounds.to;
+    }).map(function (trip) {
       var fuel = trip.fuelIncludedInCourier ? "Уже включено в оплату курьера" : (trip.fuelKop == null ? "Сумма неизвестна" : money(trip.fuelKop));
       var status = trip.status === "actual" ? "Фактический расход" : "Оценка";
       return "<div class='profit-sku'><b>" + esc(trip.date ? dayText(trip.date) : "Дата не указана") + "</b><span>Площадка: " + esc(trip.site || "Нет в документах") + "</span><span>Оплата курьера: " + esc(trip.courierKop == null ? "Сумма неизвестна" : money(trip.courierKop)) + "</span><span>Бензин: " + esc(fuel) + "</span><span>Прочие прямые: " + esc(trip.otherKop == null ? "Сумма неизвестна" : money(trip.otherKop)) + "</span><span>Итог: " + esc(trip.totalKop == null ? "Сумма неизвестна" : money(trip.totalKop)) + "</span><span>" + esc(status) + "</span></div>";
