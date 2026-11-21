@@ -53,3 +53,17 @@ for (const article of ['SKUK503', 'SKUK504']) {
 assert.ok(byArticle.SKUK501.margin > 0.30);
 assert.ok(byArticle.SKUK503.margin > 0.30);
 assert.ok(byArticle.SKUK504.margin > 0.30);
+
+for (const group of data.unitEconomics.groups.filter(g => g.brand === 'SINKO STYLING')) {
+  const item = group.items[0];
+  assert.equal(item.commissionRate, 0.46);
+  assert.equal(group.boxExcluded, true);
+  assert.equal(group.boxLabelExcluded, true);
+  assert.equal(group.packerRub, 0);
+  const purchase = group.rubPurchase != null ? group.rubPurchase : roundMoney(group.cnyPrice * group.rate);
+  const freight = group.allocatedFreightRub != null ? group.allocatedFreightRub : roundMoney(group.weightKg * group.tariffRub);
+  const cost = roundMoney(purchase + freight + group.productLabelRub);
+  const sale = item.salePriceRub;
+  const profit = roundMoney(sale - cost - roundMoney(sale * 0.46) - roundMoney(sale * data.unitEconomics.taxRate));
+  assert.ok(profit / sale > 0.30, item.article + ' margin ' + profit / sale);
+}
