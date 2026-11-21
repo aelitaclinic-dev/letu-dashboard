@@ -2273,11 +2273,15 @@
       cursor = nextMonth(cursor);
     }
     var after = blocked || result == null ? null : result - accounted;
+    var alreadyIncluded = (DATA.profit.months || []).filter(function (r) { return r.month >= bounds.from && r.month <= bounds.to && r.view && r.view.costPolicy; }).reduce(function (n, r) {
+      return n + (r.view.courierKop == null ? 0 : r.view.courierKop) + (r.view.declarationKnownKop || 0);
+    }, 0);
     var gapList = gaps.slice(0, 4).map(function (item) { return "<li>" + esc(item) + "</li>"; }).join("");
     return "<div class='profit-business'><h3>Расходы бизнеса в этом расчёте</h3>"
-      + "<p><b>До расходов бизнеса:</b> " + esc(result == null ? "Нет расчёта" : money(result)) + "</p>"
-      + "<p><b>Учтённые расходы бизнеса:</b> " + esc(blocked ? "Не определены" : money(accounted)) + "</p>"
-      + "<p><b>После расходов бизнеса:</b> " + esc(after == null ? "Не посчитан" : money(after)) + "</p>"
+      + "<p><b>Результат карточек:</b> " + esc(result == null ? "Нет расчёта" : money(result)) + "</p>"
+      + (alreadyIncluded ? "<p><b>Доставка и декларации уже внутри карточек:</b> " + esc(money(alreadyIncluded)) + ". Повторно не вычитаются.</p>" : "")
+      + "<p><b>Дополнительные расходы из журнала:</b> " + esc(blocked ? "Есть неуточнённые статьи" : money(accounted)) + "</p>"
+      + "<p><b>После дополнительных расходов:</b> " + esc(after == null ? "Не посчитан" : money(after)) + "</p>"
       + (gapList ? "<ul class='unit-check-list'>" + gapList + "</ul>" : "")
       + "<p class='muted'>Декларации ИП 2023 года относятся к шампуням и бальзамам Kérastase и L'Oréal Professionnel и к Л’Этуаль. Для октября и ноября используется подтверждённый срок 5 лет и месячная доля 1/60. Целиком в 2026 они не списываются. Оплата и распределённая стоимость вместе не вычитаются. Расходы ООО в прибыль ИП не входят. <a href='#expenses'>Открыть расходы бизнеса</a></p></div>";
   }
