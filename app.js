@@ -1623,67 +1623,38 @@
   function drawProfitChart(rows, mode) {
     var points = [];
     var running = 0;
-    var runningCovered = 0;
-    var runningFilled = 0;
-    var runningRevenue = 0;
     rows.forEach(function (row) {
-      var view = row.view;
+      var net = window.LetuFinance.verdict(row);
       var label = SHORT_MONTH[row.month.slice(5)];
       var title = monthTitle(row.month);
-      if (!view || view.status === "future" || view.resultKop == null) {
-        var why = view && view.status === "future" ? "период ещё не наступил" : "расчёта нет";
+      if (net.state !== "settled") {
+        var why = net.state === "future" ? "отчёта за месяц нет" : "расчёт не завершён";
         points.push({
           month: row.month,
           value: null,
-          covered: null,
           label: label,
-          tip: title + ": " + why + ". В накопленный итог ноль не поставлен.",
+          tip: title + ": " + why + ". Нулевой столбик не поставлен.",
         });
         return;
       }
-      var kop = view.resultKop;
-      var coveredKop = view.coveredResultKop;
-      var gap = view.partial ? " Неполный месяц." : "";
+      var kop = net.amountKop;
       if (mode === "cumulative") {
-        running += view.resultKop;
-        runningCovered += view.coveredResultKop || 0;
-        runningFilled += view.filledRevenueKop || 0;
-        runningRevenue += view.revenueKop || 0;
+        running += net.amountKop;
         kop = running;
-        coveredKop = runningCovered;
-        points.push({
-          month: row.month,
-          value: kop / 100,
-          kop: kop,
-          covered: coveredKop / 100,
-          coveredKop: coveredKop,
-          label: label + (view.partial ? "*" : ""),
-          partial: view.partial,
-          kind: view.resultKind,
-          tip: title + ": " + (runningFilled === runningRevenue ? "Предварительная чистая прибыль" : "Предварительный результат до недостающих затрат") + " " + money(kop) + ". Этот месяц: " + resultLabel(view) + " " + money(view.resultKop) + "." + gap,
-          coveredTip: title + ": Прибыль рассчитанной части " + money(coveredKop) + ". Охват " + percentOf(runningFilled, runningRevenue) + "." + gap,
-        });
-        return;
       }
-      var uncovered = view.resultKind === "remainder" ? " Часть себестоимости не заполнена." : "";
       points.push({
         month: row.month,
         value: kop / 100,
         kop: kop,
-        covered: null,
-        label: label + (view.partial ? "*" : ""),
-        partial: view.partial,
-        kind: view.resultKind,
-        tip: title + ": " + resultLabel(view) + " " + money(kop) + "." + gap + uncovered,
+        label: label,
+        tip: title + ": расчётная чистая прибыль " + money(net.amountKop) + "."
+          + (net.amountKop < 0 ? " Убыток." : "")
+          + (mode === "cumulative" ? " Накопленно по рассчитанным месяцам: " + money(kop) + ". Незавершённые месяцы в сумму не входят." : ""),
       });
     });
-    var nums = [];
-    points.forEach(function (point) {
-      if (point.value != null) nums.push(point.value);
-      if (point.covered != null) nums.push(point.covered);
-    });
+    var nums = points.filter(function (point) { return point.value != null; }).map(function (point) { return point.value; });
     if (!nums.length) {
-      return "<div class='chart-wrap' id='profit-chart'><h3 class='chart-title'>Результат по месяцам</h3><p>Нет месяцев с расчётом. Нулевой столбик не поставлен.</p></div>";
+      return "<div class='chart-wrap' id='profit-chart'><h3 class='chart-title'>Чистая прибыль по месяцам</h3><p>Нет месяцев с рассчитанной чистой прибылью. Нулевой столбик не поставлен.</p></div>";
     }
     var min = Math.min(0, Math.min.apply(null, nums));
     var max = Math.max(0, Math.max.apply(null, nums));
@@ -1700,14 +1671,12 @@
     var plotW = width - padL - padR;
     var plotH = height - padT - padB;
     var group = plotW / points.length;
-    var paired = mode === "cumulative";
-    var barW = paired ? Math.min(14, group * 0.28) : Math.min(28, group * 0.62);
+    var barW = Math.min(28, group * 0.62);
     yOfProfit = function (value) { return padT + plotH * (1 - (value - axisMin) / span); };
     profitY0 = yOfProfit(0);
     var svg = "<div class='chart-wrap' id='profit-chart'><h3 class='chart-title'>"
-      + (paired ? "Накопленный предварительный результат" : "Результат по месяцам")
+      + (mode === "cumulative" ? "Накопленная чистая прибыль рассчитанных месяцев" : "Чистая прибыль по месяцам")
       + "</h3><svg class='chart profit-chart' viewBox='0 0 " + width + " " + height + "' role='img'>";
-    svg += "<pattern id='profit-hatch' width='6' height='6' patternUnits='userSpaceOnUse' patternTransform='rotate(45)'><line x1='0' y1='0' x2='0' y2='6' stroke='#8C5E4A' stroke-width='2'/></pattern>";
     for (var step = 0; step < 4; step += 1) {
       var tick = axisMin + (axisMax - axisMin) * step / 3;
       var y = yOfProfit(tick);
@@ -1722,21 +1691,11 @@
         svg += "<text x='" + cx.toFixed(1) + "' y='" + (profitY0 - 8).toFixed(1) + "' text-anchor='middle' font-size='11' fill='#8C5E4A'><title>" + esc(point.tip) + "</title>—</text>";
         return;
       }
-      if (paired) {
-        svg += profitBar(point, point.value, cx - barW - 1.5, barW, "#EBC2A6", point.tip, point.partial);
-        svg += profitBar(point, point.covered, cx + 1.5, barW, "#69465F", point.coveredTip, false);
-        return;
-      }
-      var fill = point.kind === "remainder" ? "#EBC2A6" : "#69465F";
-      svg += profitBar(point, point.value, cx - barW / 2, barW, fill, point.tip, point.partial);
+      var fill = point.kop < 0 ? "#8E3D32" : "#69465F";
+      svg += profitBar(point, point.value, cx - barW / 2, barW, fill, point.tip, false);
     });
-    if (paired) {
-      svg += "</svg><div class='legend'><span><i class='swatch' style='background:#EBC2A6'></i>Предварительный результат до недостающих затрат</span><span><i class='swatch' style='background:#69465F'></i>Прибыль рассчитанной части, в подсказке охват</span><span><i class='swatch' style='background:#8C5E4A'></i>Штриховка — неполный месяц</span><span>Прочерк — месяца в сумме нет</span></div>";
-      svg += "<p class='muted'>Накопленный ряд складывает каждый выбранный месяц, у которого есть расчёт. Это не сумма только полных месяцев. Пока себестоимость покрывает не всю выручку, подпись ряда — «Предварительный результат до недостающих затрат». Второй ряд — прибыль рассчитанной части, охват написан в подсказке. Пропущенный месяц остаётся прочерком и нулём не заменён.</p></div>";
-    } else {
-      svg += "</svg><div class='legend'><span><i class='swatch' style='background:#69465F'></i>Себестоимость оценена по всей выручке месяца</span><span><i class='swatch' style='background:#EBC2A6'></i>Предварительный результат: часть себестоимости не заполнена</span><span><i class='swatch' style='background:#8C5E4A'></i>Штриховка — неполный месяц</span></div>";
-      svg += "<p class='muted'>Высота столбика совпадает с крупной суммой карточки. Отрицательный результат ниже нуля. Звёздочка и штриховка — неполный месяц. Светлый столбик — предварительный результат до недостающих затрат.</p></div>";
-    }
+    svg += "</svg><div class='legend'><span><i class='swatch' style='background:#69465F'></i>Расчётная чистая прибыль</span><span><i class='swatch' style='background:#8C5E4A'></i>Прочерк — расчёт не завершён или отчёта нет</span></div>";
+    svg += "<p class='muted'>Высота столбика совпадает с крупной суммой карточки. Незавершённый месяц столбиком не рисуется и нулём не заменяется. Накопленный ряд складывает только месяцы с рассчитанной чистой прибылью.</p></div>";
     return svg;
   }
 
@@ -1769,162 +1728,121 @@
     return profitFact(label, esc(value), "", esc(note));
   }
 
-  function profitCard(row) {
-    var view = row.view;
-    if (view && view.costPolicy) return letuReportProfitCard(row);
-    if (!view || view.status === "future" || view.resultKop == null) {
-      var why = view && view.status === "future" ? "Период ещё не наступил. Нулевая прибыль не поставлена." : "Отчёта для расчёта нет. Ноль не подставлен.";
-      return "<article class='unit-product profit-card' id='profit-month-" + esc(row.month) + "'><h3>" + esc(monthTitle(row.month)) + "</h3><p>" + esc(why) + "</p></article>";
+  function articleWord(count) {
+    var n10 = count % 10;
+    var n100 = count % 100;
+    if (n10 === 1 && n100 !== 11) return "артикул";
+    if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return "артикула";
+    return "артикулов";
+  }
+
+  function profitPeriod(row, view) {
+    if (row.month === "2026-11" && view && view.partial) return "1–15 ноября, неполный месяц";
+    var start = (view && view.financeStart) || row.start;
+    var end = (view && view.financeEnd) || row.end;
+    if (!start || !end) return "";
+    var text = dayText(start) + "–" + dayText(end);
+    if (view && view.partial) text += ", неполный месяц";
+    return text;
+  }
+
+  function profitGaps(row, net) {
+    var view = row.view || {};
+    var items = [];
+    var missing = view.missingArticles || [];
+    if (net.gaps.indexOf("purchase") >= 0) {
+      if (missing.length === 1) {
+        var item = missing[0];
+        items.push("Нет закупочной цены: " + item.article + (item.name ? ", " + item.name : "") + ", " + qty(item.qty) + " шт.");
+      } else items.push("Нет закупочной цены у " + missing.length + " " + articleWord(missing.length) + ".");
     }
-    var marginBase = view.resultKind === "preliminary" ? view.revenueKop : view.coveredRevenueKop;
-    var marginPart = view.resultKind === "preliminary" ? view.resultKop : view.coveredResultKop;
-    var marginName = view.resultKind === "preliminary" ? "Рентабельность" : "Рентабельность рассчитанной части";
-    var tagClass = view.partial ? "partial" : (view.resultKind === "remainder" ? "preliminary" : "month_file");
-    var unknownPack = view.missingPositiveQty || 0;
-    var chain = [
-      profitFact("Реализованные продажи", esc(money(view.turnoverKop)) + " · " + esc(qty(view.turnoverQty)) + " шт."),
-      profitFact("Возвраты", esc(money(view.returnsKop)) + " · " + esc(qty(view.returnsQty)) + " шт."),
-      profitFact("Выручка после возвратов", esc(money(view.revenueKop)), " class='unit-subtotal'"),
-      profitFact("Закупочная себестоимость проданных товаров", esc(money(view.purchaseKop)), "", "Оценка по заполненной карточке артикула"),
-      costLine("Международная доставка", view.freightKop, view.freightChargedQty || 0, view.freightExcludedQty || 0, unknownPack),
-      profitFact("Себестоимость получения товара", esc(money(view.goodsKop)), " class='unit-subtotal'", "Уже включено в другой расход: закупка и международная доставка. Второй раз не вычитаются."),
-      costLine("Этикетка на товар", view.labelKop, view.labelQty || 0, 0, unknownPack + (view.labelUnknownQty || 0)),
-      costLine("Этикетка на коробку", view.boxLabelKop, view.boxLabelQty || 0, view.boxLabelExcludedQty || 0, unknownPack + (view.boxLabelUnknownQty || 0)),
-      costLine("Коробочка", view.boxKop, view.boxQty || 0, view.boxExcludedQty || 0, unknownPack + (view.boxUnknownQty || 0)),
-      costLine("Работа упаковщика", view.packerKop, view.packerQty || 0, 0, unknownPack + (view.packerUnknownQty || 0)),
-      profitFact("Упаковочная плёнка", esc(money(view.filmKop)), "", qty(view.filmQty) + " шт. × 5 ₽ · " + (view.filmStatus || "Оценка") + ". В прочие материалы повторно не входит."),
-      stateLine("Другие расходные материалы", "Сумма неизвестна", "Плёнка уже включена в строку выше. Отдельная сумма прочих материалов неизвестна, ноль не поставлен."),
-      profitFact("Подготовка и упаковка", esc(money(view.prepKop + view.filmKop)), " class='unit-subtotal'", "Уже включено: этикетки, коробка, упаковщик и плёнка. Плёнка второй раз не вычитается."),
-      profitFact("Фактическая комиссия Л’Этуаль", esc(money(view.commissionKop))),
-      stateLine("Поездки на склад Л’Этуаль", "Сумма неизвестна", "Дата, площадка и расходы поездки в документах не найдены. Ноль не поставлен. Бензин внутри оплаты курьера повторно не прибавляется."),
-      stateLine("Логистика", "Сумма неизвестна", "Ноль не поставлен."),
-      stateLine("Хранение", "Сумма неизвестна", "Ноль не поставлен."),
-      stateLine("Обработка возвратов", "Сумма неизвестна", "Ноль не поставлен."),
-      stateLine("Декларации соответствия", "Не распределено", "Стоимость известна, срок и бренды — нет. Месячная доля в прибыль не начислена. Оплата в эту строку не входит."),
-      profitFact("Реклама", esc(money(view.adsKop)), "", "Подтверждено отчётом. Это не неизвестная сумма."),
-      stateLine("Общие расходы", "Сумма неизвестна", "По кабинету не заданы. Ноль не поставлен."),
-      profitFact("Расчётный налог", esc(money(view.taxKop)), "", "Оценка. 7% от выручки после возвратов, до комиссии."),
-      profitFact(resultLabel(view), esc(money(view.resultKop)), " class='unit-subtotal'"),
-    ].join("");
-    var afterGoods = view.revenueKop - view.goodsKop;
-    var afterPrep = afterGoods - view.prepKop - view.filmKop;
-    var afterFee = afterPrep - view.commissionKop - view.adsKop;
-    var steps = [
-      profitFact("После известной себестоимости получения", esc(money(afterGoods))),
-      profitFact("После подготовки и плёнки", esc(money(afterPrep))),
-      profitFact("После комиссии и рекламы", esc(money(afterFee))),
-      profitFact("После расчётного налога", esc(money(view.resultKop)), " class='unit-subtotal'"),
-    ].join("");
-    var commissionRows = (view.commissionRows || []).map(function (item) {
-      return "<div class='profit-sku'><b>" + esc(item.article) + "</b><span>" + esc(item.name || "") + "</span><span>База " + esc(money(item.baseKop)) + "</span><span>Ставка " + esc(item.rateLabel) + "</span><span>Вознаграждение " + esc(money(item.commissionKop)) + "</span><span>Скидка исполнителя " + esc(money(item.discountKop)) + "</span><span>В расчёте " + esc(money(item.withheldKop)) + "</span></div>";
-    }).join("");
+    if (net.gaps.indexOf("trips") >= 0) items.push(view.partial ? "Число поставок на склад за этот период неизвестно." : "Число поставок на склад Л’Этуаль неизвестно.");
+    if (net.gaps.indexOf("declaration") >= 0) items.push("Доля деклараций за период не определена.");
+    if (net.gaps.indexOf("commission") >= 0) items.push("Комиссия отчёта не сверена.");
+    if (net.gaps.indexOf("components") >= 0) items.push("Не хватает компонента формулы.");
+    if (net.gaps.indexOf("formula") >= 0) items.push("Сверка формулы с сохранённым расчётом не сошлась.");
+    return items;
+  }
+
+  function ledgerLine(label, value, note) {
+    return "<div><dt>" + esc(label) + "</dt><dd>" + esc(value) + "</dd>" + (note ? "<p class='profit-note'>" + esc(note) + "</p>" : "") + "</div>";
+  }
+
+  function profitLedger(row, net) {
+    var view = row.view;
+    var tripNote = view.courierKop == null
+      ? "Оценка 3 000 ₽ за физическую поставку. Число рейсов не подтверждено, ноль не поставлен."
+      : qty(view.deliveryCount) + " × 3 000 ₽. Управленческая оценка, не подтверждённая оплата водителю. " + (view.deliveryStatus || "");
+    var lines = [
+      ledgerLine("Выручка после возвратов", money(view.revenueKop), "Реализация " + money(view.turnoverKop) + ", возвраты " + money(view.returnsKop) + ". Это не «к оплате» и не поступление на счёт."),
+      ledgerLine("Закупочная себестоимость", money(view.purchaseKop), net.gaps.indexOf("purchase") >= 0 ? "Известная часть по карточкам. Товары без цены в эту сумму не вошли и нулём не заменены." : "Оценка по сохранённым карточкам SKU, не документ партии. Возврат уменьшает списание товара."),
+      ledgerLine("Доставка до Москвы", money(view.freightKop), "Доля из карточки товара. Если в карточке доставка не применяется, повторно она не вычитается. Это не рейс на склад Л’Этуаль."),
+      ledgerLine("Комиссия", money(view.commissionKop), "Фактическое удержание отчёта: вознаграждение минус скидка исполнителя. Скидка второй раз не вычитается. " + (view.source || "")),
+      ledgerLine("Налог", money(view.taxKop), "Управленческая ставка 7% от выручки после возвратов до комиссии. Режим и итоговая обязанность документами не подтверждены."),
+      ledgerLine("Наклейка", money(view.labelKop), qty(view.labelQty) + " шт. × 6 ₽. Возврат уже наклеенную этикетку не восстанавливает."),
+      ledgerLine("Коробка, наклейка на коробку, плёнка и упаковщик", "Не применяется", "Уточнённая модель поставки Л’Этуаль. Прежний комплект подготовки в эту сумму не входит."),
+      ledgerLine("Доставка партий на склад", view.courierKop == null ? "Сумма неизвестна" : money(view.courierKop), tripNote),
+      ledgerLine("Декларации", net.declarationKop == null ? "Сумма неизвестна" : money(net.declarationKop), "Две декларации ИП по 23 000 ₽, срок 5 лет, доля 1/60. Полная оплата повторно не списывается. Декларации ООО не входят."),
+      ledgerLine("Маркетинг", money(view.adsKop), "По отчёту исполнителя."),
+      ledgerLine("Другие подтверждённые расходы магазина", "Нет в журнале", "Дополнительных статей ИП по Л’Этуаль, кроме доставки партий и деклараций, в журнале нет.")
+    ];
+    if (net.state === "settled") lines.push(ledgerLine("Чистая прибыль", money(net.amountKop), net.amountKop < 0 ? "Убыток." : "Все статьи формулы за этот период определены. Закупка, налог, рейс и декларации остаются оценками."));
+    else if (net.remainderKop != null) lines.push(ledgerLine("Результат до неуточнённых расходов", money(net.remainderKop), "Это не чистая прибыль: неизвестные статьи ещё не вычтены. Выручка товаров без закупочной цены в остатке остаётся."));
     var missing = (view.missingArticles || []).map(function (item) {
       return "<li>" + esc(item.article) + (item.name ? " · " + esc(item.name) : "") + " · " + esc(qty(item.qty)) + " шт. · выручка " + esc(money(item.revenueKop)) + "</li>";
     }).join("");
-    var unconfirmed = (view.unconfirmed || []).map(function (item) {
-      var amount = item.rubKop == null ? "сумма лишних штук в аналитике отдельно не выделена" : money(item.rubKop);
-      return "<li>" + esc(item.article) + (item.name ? " · " + esc(item.name) : "") + " · " + esc(qty(item.qty)) + " шт. · " + esc(amount) + " · " + esc(item.note) + "</li>";
-    }).join("");
-    var disputed = (view.disputed || []).map(function (item) {
-      return "<li>" + esc(item.article) + (item.name ? " · " + esc(item.name) : "") + " · " + esc(qty(item.qty)) + " шт. · выручка " + esc(money(item.revenueKop)) + " · оценка карточки " + esc(money(item.refusedKop)) + " не вычтена. " + esc(item.reason) + "</li>";
-    }).join("");
-    var notes = (view.notes || []).map(function (note) { return "<li>" + esc(note) + "</li>"; }).join("");
-    var coveredLine = "<p class='unit-notice'>Охват выручки товарами с заполненной себестоимостью: " + esc(percentOf(view.filledRevenueKop, view.revenueKop)) + ". Документально подтверждённая себестоимость: 0%."
-      + (view.resultKind === "remainder" ? " Прибыль рассчитанной части: " + esc(money(view.coveredResultKop)) + "." : "")
-      + "</p><p class='unit-notice'>Полнота учтённых расходов: неполная. Логистика, хранение, обработка возвратов, другие материалы и общие расходы не заданы."
-      + (view.freightExcludedQty ? " Без международной доставки: " + esc(qty(view.freightExcludedQty)) + " шт. на " + esc(money(view.freightGapRevenueKop)) + ". Ноль за эту доставку не поставлен." : "")
-      + "</p>";
-    var limits = "Охват себестоимости " + percentOf(view.filledRevenueKop, view.revenueKop) + ". Расходы учтены не полностью.";
-    if (view.freightExcludedQty) limits += " Без международной доставки: " + qty(view.freightExcludedQty) + " шт. на " + money(view.freightGapRevenueKop) + ".";
-    if (view.disputedRefusedKop) limits += " Спорная себестоимость не вычтена: " + money(view.disputedRefusedKop) + ".";
-    var cashLine = view.declarationCashKop == null ? "" : "<p class='profit-cash'>Движение денег: оплата деклараций " + esc(money(view.declarationCashKop)) + ". В результат месяца не входит.</p>";
-    return "<article class='unit-product profit-card' id='profit-month-" + esc(row.month) + "' data-result-kop='" + view.resultKop + "'><div class='unit-product-head'><span class='unit-brand-label'>" + esc(monthTitle(row.month)) + "</span><span class='tag " + tagClass + "'>" + esc(view.status) + "</span></div><div class='unit-metrics'><div><span>Оборот</span><strong>" + esc(money(view.turnoverKop)) + "</strong><small>" + esc(qty(view.turnoverQty)) + " шт. до возвратов</small></div><div><span>Выручка после возвратов</span><strong>" + esc(money(view.revenueKop)) + "</strong><small>Возвраты " + esc(money(view.returnsKop)) + "</small></div><div><span>Учтённые затраты</span><strong>" + esc(money(view.accountedKop)) + "</strong></div><div class='unit-result'><span>" + esc(resultLabel(view)) + "</span><strong>" + esc(money(view.resultKop)) + "</strong><small>" + esc(marginName) + " " + esc(percentOf(marginPart, marginBase)) + "</small></div></div><p class='profit-limits'>" + esc(limits) + "</p>" + cashLine + businessMonthBox(row.month, view.resultKop) + "<details class='unit-breakdown'><summary class='profit-reveal'><span class='when-closed'>Раскрыть расходы</span><span class='when-open'>Скрыть расходы</span></summary>"
-      + coveredLine
-      + "<h4>От выручки к результату</h4><dl class='unit-facts'>" + chain + "</dl>"
-      + "<h4>Промежуточные итоги</h4><p class='muted'>Компоненты себестоимости и упаковки уже внутри промежуточных итогов и второй раз не вычитаются.</p><dl class='unit-facts'>" + steps + "</dl>"
-      + "<h4>Комиссия по товарам</h4><p class='muted'>Источник: " + esc(view.source) + ", " + esc(dayText(view.financeStart)) + "–" + esc(dayText(view.financeEnd)) + ". В расчёт взято удержание, оно сходится с итогом отчёта. Скидка второй раз не вычитается. Ставка только проверяет строку.</p><div class='profit-skus'>" + commissionRows + "</div>"
-      + "<h4>Сверка комиссии</h4><dl class='unit-facts'>"
-      + profitFact("Комиссия по отчёту", esc(money(view.commissionReportKop)))
-      + profitFact("Комиссия в расчёте прибыли", esc(money(view.commissionKop)))
-      + profitFact("Расхождение", esc(money(view.commissionGapKop)))
-      + profitFact("Операции без подтверждения", esc(String((view.unconfirmed || []).length)))
-      + "</dl>"
-      + (disputed ? "<h4>Спорная себестоимость</h4><ul class='unit-check-list'>" + disputed + "</ul><p class='muted'>Влияние на результат месяца: остаток выше на " + esc(money(view.disputedRefusedKop)) + ", потому что оценка карточки не списана и нулём не заменена.</p>" : "")
-      + (missing ? "<h4>Нет закупочной оценки</h4><ul class='unit-check-list'>" + missing + "</ul><p class='muted'>Поездки, декларации и прочие расходы этот список не закрывают.</p>" : "")
-      + (unconfirmed ? "<h4>Комиссия не подтверждена отчётом</h4><ul class='unit-check-list'>" + unconfirmed + "</ul>" : "<p class='muted'>Продаж аналитики без строки этого отчёта нет.</p>")
-      + "<h4>Как посчитано</h4><ul class='unit-check-list'>" + notes + "</ul></details></article>";
+    return "<dl class='unit-facts'>" + lines.join("") + "</dl>" + (missing ? "<h4>Нет закупочной цены</h4><ul class='unit-check-list'>" + missing + "</ul>" : "");
   }
 
-  function letuReportProfitCard(row) {
-    var v = row.view;
-    var facts = [
-      profitFact("Реализация", esc(money(v.turnoverKop)), "", qty(v.turnoverQty) + " шт. до возвратов"),
-      profitFact("Возвраты", esc(money(v.returnsKop)), "", qty(v.returnsQty) + " шт."),
-      profitFact("Выручка после возвратов", esc(money(v.revenueKop)), " class='unit-subtotal'"),
-      profitFact("Закупочная себестоимость", esc(money(v.purchaseKop)), "", "По сохранённым карточкам SKU. Возвраты уменьшают списание товара."),
-      profitFact("Доставка товара до Москвы", esc(money(v.freightKop)), "", "Сохранённая доля доставки в себестоимости. Повторно не вычитается."),
-      profitFact("Одна наклейка на товар", esc(money(v.labelKop)), "", qty(v.labelQty) + " шт. × 6 ₽. Возврат не восстанавливает наклейку."),
-      profitFact("Индивидуальная коробка и наклейка на коробку", "Не применяются"),
-      profitFact("Отдельный упаковщик и плёнка", "Не применяются", "", "По уточнённой модели поставки Л’Этуаль."),
-      profitFact("Фактическая комиссия Л’Этуаль", esc(money(v.commissionKop)), "", "Вознаграждение минус скидка исполнителя."),
-      profitFact("Доставка партий на склад Л’Этуаль", esc(v.courierKop == null ? "Количество рейсов неизвестно" : money(v.courierKop)), "",
-        v.deliveryCount == null ? "Оценка 3 000 ₽ за партию. Сумма не подставлена до уточнения числа поставок."
-        : qty(v.deliveryCount) + " рейс. × 3 000 ₽ · " + esc(v.deliveryStatus)),
-      profitFact("Декларации ИП за период", esc(v.declarationKop == null ? "Доля пока не распределена" : money(v.declarationKop)), "",
-        v.declarationKop == null ? "Стоимость двух деклараций сохранена: 46 000 ₽. Для доли за период нужен срок действия. Неизвестная доля не равна нулю."
-        : "Расчётная доля: стоимость / 60 месяцев; неполный месяц — пропорционально дням отчёта. Срок 5 лет подтверждён, точные даты регистрации не указаны. Оплата повторно не списывается."),
-      profitFact("Маркетинговые услуги", esc(money(v.adsKop)), "", "По отчёту исполнителя."),
-      profitFact("Расчётный налог", esc(money(v.taxKop)), "", Math.round(v.taxRate * 100) + "% от выручки после возвратов до комиссии. Прежняя управленческая модель ИП."),
-      profitFact("Всего учтено расходов", esc(money(v.accountedKop)), " class='unit-subtotal'"),
-      profitFact(resultLabel(v), esc(money(v.resultKop)), " class='unit-subtotal'")
-    ].join("");
-    var gaps = (v.pendingExpenses || []).map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("");
-    var costs = v.costRows.map(function (s) {
-      return "<tr><td>" + esc(s.article) + "</td><td class='num'>" + qty(s.saleQty) + " / " + qty(s.returnQty)
-        + "</td><td class='num'>" + esc(money(s.unitPurchaseKop)) + "</td><td class='num'>" + esc(money(s.unitFreightKop))
-        + "</td><td class='num'>" + esc(money(s.purchaseKop == null || s.freightKop == null ? null : s.purchaseKop + s.freightKop)) + "</td></tr>";
-    }).join("");
-    var commissions = v.commissionRows.map(function (s) {
-      return "<tr><td>" + esc(s.article) + "</td><td class='num'>" + esc(s.rateLabel)
-        + "</td><td class='num'>" + esc(money(s.commissionKop)) + "</td><td class='num'>" + esc(money(s.discountKop))
-        + "</td><td class='num'>" + esc(money(s.withheldKop)) + "</td></tr>";
-    }).join("");
-    return "<article class='unit-product profit-card' id='profit-month-" + esc(row.month) + "' data-result-kop='" + v.resultKop + "'>"
-      + "<div class='unit-product-head'><h3>" + esc(monthTitle(row.month)) + "</h3><span class='tag " + (v.partial ? "partial" : "month_file") + "'>" + esc(v.status) + "</span></div>"
-      + "<p>Финансовый период: " + esc(dayText(v.financeStart)) + "–" + esc(dayText(v.financeEnd)) + ".</p>"
-      + "<div class='unit-metrics'><div><span>Выручка после возвратов</span><strong>" + esc(money(v.revenueKop)) + "</strong></div>"
-      + "<div><span>Учтённые расходы</span><strong>" + esc(money(v.accountedKop)) + "</strong></div>"
-      + "<div class='unit-result'><span>" + esc(resultLabel(v)) + "</span><strong>" + esc(money(v.resultKop)) + "</strong></div></div>"
-      + (gaps ? "<p class='profit-limits'>Расчёт предварительный. Осталось уточнить:</p><ul class='unit-check-list'>" + gaps + "</ul>" : "<p>Все статьи выбранной модели расходов учтены. Себестоимость и налог остаются расчётными оценками.</p>")
-      + "<details class='unit-breakdown'><summary class='profit-reveal'>Раскрыть расходы и сверку</summary><dl class='unit-facts'>" + facts + "</dl>"
-      + "<h4>Себестоимость по товарам</h4><div class='table-wrap'><table><thead><tr><th>Артикул</th><th>Продано / возврат</th><th>Закупка за шт.</th><th>Доставка за шт.</th><th>Списано с доставкой</th></tr></thead><tbody>" + costs + "</tbody></table></div>"
-      + "<h4>Комиссия по отчёту</h4><div class='table-wrap'><table><thead><tr><th>Артикул</th><th>Ставка</th><th>Вознаграждение</th><th>Скидка площадки</th><th>Удержано</th></tr></thead><tbody>" + commissions + "</tbody></table></div>"
-      + "<p>Расхождение комиссии с итогом отчёта: " + esc(money(v.commissionGapKop)) + ".</p>"
-      + "<ul class='unit-check-list'>" + v.notes.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ul></details></article>";
+  function profitCard(row) {
+    var net = window.LetuFinance.verdict(row);
+    var view = row.view;
+    if (net.state === "future") {
+      return "<article class='unit-product profit-card net-card' id='profit-month-" + esc(row.month) + "' data-profit-state='future'><h3>" + esc(monthTitle(row.month)) + "</h3><p class='net-kicker'>ЧИСТАЯ ПРИБЫЛЬ</p><p class='net-amount is-open'>Отчёта нет</p><p class='net-status'>Период без отчёта. Нулевая прибыль не поставлена.</p></article>";
+    }
+    var gaps = profitGaps(row, net);
+    var loss = net.state === "settled" && net.amountKop < 0;
+    var hero = net.state === "settled"
+      ? "<p class='net-amount" + (loss ? " is-loss" : "") + "'>" + esc(money(net.amountKop)) + "</p><p class='net-status'>" + (loss ? "Убыток. " : "") + "Расчётная чистая прибыль</p><p class='net-margin'>Рентабельность " + esc(percentOf(net.amountKop, view.revenueKop)) + "</p><p class='net-assume'>Оценки: закупочные карточки, налог 7%, доставка партии 3 000 ₽, декларации 1/60, наклейка 6 ₽. Налоговый режим документами не подтверждён.</p>"
+      : "<p class='net-amount is-open'>Расчёт не завершён</p><ul class='net-missing'>" + gaps.map(function (item) { return "<li>" + esc(item) + "</li>"; }).join("") + "</ul>";
+    return "<article class='unit-product profit-card net-card" + (loss ? " is-loss" : "") + "' id='profit-month-" + esc(row.month) + "' data-profit-state='" + net.state + "'" + (net.state === "settled" ? " data-result-kop='" + net.amountKop + "'" : "") + "><h3>" + esc(monthTitle(row.month)) + "</h3><p class='net-period'>" + esc(profitPeriod(row, view)) + "</p><p class='net-kicker'>ЧИСТАЯ ПРИБЫЛЬ</p>" + hero + "<details class='unit-breakdown'><summary>Как рассчитано</summary>" + profitLedger(row, net) + "</details></article>";
   }
 
   function renderProfitPage() {
     if (!DATA.profit || !DATA.profit.months) return "<p>Расчёт прибыли не собран.</p>";
     var bounds = profitBounds();
     var rows = profitSelection(bounds);
-    var ready = rows.filter(function (row) { return row.view && row.view.resultKop != null; });
-    var future = rows.filter(function (row) { return row.view && row.view.status === "future"; });
-    var preset = profitPreset(bounds);
-    var turnover = viewSum(ready, "turnoverKop");
-    var returns = viewSum(ready, "returnsKop");
-    var revenue = viewSum(ready, "revenueKop");
-    var accounted = viewSum(ready, "accountedKop");
-    var result = viewSum(ready, "resultKop");
-    var coveredResult = viewSum(ready, "coveredResultKop");
-    var coveredRevenue = viewSum(ready, "coveredRevenueKop");
-    var filled = viewSum(ready, "filledRevenueKop");
-    var costComplete = ready.length && filled === revenue;
-    var resultName = ready.every(function (r) { return r.view.expensesComplete; }) ? "Предварительная чистая прибыль" : "Результат по учтённым расходам";
-    var marginName = costComplete ? "Рентабельность" : "Рентабельность рассчитанной части";
-    var marginPart = costComplete ? result : coveredResult;
-    var marginBase = costComplete ? revenue : coveredRevenue;
-    var loss = result != null && result < 0;
-    var cov = DATA.profit.coverage || {};
+    var reported = [];
+    var settled = [];
+    var open = [];
+    rows.forEach(function (row) {
+      var net = window.LetuFinance.verdict(row);
+      if (net.state === "future") return;
+      reported.push(row);
+      if (net.state === "settled") settled.push({row: row, net: net});
+      else open.push(row);
+    });
+    var sum = settled.reduce(function (acc, item) { return acc + item.net.amountKop; }, 0);
+    var loss = settled.length > 0 && sum < 0;
+    var openNames = open.map(function (row) { return row.month === "2026-11" ? "1–15 ноября" : monthTitle(row.month); }).join(", ");
+    var bannerName;
+    var bannerAmount = "";
+    var bannerMeta;
+    if (!reported.length) {
+      bannerName = "Чистая прибыль не рассчитана";
+      bannerMeta = "В выбранных датах нет месяца с отчётом. Нулевая сумма не поставлена.";
+    } else if (!settled.length) {
+      bannerName = "Чистая прибыль не рассчитана";
+      bannerMeta = "Рассчитано за 0 из " + reported.length + " месяцев. Не завершены: " + openNames + ".";
+    } else if (open.length) {
+      bannerName = "Чистая прибыль рассчитана за " + settled.length + " из " + reported.length + " месяцев";
+      bannerAmount = "<p class='profit-banner-amount'>" + esc(money(sum)) + "</p>";
+      bannerMeta = "Сумма за рассчитанные месяцы — " + money(sum) + ". Не завершены: " + openNames + ".";
+    } else {
+      bannerName = loss ? "Убыток" : "Расчётная чистая прибыль";
+      bannerAmount = "<p class='profit-banner-amount'>" + esc(money(sum)) + "</p>";
+      bannerMeta = "Сумма за рассчитанные месяцы — " + money(sum) + ".";
+    }
     var months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
     function options(selected) {
       return months.map(function (mon) {
@@ -1932,91 +1850,26 @@
         return "<option value='" + value + "'" + (value === selected ? " selected" : "") + ">" + esc(MONTH_NAME[mon]) + " 2026</option>";
       }).join("");
     }
+    var preset = profitPreset(bounds);
     var button = function (id, text) {
       return "<button type='button' data-profit-preset='" + id + "'" + (preset === id ? "" : " class='secondary'") + ">" + esc(text) + "</button>";
     };
-    var coverage = "Продажи в аналитике загружены по " + dayText(cov.salesThrough) + ". Полные финансовые отчёты — по " + dayText(cov.financeFullThrough) + ". Последний финансовый отчёт — по " + dayText(cov.financeThrough) + ". Дата обновления сайта не продлевает период отчётов.";
-    function monthLastDay(month) {
-      var year = Number(month.slice(0, 4));
-      var mon = Number(month.slice(5));
-      var day = new Date(Date.UTC(year, mon, 0)).getUTCDate();
-      return month + "-" + (day < 10 ? "0" : "") + day;
-    }
-    var partials = ready.filter(function (row) { return row.view.partial; });
-    var dateLine = dayText(bounds.from + "-01") + "–" + dayText(monthLastDay(bounds.to));
-    if (partials.length) {
-      dateLine += ". " + partials.map(function (row) {
-        return monthTitle(row.month) + " в расчёте по отчёту " + dayText(row.view.financeStart) + "–" + dayText(row.view.financeEnd);
-      }).join(". ");
-    }
-    var bannerMeta = dateLine + (result == null ? ". Нулевая сумма не поставлена." : ". Сумма карточек выбранных месяцев. Известные расходы включены в карточки, неизвестные перечислены отдельно.");
-    var bannerCover = result == null || costComplete ? "" : "<span class='profit-banner-cover'>Охват расчёта " + esc(percentOf(filled, revenue)) + "</span>";
-    var banner = "<div class='profit-banner" + (loss ? " is-loss" : "") + "' id='profit-banner' data-result-kop='" + (result == null ? "" : String(result)) + "'>"
+    var cov = DATA.profit.coverage || {};
+    var coverage = "Продажи в аналитике загружены по " + dayText(cov.salesThrough) + ". Полные финансовые отчёты — по " + dayText(cov.financeFullThrough) + ". Последний финансовый отчёт — по " + dayText(cov.financeThrough) + ".";
+    var banner = "<div class='profit-banner" + (loss ? " is-loss" : "") + "' id='profit-banner' data-profit-state='" + (settled.length ? "settled" : "open") + "' data-result-kop='" + (settled.length ? String(sum) : "") + "'>"
       + (loss ? "<p class='profit-banner-flag'>Убыток</p>" : "")
-      + "<p class='profit-banner-name'>" + esc(result == null ? "Нет расчёта" : resultName) + bannerCover + "</p>"
-      + (result == null ? "" : "<p class='profit-banner-amount'>" + esc(money(result)) + "</p>")
+      + "<p class='profit-banner-name'>" + esc(bannerName) + "</p>"
+      + bannerAmount
       + "<p class='profit-banner-meta'>" + esc(bannerMeta) + "</p></div>";
-    var cards = [
-      "<div><span>Оборот</span><strong>" + esc(money(turnover)) + "</strong><small>Реализованные продажи до вычета возвратов. Заказы сюда не входят.</small></div>",
-      "<div><span>Возвраты</span><strong>" + esc(money(returns)) + "</strong><small>Как в отчётах. Минус уменьшает оборот.</small></div>",
-      "<div><span>Выручка после возвратов</span><strong>" + esc(money(revenue)) + "</strong><small>Оборот плюс возвраты. Это не «к оплате» и не деньги на счёте.</small></div>",
-      "<div><span>Учтённые затраты</span><strong>" + esc(money(accounted)) + "</strong><small>Только известные и явно оценённые суммы. Пустая себестоимость нулём не вошла. Поездки и декларации включены только там, где сумма за период определена.</small></div>",
-      "<div><span>" + esc(marginName) + "</span><strong>" + esc(percentOf(marginPart, marginBase)) + "</strong><small>" + (costComplete ? "Результат разделить на выручку после возвратов. Расходы всё равно учтены не полностью." : "Прибыль рассчитанной части " + money(coveredResult) + " к её выручке " + money(coveredRevenue) + ". Охват " + percentOf(filled, revenue) + ". Доля результата в выручке " + percentOf(result, revenue) + ".") + "</small></div>",
-    ].join("");
-    var check = ready.map(function (row) {
-      var view = row.view;
-      var pending = (view.unconfirmed || []).length;
-      return "<div class='profit-check-row'><b>" + esc(monthTitle(row.month)) + "</b><span>По отчёту " + esc(money(view.commissionReportKop)) + "</span><span>В расчёте " + esc(money(view.commissionKop)) + "</span><span>Расхождение " + esc(money(view.commissionGapKop)) + "</span><span>Без подтверждения: " + esc(String(pending)) + "</span></div>";
-    }).join("");
-    var futureNote = future.length ? "<p class='muted'>" + esc(future.map(function (row) { return monthTitle(row.month); }).join(", ")) + ": период ещё не наступил. Нулевая прибыль не поставлена.</p>" : "";
-    var missingMap = {};
-    ready.forEach(function (row) {
-      (row.view.missingArticles || []).forEach(function (item) {
-        var bucket = missingMap[item.article] || { article: item.article, name: item.name || "", qty: 0, revenueKop: 0 };
-        bucket.qty += item.qty;
-        bucket.revenueKop += item.revenueKop;
-        missingMap[item.article] = bucket;
-      });
-    });
-    var missingRows = Object.keys(missingMap).sort().map(function (key) {
-      var item = missingMap[key];
-      return "<li>" + esc(item.article) + (item.name ? " · " + esc(item.name) : "") + " · " + esc(qty(item.qty)) + " шт. · выручка " + esc(money(item.revenueKop)) + "</li>";
-    }).join("");
-    var missingBlock = "<h3>Товары без себестоимости</h3><p class='muted'>Список за выбранные месяцы. Поездки, декларации, плёнка и прочие расходы этот пробел не закрывают.</p>"
-      + (missingRows ? "<ul class='unit-check-list'>" + missingRows + "</ul>" : "<p>В выбранных месяцах таких товаров нет.</p>");
-    var registers = DATA.profit.registers || {};
-    var tripRows = (registers.trips || []).filter(function (trip) {
-      var month = String(trip.date || "").slice(0, 7);
-      return month >= bounds.from && month <= bounds.to;
-    }).map(function (trip) {
-      var fuel = trip.fuelIncludedInCourier ? "Уже включено в оплату курьера" : (trip.fuelKop == null ? "Сумма неизвестна" : money(trip.fuelKop));
-      var status = trip.status === "actual" ? "Фактический расход" : "Оценка";
-      return "<div class='profit-sku'><b>" + esc(trip.date ? dayText(trip.date) : "Дата не указана") + "</b><span>Площадка: " + esc(trip.site || "Нет в документах") + "</span><span>Оплата курьера: " + esc(trip.courierKop == null ? "Сумма неизвестна" : money(trip.courierKop)) + "</span><span>Бензин: " + esc(fuel) + "</span><span>Прочие прямые: " + esc(trip.otherKop == null ? "Сумма неизвестна" : money(trip.otherKop)) + "</span><span>Итог: " + esc(trip.totalKop == null ? "Сумма неизвестна" : money(trip.totalKop)) + "</span><span>" + esc(status) + "</span></div>";
-    }).join("");
-    var tripsBlock = "<h3>Поездки на склад Л’Этуаль</h3><p class='muted'>" + esc(registers.tripRule || "Поездка относится к месяцу выполнения. Бензин внутри оплаты курьера повторно не прибавляется.") + "</p>"
-      + (tripRows || "<p class='profit-limits'>Документов о поездках нет. Сумма неизвестна, ноль не поставлен и в прибыль не входит.</p><div class='profit-sku'><span>Дата: нет в документах</span><span>Площадка назначения: нет в документах</span><span>Оплата курьера: сумма неизвестна</span><span>Бензин: сумма неизвестна</span><span>Прочие прямые расходы: сумма неизвестна</span><span>Итог: сумма неизвестна</span><span>Статус: не заполнен</span></div>");
-    var declarationRows = (registers.declarations || []).filter(function (item) { return item.entity === "ip"; }).map(function (item) {
-      return "<div class='profit-sku'><b>" + esc(item.paidLabel || "Декларация") + "</b><span>Номер: " + esc(item.number || "Нет в документах") + "</span><span>Стоимость: " + esc(money(item.costKop)) + "</span><span>Дата оплаты: " + esc(item.paidOn ? dayText(item.paidOn) : "Нет в документах") + "</span><span>Начало действия: " + esc(item.validFrom ? dayText(item.validFrom) : "Нет в документах") + "</span><span>Окончание действия: " + esc(item.validTo ? dayText(item.validTo) : "Нет в документах") + "</span><span>Юрлицо: " + esc(item.entity === "ip" ? "ИП" : item.entity === "ooo" ? "ООО" : "Нужно уточнить") + "</span><span>Товары и бренды: " + esc(item.coverageLabel || "Нет в документах") + "</span><span>В прибыли: " + esc(item.profitState === "monthly-estimate" ? "Месячная доля 1/60, срок 5 лет подтверждён" : "Не распределено") + "</span></div>";
-    }).join("");
-    var declarationsBlock = "<h3>Декларации</h3><p class='muted'>" + esc(registers.declarationMethod || "") + "</p>"
-      + "<p class='muted'>Здесь декларации ИП для Л’Этуаль. Декларации ООО отражены отдельно в расходах ООО.</p>"
-      + "<div class='profit-skus'>" + declarationRows + "</div>";
-    return "<section id='profit'><div class='unit-heading'><h2>Прибыль</h2><span class='unit-date'>Л’Этуаль · 2026</span></div>"
-      + "<div class='unit-intro'><strong>Это помесячный расчёт по отчётам исполнителя.</strong> Комиссия каждого месяца взята из его отчёта. С октября модель Л’Этуаль включает одну наклейку, себестоимость, расчётный налог и доставку партий; коробка, плёнка и отдельный упаковщик не применяются. Неуточнённые затраты перечислены в карточках. Закупка — сохранённая оценка, не подтверждённая себестоимость партии.</div>"
+    return "<section id='profit'><div class='unit-heading'><h2>Чистая прибыль</h2><span class='unit-date'>Л’Этуаль · ИП</span></div>"
+      + "<div class='unit-intro'><strong>Крупная сумма карточки — чистая прибыль месяца после всех статей формулы.</strong> Если данных не хватает, вместо суммы написано «Расчёт не завершён». Аванс, выплата и остаток «к оплате» прибыль не уменьшают.</div>"
       + "<div class='profit-presets'>" + button("year", "С начала 2026 по последний отчёт") + button("jansep", "Январь–сентябрь 2026") + "</div>"
       + "<form id='profit-custom' class='filters'><label>С месяца<select id='profit-from'>" + options(bounds.from) + "</select></label><label>По месяц<select id='profit-to'>" + options(bounds.to) + "</select></label><button type='submit'>Показать месяцы</button></form>"
       + banner
       + "<p class='muted'>" + esc(coverage) + "</p>"
-      + businessPeriodBox(bounds, result)
-      + "<div class='profit-hero'>" + cards + "</div>"
       + "<div class='profit-modes'><button type='button' data-profit-mode='month'" + (profitChartMode === "month" ? "" : " class='secondary'") + ">По месяцам</button><button type='button' data-profit-mode='cumulative'" + (profitChartMode === "cumulative" ? "" : " class='secondary'") + ">Накопленным итогом</button></div>"
       + drawProfitChart(rows, profitChartMode)
-      + "<div class='unit-products profit-months'>" + rows.map(profitCard).join("") + "</div>"
-      + futureNote
-      + missingBlock
-      + tripsBlock
-      + declarationsBlock
-      + "<h3>Сверка комиссии</h3><p class='muted'>Сумма по строкам отчёта сходится с итогом отчёта. В прибыль входит именно она. Расхождение не подгоняется. Продажа без строки отчёта не получает текущую ставку, среднюю ставку или ноль.</p><div class='profit-check'>" + check + "</div></section>";
+      + "<div class='unit-products profit-months'>" + rows.map(profitCard).join("") + "</div></section>";
   }
 
   function bindProfitPage() {

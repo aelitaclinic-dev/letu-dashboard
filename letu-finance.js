@@ -142,6 +142,36 @@
       ].concat(gaps)
     };
   }
+  function verdict(row) {
+    const view = row && row.view;
+    if (!view || row.revenueState === 'future' || view.status === 'future') {
+      return {state:'future', amountKop:null, remainderKop:null, declarationKop:null, gaps:['report'], missingCount:0};
+    }
+    const missing = view.missingArticles || [];
+    const declarationKop = view.declarationKop != null ? view.declarationKop : (view.partial ? null : 76667);
+    const gaps = [];
+    if (view.partial) gaps.push('partial');
+    if (missing.length) gaps.push('purchase');
+    if (view.courierKop == null) gaps.push('trips');
+    if (declarationKop == null) gaps.push('declaration');
+    if (view.commissionKop == null || view.commissionGapKop !== 0) gaps.push('commission');
+    if (view.revenueKop == null || view.purchaseKop == null || view.freightKop == null || view.taxKop == null || view.labelKop == null || view.adsKop == null) gaps.push('components');
+    if (gaps.indexOf('components') >= 0 || gaps.indexOf('commission') >= 0) {
+      return {state:'open', amountKop:null, remainderKop:null, declarationKop, gaps, missingCount:missing.length};
+    }
+    let costs = view.purchaseKop + view.freightKop + view.commissionKop + view.taxKop + view.labelKop + (view.adsKop || 0);
+    if (view.courierKop != null) costs += view.courierKop;
+    if (declarationKop != null) costs += declarationKop;
+    const remainderKop = view.revenueKop - costs;
+    const blocking = gaps.filter(code => code !== 'partial');
+    if (!blocking.length && !view.partial) {
+      if (view.costPolicy && view.resultKop !== remainderKop) {
+        return {state:'open', amountKop:null, remainderKop, declarationKop, gaps:gaps.concat('formula'), missingCount:missing.length};
+      }
+      return {state:'settled', amountKop:remainderKop, remainderKop, declarationKop, gaps:[], missingCount:0};
+    }
+    return {state:'open', amountKop:null, remainderKop, declarationKop, gaps, missingCount:missing.length};
+  }
   function apply(data, expenses) {
     if (!data.letuFinance) return;
     expenses = expenses || data.businessExpenses.records;
@@ -162,7 +192,7 @@
         profitState:view.expensesComplete?'preliminary':'not_calculated'});
     }
   }
-  const api = {apply, calculate, declarationShare};
+  const api = {apply, calculate, declarationShare, verdict};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else { root.LetuFinance = api; if (root.DASHBOARD) apply(root.DASHBOARD); }
 })(typeof window !== 'undefined' ? window : globalThis);

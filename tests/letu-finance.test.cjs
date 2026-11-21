@@ -72,4 +72,24 @@ assert.equal(twoTrips.profit.months.find(r=>r.month==='2026-10').view.resultKop,
 const changed=snapshot();changed.unitEconomics.groups.find(g=>g.items.some(i=>i.article==='генезисгидра80')).items.find(i=>i.article==='генезисгидра80').rubPurchase=380;
 finance.apply(changed);
 assert.equal(changed.profit.months.find(r=>r.month==='2026-10').view.resultKop,oct.resultKop-20000);
+const verdict = month => finance.verdict(data.profit.months.find(r => r.month === month));
+assert.equal(verdict('2026-10').state, 'settled');
+assert.equal(verdict('2026-10').amountKop, 1297438);
+assert.equal(verdict('2026-11').state, 'open');
+assert.equal(verdict('2026-11').amountKop, null);
+assert.equal(verdict('2026-11').remainderKop, 2156070);
+assert.deepEqual(verdict('2026-11').gaps, ['partial', 'purchase', 'trips']);
+for (const month of ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06','2026-07','2026-08','2026-09']) {
+  const row = verdict(month);
+  assert.equal(row.state, 'open', month);
+  assert.equal(row.amountKop, null, month);
+  assert.equal(row.declarationKop, 76667, month);
+  assert.ok(row.gaps.includes('trips'), month);
+}
+const may = data.profit.months.find(r => r.month === '2026-05').view;
+assert.equal(verdict('2026-05').remainderKop, may.revenueKop - may.purchaseKop - may.freightKop - may.commissionKop - may.taxKop - may.labelKop - may.adsKop - 76667);
+assert.equal(verdict('2026-05').gaps.join(','), 'trips');
+assert.ok(verdict('2026-09').gaps.includes('purchase'));
+assert.equal(verdict('2026-12').state, 'future');
+assert.equal(data.profit.months.filter(r => finance.verdict(r).state === 'settled').length, 1);
 console.log('L’Etual: report reconciliation, returns, actual commission, tax, one sticker, trip counts, declaration allocation, missing costs, privacy and unchanged prior periods passed');

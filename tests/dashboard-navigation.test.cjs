@@ -43,5 +43,32 @@ assert.match(november.nodes.screen.innerHTML, /Бизнес на одном эк
 
 const december = dashboard('2026-11-30T21:30:00Z', '#overview');
 assert.equal(december.data.months.find(r => r.month === '2026-12').movementState, 'missing');
+const profit = dashboard('2026-11-21T12:00:00Z', '#profit');
+const page = profit.nodes.screen.innerHTML;
+const banner = page.slice(page.indexOf("id='profit-banner'"), page.indexOf("id='profit-chart'"));
+assert.match(banner, /Чистая прибыль рассчитана за 1 из 11 месяцев/);
+assert.match(banner, /12 974,38 ₽/);
+assert.doesNotMatch(banner, /21 560/);
+const octoberCard = page.slice(page.indexOf("id='profit-month-2026-10'"), page.indexOf("id='profit-month-2026-11'"));
+assert.match(octoberCard, /data-profit-state='settled'/);
+assert.match(octoberCard, /ЧИСТАЯ ПРИБЫЛЬ/);
+assert.match(octoberCard, /Расчётная чистая прибыль/);
+assert.match(octoberCard, /12 974,38 ₽/);
+const novemberCard = page.slice(page.indexOf("id='profit-month-2026-11'"));
+const novemberHero = novemberCard.slice(0, novemberCard.indexOf('<details'));
+assert.match(novemberCard, /data-profit-state='open'/);
+assert.match(novemberHero, /Расчёт не завершён/);
+assert.match(novemberHero, /1–15 ноября, неполный месяц/);
+assert.match(novemberHero, /нутритив250/);
+assert.doesNotMatch(novemberHero, /21 560/);
+assert.match(novemberCard, /Результат до неуточнённых расходов[\s\S]{0,80}21 560,70 ₽/);
+assert.match(page, /id='profit-month-2026-09'[\s\S]{0,120}data-profit-state='open'/);
+assert.equal((page.match(/data-profit-month='2026-10'/g) || []).length > 0, true);
+assert.equal(page.includes("data-profit-month='2026-09'"), false);
+profit.context.location.hash = '#profit/2026-01/2026-09';
+profit.listeners.hashchange();
+const early = profit.nodes.screen.innerHTML;
+assert.match(early, /Рассчитано за 0 из 9 месяцев/);
+assert.doesNotMatch(early, /profit-banner-amount/);
 console.log('Dashboard: home and unit routes, November partial report, Moscow month rollover, and unchanged financial amounts passed');
 
