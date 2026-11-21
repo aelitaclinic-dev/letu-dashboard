@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MAAT Metrika Goals
  * Description: Цели прайса и контактов для уже установленного счётчика Яндекс Метрики 99820405. Счётчик, Site Kit, Jetpack и Вебвизор не меняет.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: MA Distribution
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -29,7 +29,7 @@ add_action('wp_enqueue_scripts', function () {
         'maat-metrika-goals',
         plugins_url('assets/goals.js', __FILE__),
         array('jquery'),
-        '1.0.0',
+        '1.0.1',
         true
     );
 
