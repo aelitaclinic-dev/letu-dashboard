@@ -1,0 +1,357 @@
+{
+  "schemaVersion": 1,
+  "sample": false,
+  "counterId": 99820405,
+  "id": "2026-11-19_2026-11-20",
+  "period": {
+    "start": "2026-11-19",
+    "end": "2026-11-20"
+  },
+  "previousPeriod": {
+    "start": "2026-11-17",
+    "end": "2026-11-18"
+  },
+  "generatedAt": "2026-11-21T16:53:38+03:00",
+  "totals": {
+    "users": 18.0,
+    "visits": 20.0,
+    "pageviews": 115.0,
+    "avgDurationSeconds": 522.45,
+    "sampled": false
+  },
+  "previousTotals": {
+    "users": 6.0,
+    "visits": 7.0,
+    "pageviews": 9.0,
+    "avgDurationSeconds": 13.85714286,
+    "sampled": false
+  },
+  "sources": [
+    {
+      "id": "yandex",
+      "label": "Яндекс",
+      "visits": 1,
+      "previous": 0
+    },
+    {
+      "id": "social",
+      "label": "Соцсети",
+      "visits": 0,
+      "previous": 0
+    },
+    {
+      "id": "referral",
+      "label": "Переходы с других сайтов",
+      "visits": 0,
+      "previous": 0
+    },
+    {
+      "id": "direct",
+      "label": "Прямые визиты",
+      "visits": 16,
+      "previous": 7
+    },
+    {
+      "id": "utm",
+      "label": "Кампании с UTM",
+      "visits": 0,
+      "previous": 0
+    },
+    {
+      "id": "other_search",
+      "label": "Другие поисковые системы",
+      "visits": 1,
+      "previous": 0
+    },
+    {
+      "id": "unknown",
+      "label": "Неизвестный источник",
+      "visits": 2,
+      "previous": 0
+    }
+  ],
+  "sourceGap": 0,
+  "entrances": [
+    {
+      "url": "https://maat-impera.ru/",
+      "visits": 8.0
+    },
+    {
+      "url": "https://maat-impera.ru/sinko-styling/",
+      "visits": 4.0
+    },
+    {
+      "url": "https://maat-impera.ru/line/brazilian-keratin/",
+      "visits": 2.0
+    },
+    {
+      "url": "https://maat-impera.ru/public-offer/",
+      "visits": 2.0
+    },
+    {
+      "url": "https://maat-impera.ru/contacs/",
+      "visits": 1.0
+    },
+    {
+      "url": "https://maat-impera.ru/personal-data-consent/",
+      "visits": 1.0
+    },
+    {
+      "url": "https://maat-impera.ru/sinko-styling/#price-form",
+      "visits": 1.0
+    },
+    {
+      "url": "https://maat-impera.ru/агентство/завалишина-анастасия/",
+      "visits": 1.0
+    }
+  ],
+  "sequences": {
+    "available": false,
+    "rows": [],
+    "reason": "Журнал просмотров Метрики недоступен, типичные последовательности не восстанавливаю."
+  },
+  "pages": [
+    {
+      "id": "home",
+      "label": "Главная",
+      "visits": 12.0,
+      "pageviews": 106.0,
+      "reachedPrice": null,
+      "reachedContacts": null,
+      "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+    },
+    {
+      "id": "catalog",
+      "label": "Каталог",
+      "visits": 6.0,
+      "pageviews": 94.0,
+      "reachedPrice": null,
+      "reachedContacts": null,
+      "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+    },
+    {
+      "id": "sinko",
+      "label": "SINKO STYLING",
+      "visits": 8.0,
+      "pageviews": 98.0,
+      "reachedPrice": null,
+      "reachedContacts": null,
+      "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+    },
+    {
+      "id": "product",
+      "label": "Карточки товаров",
+      "visits": 1.0,
+      "pageviews": 6.0,
+      "reachedPrice": null,
+      "reachedContacts": null,
+      "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+    },
+    {
+      "id": "contacts",
+      "label": "Контакты",
+      "visits": 3.0,
+      "pageviews": 83.0,
+      "reachedPrice": null,
+      "reachedContacts": null,
+      "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+    }
+  ],
+  "visitDuration": {
+    "label": "Средняя длительность визита",
+    "seconds": 522.45,
+    "previousSeconds": 13.85714286
+  },
+  "engagement": {
+    "label": "Оценка вовлечённости",
+    "note": "Секунды видимой вкладки на целевой странице. Это не длительность визита и с ней не складывается.",
+    "rows": [
+      {
+        "page": "Главная",
+        "pageviews": 106.0,
+        "seconds": {
+          "15": {
+            "reaches": 6.0,
+            "shareOfPageviews": 0.0566,
+            "error": null
+          },
+          "30": {
+            "reaches": 4.0,
+            "shareOfPageviews": 0.0377,
+            "error": null
+          },
+          "60": {
+            "reaches": 3.0,
+            "shareOfPageviews": 0.0283,
+            "error": null
+          }
+        }
+      },
+      {
+        "page": "Каталог",
+        "pageviews": 94.0,
+        "seconds": {
+          "15": {
+            "reaches": 2.0,
+            "shareOfPageviews": 0.0213,
+            "error": null
+          },
+          "30": {
+            "reaches": 2.0,
+            "shareOfPageviews": 0.0213,
+            "error": null
+          },
+          "60": {
+            "reaches": 2.0,
+            "shareOfPageviews": 0.0213,
+            "error": null
+          }
+        }
+      },
+      {
+        "page": "SINKO STYLING",
+        "pageviews": 98.0,
+        "seconds": {
+          "15": {
+            "reaches": 5.0,
+            "shareOfPageviews": 0.051,
+            "error": null
+          },
+          "30": {
+            "reaches": 3.0,
+            "shareOfPageviews": 0.0306,
+            "error": null
+          },
+          "60": {
+            "reaches": 2.0,
+            "shareOfPageviews": 0.0204,
+            "error": null
+          }
+        }
+      },
+      {
+        "page": "Карточки товаров",
+        "pageviews": 6.0,
+        "seconds": {
+          "15": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          },
+          "30": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          },
+          "60": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          }
+        }
+      },
+      {
+        "page": "Контакты",
+        "pageviews": 83.0,
+        "seconds": {
+          "15": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          },
+          "30": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          },
+          "60": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          }
+        }
+      }
+    ]
+  },
+  "funnel": {
+    "mode": "separate_goal_totals",
+    "note": "API отдал отдельные итоги целей. Долю одного итога от другого как конверсию воронки не считаю.",
+    "stages": [
+      {
+        "id": "price_block_view",
+        "label": "Увидели блок прайса",
+        "visits": 5.0,
+        "reaches": 24.0,
+        "shareOfPrevious": null,
+        "error": null
+      },
+      {
+        "id": "price_form_start",
+        "label": "Начали форму",
+        "visits": 0.0,
+        "reaches": 0.0,
+        "shareOfPrevious": null,
+        "error": null
+      },
+      {
+        "id": "price_form_success",
+        "label": "Отправили заявку",
+        "visits": 0.0,
+        "reaches": 0.0,
+        "shareOfPrevious": null,
+        "error": null
+      }
+    ],
+    "separate": [
+      {
+        "id": "price_cta_click",
+        "label": "Нажатие «Получить прайс»",
+        "visits": 0.0,
+        "reaches": 0.0,
+        "error": null,
+        "note": "До формы можно дойти скроллом, поэтому клик по кнопке не входит в воронку."
+      },
+      {
+        "id": "price_download_click",
+        "label": "Клик по скачиванию",
+        "visits": 0.0,
+        "reaches": 0.0,
+        "error": null,
+        "note": "Сайт подтверждает только клик по ссылке на файл, не саму выдачу. Это не шаг воронки заявки."
+      }
+    ]
+  },
+  "contacts": {
+    "page": {
+      "id": "contacts_view",
+      "visits": 1.0,
+      "reaches": 1.0,
+      "error": null
+    },
+    "phone": {
+      "id": "contact_phone_click",
+      "visits": 1.0,
+      "reaches": 3.0,
+      "error": null
+    },
+    "email": {
+      "id": "contact_email_click",
+      "visits": 1.0,
+      "reaches": 2.0,
+      "error": null
+    },
+    "messenger": {
+      "id": "contact_messenger_click",
+      "visits": 3.0,
+      "reaches": 8.0,
+      "error": null
+    }
+  },
+  "errors": [],
+  "apiError": null,
+  "conclusions": [
+    "Визиты: 20.0 против 7.0 за предыдущие два дня, на 13.0 больше. Трафик небольшой, рядом с любой долей смотрите абсолютное число.",
+    "Порядок этапов по одним визитам API не отдал. Отдельные итоги целей на конверсию воронки не делю.",
+    "Блок прайса отмечен в 5.0 визитах, подтверждённых заявок 0. Первым проверить отправку формы № 3 и согласия."
+  ]
+}
