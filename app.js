@@ -1129,6 +1129,37 @@
 
   // Цена продажи — то, что платит покупатель. Комиссия = эта цена × ставка.
   // Пустой прочий расход не вычитается и нулём не становится.
+  // Actual report rows stay attached to their own month; no historical tariff becomes current.
+  function unitReportHistory(row) {
+    if (!/OREAL/i.test(row.brand || "")) return [];
+    var reports = (DATA.profit && DATA.profit.months || []).map(function (m) {
+      return {month:m.month, source:m.view && m.view.source, rows:m.view && m.view.commissionRows || []};
+    });
+    (DATA.letuFinance && DATA.letuFinance.reports || []).forEach(function (r) {
+      reports = reports.filter(function (m) { return m.month !== r.month; });
+      reports.push({month:r.month, source:r.source, rows:r.commissionRows || []});
+    });
+    return reports.map(function (report) {
+      var lines = report.rows.filter(function (i) { return i.article === row.article; });
+      if (!lines.length || lines.some(function (i) { return !Number.isFinite(i.qty) || !Number.isFinite(i.baseKop) || !Number.isFinite(i.discountKop) || !Number.isFinite(i.withheldKop) || !Number.isFinite(i.commissionKop); })) return null;
+      var sum = function (key) { return lines.reduce(function (n,i) { return n+i[key]; },0); };
+      var q=sum("qty"); if(q<=0) return null;
+      var base=sum("baseKop"), discount=sum("discountKop"), withheld=sum("withheldKop");
+      return {month:report.month, source:report.source, qty:q,
+        sale:(base-discount)/100/q, commission:withheld/100/q,
+        payout:(base-discount-withheld)/100/q, rate:base ? sum("commissionKop")/base : null};
+    }).filter(Boolean).sort(function(a,b){return a.month.localeCompare(b.month);});
+  }
+
+  function unitHistoricalTable(row) {
+    var history=unitReportHistory(row); if(!history.length) return "";
+    var cost=knownAmount(row.accountedRub), taxRate=knownAmount(DATA.unitEconomics.taxRate);
+    return "<details class='unit-breakdown'><summary>Фактические продажи по месяцам · отчёты исполнителя</summary><p class='note'>Средние суммы на одну штуку. Комиссия — фактическое удержание после скидки исполнителя. К перечислению по строке — до общих удержаний, авансов и банковских взаиморасчётов. Закупка и подготовка взяты из карточки; принадлежность цены прошлым партиям не подтверждена. Это оценка остатка, до неучтённых расходов.</p>" +
+      history.map(function(h){var tax=taxRate==null?null:roundMoney(h.sale*taxRate);var rest=cost==null||tax==null?null:roundMoney(h.payout-cost-tax-(knownAmount(row.otherSellingCostsRub)||0));
+        return "<h4>"+esc(h.month)+" · "+esc(qty(h.qty))+" шт.</h4>"+unitFacts([["Продажа после скидки, на штуку",rub(h.sale)],["Удержанная комиссия, на штуку",rub(h.commission)],["К перечислению по строке, на штуку",rub(h.payout)],["Товар и подготовка по карточке",rub(cost)],["Расчётный налог по настройке",rub(tax)],["Остаток после учтённых затрат, на штуку",rub(rest),true]])+"<p class='note'>"+esc(h.source||"Отчёт исполнителя за "+h.month)+"</p>";
+      }).join("")+"</details>";
+  }
+
   function saleEconomics(row) {
     var sale = knownAmount(row.salePriceRub);
     var list = knownAmount(row.listPriceRub);
@@ -1136,7 +1167,9 @@
     var cost = knownAmount(row.accountedRub);
     var other = knownAmount(row.otherSellingCostsRub);
     var taxRate = knownAmount(DATA.unitEconomics && DATA.unitEconomics.taxRate);
-    var commission = sale != null && rate != null ? roundMoney(sale * rate) : null;
+    var history = unitReportHistory(row), actual = history.length ? history[history.length-1] : null;
+    if (actual) { sale = actual.sale; list = null; rate = actual.rate; }
+    var commission = actual ? actual.commission : sale != null && rate != null ? roundMoney(sale * rate) : null;
     var tax = sale != null && taxRate != null ? roundMoney(sale * taxRate) : null;
     var profit = null;
     if (sale != null && cost != null && commission != null && tax != null) {
@@ -1156,7 +1189,8 @@
       other: other,
       profit: profit,
       margin: margin,
-      discount: discount
+      discount: discount,
+      reportMonth: actual ? actual.month : null
     };
   }
 
@@ -1224,7 +1258,7 @@
 
   function unitDetail(row) {
     var audit = unitAudit(row), econ = audit.econ;
-    var commissionSource = row.commissionRateNote || "Источник ставки не указан.";
+    var commissionSource = econ.reportMonth ? "Источник удержания: отчёт исполнителя за "+econ.reportMonth+"; исторические суммы, не текущий тариф." : row.commissionRateNote || "Источник ставки не указан.";
     var purchaseNote = row.freightExcluded
       ? "Закупка задана в рублях. Доставки до Москвы в этой сумме нет, вес и тариф в расчёт не входят."
       : row.allocatedFreightRub != null
@@ -1243,6 +1277,7 @@
       + unitFacts([["Витринная цена", rub(econ.list)], ["Цена покупателю после скидки", rub(econ.sale), true], ["Комиссия по модели, " + percentText(econ.rate), rub(econ.commission)], ["Налог по настройке, " + percentText(econ.taxRate), rub(econ.tax)], ["Прочие учтённые расходы продажи", rub(econ.other)], ["Остаток после учтённых затрат", rub(econ.profit), true], ["Доля остатка в цене продажи", percentText(econ.margin)]])
       + "<p class='note'>Скидка второй раз не вычитается. Остаток — предварительная оценка на одну продажу по текущей выгрузке цен, а не чистая прибыль и не прибыль за год.</p>"
       + (row.priceNote ? "<p class='note'>" + esc(row.priceNote) + "</p>" : "")
+      + (econ.reportMonth ? "<p class='note'>Продажа и удержанная комиссия взяты из отчёта за "+esc(econ.reportMonth)+". Это историческая продажа; текущий тариф не заявляется. Сумма комиссии взята напрямую из отчёта, без повторного вычитания скидки.</p>" : "")
       + "<h4>Что ещё нужно проверить</h4><ul class='unit-check-list'>"
       + (audit.missing.length ? "<li>Для расчёта не хватает: " + esc(audit.missing.join(", ")) + ".</li>" : "")
       + audit.checks.map(function (message) { return "<li>" + esc(message) + "</li>"; }).join("")
@@ -1250,7 +1285,7 @@
       + "<li>Резерв на непредвиденные расходы не задан. В расчёт не включён.</li>"
       + "<li>Закупочные данные: " + esc(row.status || MISSING) + "; вес: " + esc(row.weightStatus || MISSING) + ".</li>"
       + "<li>" + esc(commissionSource) + " Историческая ставка не подтверждает текущий тариф.</li>"
-      + "<li>Формула комиссии требует сверки с отчётом: сейчас модель умножает цену после скидки на ставку. В прежнем описании страницы указан другой порядок расчёта комиссии и скидки.</li>"
+      + (econ.reportMonth ? "<li>Комиссия взята из фактического удержания отчёта; скидка повторно не вычитается.</li>" : "<li>Формула комиссии требует сверки с отчётом: модель умножает цену после скидки на ставку.</li>")
       + "</ul></details>";
   }
 
@@ -1271,9 +1306,10 @@
       + "<span class='unit-badge " + audit.key + "'>" + esc(unitStatus(audit)) + "</span></header>"
       + "<h3>" + esc(row.name) + "</h3><p class='unit-article'>Артикул: <b>" + esc(articleShown) + "</b> · " + esc(row.productType) + "</p>"
       + linkLine
-      + "<div class='unit-metrics'><div><span>Цена продажи</span><strong>" + esc(rub(econ.sale)) + "</strong><small>после скидки, по выгрузке" + (row.priceAsOf ? " " + esc(dayText(row.priceAsOf)) : "") + "</small></div>"
+      + "<div class='unit-metrics'><div><span>Цена продажи</span><strong>" + esc(rub(econ.sale)) + "</strong><small>" + (econ.reportMonth ? "по отчёту за "+esc(econ.reportMonth) : "после скидки, по выгрузке") + (row.priceAsOf ? " " + esc(dayText(row.priceAsOf)) : "") + "</small></div>"
       + "<div><span>Товар и подготовка</span><strong>" + esc(rub(row.accountedRub)) + "</strong><small>" + (row.freightExcluded ? "закупка без доставки до Москвы, этикетка на товар, упаковщик" : "закупка, доставка, упаковка") + (row.filmExcluded ? "" : ", плёнка") + "</small></div>"
       + "<div class='unit-result'><span>Остаток с продажи · оценка</span><strong>" + esc(rub(econ.profit)) + "</strong><small>" + (econ.margin == null ? "нужны исходные данные" : esc(percentText(econ.margin)) + " от цены · до неучтённых расходов") + "</small></div></div>"
+      + (econ.reportMonth ? "<p class='unit-notice'>Расчёт по фактическому отчёту за "+esc(econ.reportMonth)+": средние суммы на одну штуку, с закупкой из карточки. Комиссия удержана по отчёту.</p>" : "")
       + "<p class='unit-deductions'>Комиссия: " + esc(percentText(econ.rate)) + (row.commissionObservedFrom ? " с " + esc(dayText(row.commissionObservedFrom)) : "") + " / " + esc(rub(econ.commission)) + " · Налог: " + esc(percentText(econ.taxRate)) + " / " + esc(rub(econ.tax)) + "</p>"
       + "<p class='unit-deductions'>Плёнка для упаковки: " + esc(filmFact(row)) + "</p>"
       + (row.freightExcluded ? "<p class='unit-notice'>Доставка до Москвы не входит в закупку и не считается. Индивидуальная коробочка и этикетка на коробку не применяются.</p>" : "")
@@ -1281,7 +1317,7 @@
       + (row.cardNote ? "<p class='unit-notice'>" + esc(row.cardNote) + "</p>" : "")
       + (audit.missing.length ? "<p class='unit-notice'>Заполнить: " + esc(audit.missing.join(", ")) + ".</p>" : "")
       + (audit.checks.length ? "<p class='unit-notice'>" + esc(audit.checks[0]) + "</p>" : "")
-      + unitDetail(row) + "</article>";
+      + unitDetail(row) + unitHistoricalTable(row) + "</article>";
   }
 
   function tariffHistory() {
