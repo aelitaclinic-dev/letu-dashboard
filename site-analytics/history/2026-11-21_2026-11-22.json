@@ -1,0 +1,333 @@
+{
+  "schemaVersion": 1,
+  "sample": false,
+  "counterId": 99820405,
+  "id": "2026-11-21_2026-11-22",
+  "period": {
+    "start": "2026-11-21",
+    "end": "2026-11-22"
+  },
+  "previousPeriod": {
+    "start": "2026-11-19",
+    "end": "2026-11-20"
+  },
+  "generatedAt": "2026-11-23T19:49:32+03:00",
+  "totals": {
+    "users": 5.0,
+    "visits": 5.0,
+    "pageviews": 9.0,
+    "avgDurationSeconds": 15.4,
+    "sampled": false
+  },
+  "previousTotals": {
+    "users": 18.0,
+    "visits": 20.0,
+    "pageviews": 115.0,
+    "avgDurationSeconds": 522.45,
+    "sampled": false
+  },
+  "sources": [
+    {
+      "id": "yandex",
+      "label": "Яндекс",
+      "visits": 2,
+      "previous": 1
+    },
+    {
+      "id": "social",
+      "label": "Соцсети",
+      "visits": 0,
+      "previous": 0
+    },
+    {
+      "id": "referral",
+      "label": "Переходы с других сайтов",
+      "visits": 0,
+      "previous": 0
+    },
+    {
+      "id": "direct",
+      "label": "Прямые визиты",
+      "visits": 3,
+      "previous": 16
+    },
+    {
+      "id": "utm",
+      "label": "Кампании с UTM",
+      "visits": 0,
+      "previous": 0
+    },
+    {
+      "id": "other_search",
+      "label": "Другие поисковые системы",
+      "visits": 0,
+      "previous": 1
+    },
+    {
+      "id": "unknown",
+      "label": "Неизвестный источник",
+      "visits": 0,
+      "previous": 2
+    }
+  ],
+  "sourceGap": 0,
+  "entrances": [
+    {
+      "url": "https://maat-impera.ru/sinko-styling/",
+      "visits": 3.0
+    },
+    {
+      "url": "https://maat-impera.ru/",
+      "visits": 2.0
+    }
+  ],
+  "sequences": {
+    "available": false,
+    "rows": [],
+    "reason": "Журнал просмотров Метрики недоступен, типичные последовательности не восстанавливаю."
+  },
+  "pages": [
+    {
+      "id": "home",
+      "label": "Главная",
+      "visits": 2.0,
+      "pageviews": 2.0,
+      "reachedPrice": null,
+      "reachedContacts": null,
+      "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+    },
+    {
+      "id": "catalog",
+      "label": "Каталог",
+      "visits": 2.0,
+      "pageviews": 6.0,
+      "reachedPrice": null,
+      "reachedContacts": null,
+      "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+    },
+    {
+      "id": "sinko",
+      "label": "SINKO STYLING",
+      "visits": 3.0,
+      "pageviews": 7.0,
+      "reachedPrice": null,
+      "reachedContacts": null,
+      "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+    },
+    {
+      "id": "product",
+      "label": "Карточки товаров",
+      "visits": 0.0,
+      "pageviews": 0.0,
+      "reachedPrice": null,
+      "reachedContacts": null,
+      "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+    },
+    {
+      "id": "contacts",
+      "label": "Контакты",
+      "visits": 0.0,
+      "pageviews": 0.0,
+      "reachedPrice": null,
+      "reachedContacts": null,
+      "note": "Визиты страницы и цели приходят разными итогами. Долю «дошли до прайса» из них не делю."
+    }
+  ],
+  "visitDuration": {
+    "label": "Средняя длительность визита",
+    "seconds": 15.4,
+    "previousSeconds": 522.45
+  },
+  "engagement": {
+    "label": "Оценка вовлечённости",
+    "note": "Секунды видимой вкладки на целевой странице. Это не длительность визита и с ней не складывается.",
+    "rows": [
+      {
+        "page": "Главная",
+        "pageviews": 2.0,
+        "seconds": {
+          "15": {
+            "reaches": 1.0,
+            "shareOfPageviews": 0.5,
+            "error": null
+          },
+          "30": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          },
+          "60": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          }
+        }
+      },
+      {
+        "page": "Каталог",
+        "pageviews": 6.0,
+        "seconds": {
+          "15": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          },
+          "30": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          },
+          "60": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          }
+        }
+      },
+      {
+        "page": "SINKO STYLING",
+        "pageviews": 7.0,
+        "seconds": {
+          "15": {
+            "reaches": 1.0,
+            "shareOfPageviews": 0.1429,
+            "error": null
+          },
+          "30": {
+            "reaches": 1.0,
+            "shareOfPageviews": 0.1429,
+            "error": null
+          },
+          "60": {
+            "reaches": 0.0,
+            "shareOfPageviews": 0.0,
+            "error": null
+          }
+        }
+      },
+      {
+        "page": "Карточки товаров",
+        "pageviews": 0.0,
+        "seconds": {
+          "15": {
+            "reaches": 0.0,
+            "shareOfPageviews": null,
+            "error": null
+          },
+          "30": {
+            "reaches": 0.0,
+            "shareOfPageviews": null,
+            "error": null
+          },
+          "60": {
+            "reaches": 0.0,
+            "shareOfPageviews": null,
+            "error": null
+          }
+        }
+      },
+      {
+        "page": "Контакты",
+        "pageviews": 0.0,
+        "seconds": {
+          "15": {
+            "reaches": 0.0,
+            "shareOfPageviews": null,
+            "error": null
+          },
+          "30": {
+            "reaches": 0.0,
+            "shareOfPageviews": null,
+            "error": null
+          },
+          "60": {
+            "reaches": 0.0,
+            "shareOfPageviews": null,
+            "error": null
+          }
+        }
+      }
+    ]
+  },
+  "funnel": {
+    "mode": "separate_goal_totals",
+    "note": "API отдал отдельные итоги целей. Долю одного итога от другого как конверсию воронки не считаю.",
+    "stages": [
+      {
+        "id": "price_block_view",
+        "label": "Увидели блок прайса",
+        "visits": 1.0,
+        "reaches": 1.0,
+        "shareOfPrevious": null,
+        "error": null
+      },
+      {
+        "id": "price_form_start",
+        "label": "Начали форму",
+        "visits": 0.0,
+        "reaches": 0.0,
+        "shareOfPrevious": null,
+        "error": null
+      },
+      {
+        "id": "price_form_success",
+        "label": "Отправили заявку",
+        "visits": 0.0,
+        "reaches": 0.0,
+        "shareOfPrevious": null,
+        "error": null
+      }
+    ],
+    "separate": [
+      {
+        "id": "price_cta_click",
+        "label": "Нажатие «Получить прайс»",
+        "visits": 0.0,
+        "reaches": 0.0,
+        "error": null,
+        "note": "До формы можно дойти скроллом, поэтому клик по кнопке не входит в воронку."
+      },
+      {
+        "id": "price_download_click",
+        "label": "Клик по скачиванию",
+        "visits": 0.0,
+        "reaches": 0.0,
+        "error": null,
+        "note": "Сайт подтверждает только клик по ссылке на файл, не саму выдачу. Это не шаг воронки заявки."
+      }
+    ]
+  },
+  "contacts": {
+    "page": {
+      "id": "contacts_view",
+      "visits": 0.0,
+      "reaches": 0.0,
+      "error": null
+    },
+    "phone": {
+      "id": "contact_phone_click",
+      "visits": 0.0,
+      "reaches": 0.0,
+      "error": null
+    },
+    "email": {
+      "id": "contact_email_click",
+      "visits": 0.0,
+      "reaches": 0.0,
+      "error": null
+    },
+    "messenger": {
+      "id": "contact_messenger_click",
+      "visits": 0.0,
+      "reaches": 0.0,
+      "error": null
+    }
+  },
+  "errors": [],
+  "apiError": null,
+  "conclusions": [
+    "Визиты: 5.0 против 20.0 за предыдущие два дня, на 15.0 меньше. Трафик небольшой, рядом с любой долей смотрите абсолютное число.",
+    "Порядок этапов по одним визитам API не отдал. Отдельные итоги целей на конверсию воронки не делю.",
+    "Блок прайса отмечен в 1.0 визитах, подтверждённых заявок 0. Первым проверить отправку формы № 3 и согласия."
+  ]
+}
