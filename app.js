@@ -3190,22 +3190,24 @@
   function updateMarketNavigation(hash, channel) {
     var expensePage = hash === "expenses" || hash.indexOf("expenses/") === 0;
     var directPage = hash === "direct-orders";
+    var leadsPage = hash === "leads";
     var bankPage = hash === "bank" || hash.indexOf("bank/") === 0;
     var purchasePage = hash === "purchases" || hash.indexOf("purchases/") === 0 || directPage;
     var sitePage = hash === "site" || hash.indexOf("site/") === 0;
     var overview = !hash || hash === "overview";
-    var isLetu = !overview && !channel && !expensePage && !purchasePage && !bankPage && !sitePage;
+    var isLetu = !overview && !channel && !expensePage && !purchasePage && !bankPage && !sitePage && !leadsPage;
     document.querySelector("nav.menu").hidden = !isLetu;
     document.getElementById("freshness").hidden = !isLetu;
     document.getElementById("page-context").textContent = overview ? "Все площадки · единый обзор бизнеса"
       : bankPage ? "Банк ООО «КЛМ» · сверка выписки и расходов"
+      : leadsPage ? "Входящие оптовые заявки · сайт, мессенджеры и рекомендации"
       : directPage ? "Прямые заказы сторонних клиентов · лично или через переписку"
       : purchasePage ? "Закупки, поставки и собственные склады · ИП и ООО"
       : expensePage ? "Общие расходы бизнеса · раздельный учёт ИП и ООО"
       : sitePage ? "Сайт maat-impera.ru · посещения и цели"
       : channel ? (channel === "wb" ? "Wildberries" : "Ozon") + " · кабинеты ИП и ООО"
       : "Л’Этуаль · ИП Барская Регина Александровна";
-    var current = overview ? "#overview" : hash === "unit" ? "#unit" : sitePage ? "#site" : bankPage ? "#bank/ooo" : purchasePage ? "#purchases" : expensePage ? "#expenses" : channel ? "#" + channel + "/all/summary" : "#letu";
+    var current = overview ? "#overview" : hash === "unit" ? "#unit" : sitePage ? "#site" : leadsPage ? "#leads" : bankPage ? "#bank/ooo" : purchasePage ? "#purchases" : expensePage ? "#expenses" : channel ? "#" + channel + "/all/summary" : "#letu";
     document.querySelectorAll(".market-nav a").forEach(function (link) {
       var on = link.getAttribute("href") === current;
       link.classList.toggle("on", on);
@@ -3213,12 +3215,14 @@
     });
     var footer = document.querySelector(".foot");
     if (!footer.dataset.originalText) footer.dataset.originalText = footer.textContent;
-    footer.textContent = directPage
+    footer.textContent = leadsPage
+      ? "Входящие оптовые заявки. Заявки формы прайса сходятся по номеру отправки. Ручные заявки остаются в этом браузере."
+      : directPage
       ? "Журнал прямых заказов. Общий файл открывается на любом устройстве. Правки этой страницы сохраняются в браузере и остаются после обновления."
       : purchasePage ? "Личный журнал закупок и складских движений. Записи сохраняются в текущем браузере. Сохраните резервную копию для переноса на другое устройство."
       : sitePage ? "Сводка посещений сайта. Имена, телефоны и почта сюда не попадают. Заявки из мессенджера с визитами не складываются."
       : footer.dataset.originalText;
-    document.title = "MA Distribution — " + (overview ? "обзор бизнеса" : bankPage ? "банк ООО КЛМ" : directPage ? "прямые заказы клиентов" : purchasePage ? "закупки и склад" : expensePage ? "расходы ИП / ООО" : sitePage ? "сайт" : channel ? (channel === "wb" ? "Wildberries" : "Ozon") : "Л’Этуаль");
+    document.title = "MA Distribution — " + (overview ? "обзор бизнеса" : bankPage ? "банк ООО КЛМ" : leadsPage ? "входящие оптовые заявки" : directPage ? "прямые заказы клиентов" : purchasePage ? "закупки и склад" : expensePage ? "расходы ИП / ООО" : sitePage ? "сайт" : channel ? (channel === "wb" ? "Wildberries" : "Ozon") : "Л’Этуаль");
   }
 
   function render() {
@@ -3240,6 +3244,13 @@
     const channel = route[0] === "wb" || route[0] === "ozon" ? route[0] : null;
     updateMarketNavigation(hash, channel);
     if (!hash || hash === "overview") screen.innerHTML = renderOverview(state);
+    else if (hash === "leads" && window.WholesaleLeads) {
+      screen.dataset.purchaseView = "";
+      if (!screen.querySelector("#wl-root")) {
+        window.WholesaleLeads.mount(screen);
+        window.scrollTo({top: 0, left: 0, behavior: "instant"});
+      }
+    }
     else if (hash === "direct-orders" && window.DirectOrders) {
       screen.dataset.purchaseView = "";
       if (!screen.querySelector("#do-root")) {

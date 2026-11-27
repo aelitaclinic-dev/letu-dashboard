@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "leads": [
+    {
+      "id": "seed-site",
+      "externalId": "seed:site",
+      "receivedAt": "2026-11-27T20:40:00.000Z",
+      "name": "Тест сайта",
+      "phone": "+7 000 000-00-01",
+      "email": "test-site@example.com",
+      "request": "Запрос оптового прайса",
+      "source": "site",
+      "channel": "form",
+      "referrer": "",
+      "stage": "new",
+      "firstReplyAt": null
+    },
+    {
+      "id": "seed-messenger",
+      "externalId": "seed:messenger",
+      "receivedAt": "2026-11-27T20:45:00.000Z",
+      "name": "Тест мессенджера",
+      "phone": "+7 000 000-00-02",
+      "email": "",
+      "request": "Нужен прайс на кератин для салона",
+      "source": "messenger",
+      "channel": "telegram",
+      "referrer": "",
+      "stage": "new",
+      "firstReplyAt": null
+    },
+    {
+      "id": "seed-referral",
+      "externalId": "seed:referral",
+      "receivedAt": "2026-11-27T20:50:00.000Z",
+      "name": "Тест рекомендации",
+      "phone": "+7 000 000-00-03",
+      "email": "",
+      "request": "Хочет оптовый прайс",
+      "source": "referral",
+      "channel": "telegram",
+      "referrer": "Катя",
+      "stage": "new",
+      "firstReplyAt": null
+    }
+  ]
+}
