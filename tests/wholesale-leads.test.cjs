@@ -163,5 +163,9 @@ assert.match(php, /Новая оптовая заявка/);
 assert.match(php, /maat_wl_strip_leads_menu/);
 assert.match(php, /_wp_auto_add_pages_to_menu/);
 assert.doesNotMatch(php, /Access-Control-Allow-Origin/);
+assert.match(php, /Узнать условия для мастеров/);
+assert.match(php, /Здравствуйте! Подскажите, какие продукты SINKO STYLING вам нужны и в каком количестве\. Рассчитаем стоимость вашего заказа\./);
+assert.match(php, /Сообщение получили\. Рассчитаем стоимость по этим позициям\./);
+assert.doesNotMatch(php, /скачать|полный прайс|прайс\.pdf/i);
 
 console.log('Wholesale leads: privacy, channels, paging, chat continuation, and notify rules passed');
