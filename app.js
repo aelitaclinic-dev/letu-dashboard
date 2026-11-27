@@ -3200,7 +3200,7 @@
     document.getElementById("freshness").hidden = !isLetu;
     document.getElementById("page-context").textContent = overview ? "Все площадки · единый обзор бизнеса"
       : bankPage ? "Банк ООО «КЛМ» · сверка выписки и расходов"
-      : leadsPage ? "Входящие оптовые заявки · сайт, мессенджеры и рекомендации"
+      : leadsPage ? "Демонстрационные оптовые заявки · это не реальные клиенты"
       : directPage ? "Прямые заказы сторонних клиентов · лично или через переписку"
       : purchasePage ? "Закупки, поставки и собственные склады · ИП и ООО"
       : expensePage ? "Общие расходы бизнеса · раздельный учёт ИП и ООО"
@@ -3216,7 +3216,7 @@
     var footer = document.querySelector(".foot");
     if (!footer.dataset.originalText) footer.dataset.originalText = footer.textContent;
     footer.textContent = leadsPage
-      ? "Входящие оптовые заявки. Заявки формы прайса сходятся по номеру отправки. Ручные заявки остаются в этом браузере."
+      ? "Демонстрационные данные. Это не реальные клиенты. Рабочий список открывается после входа на сайте."
       : directPage
       ? "Журнал прямых заказов. Общий файл открывается на любом устройстве. Правки этой страницы сохраняются в браузере и остаются после обновления."
       : purchasePage ? "Личный журнал закупок и складских движений. Записи сохраняются в текущем браузере. Сохраните резервную копию для переноса на другое устройство."
@@ -3247,7 +3247,7 @@
     else if (hash === "leads" && window.WholesaleLeads) {
       screen.dataset.purchaseView = "";
       if (!screen.querySelector("#wl-root")) {
-        window.WholesaleLeads.mount(screen);
+        window.WholesaleLeads.mount(screen, {demo: true});
         window.scrollTo({top: 0, left: 0, behavior: "instant"});
       }
     }

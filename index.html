@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<script>try{localStorage.removeItem("ma-distribution-wholesale-leads-v1")}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MA Distribution — обзор бизнеса</title>
 <link rel="stylesheet" href="app.css?v=20261119-site">
-<link rel="stylesheet" href="purchases.css?v=20261128-leads">
+<link rel="stylesheet" href="purchases.css?v=20261128-leads-desk">
 <link rel="stylesheet" href="ozon.css?v=20261116-ozon-ooo">
 </head>
 <body>
@@ -22,7 +23,7 @@
   <a href="#unit">Юнит-экономика</a>
   <a href="#bank/ooo">Банк ООО</a>
   <a href="#expenses">Расходы ИП / ООО</a>
-  <a href="#leads">Оптовые заявки</a>
+  <a href="https://maat-impera.ru/wholesale-leads/">Оптовые заявки</a>
   <a href="#site">Сайт</a>
 </nav>
 <nav class="menu" aria-label="Разделы Л’Этуаль" hidden>
@@ -44,18 +45,18 @@
 <script src="letu-finance.js?v=20261121-letu-reports"></script>
 <script src="purchases.js?v=20261128-leads"></script>
 <script src="direct-orders.js?v=20261127-skuk502-2080"></script>
-<script src="wholesale-leads.js?v=20261128-leads-open"></script>
+<script src="wholesale-leads.js?v=20261128-leads-desk"></script>
 <script src="bank.js?v=20261116-duty"></script>
 <script src="ozon.js?v=20261127-october"></script>
 <script src="site.js?v=20261119-site"></script>
-<script src="app.js?v=20261128-leads-open"></script>
+<script src="app.js?v=20261128-leads-desk"></script>
 <script>
 (function () {
   function openLeads() {
     if ((location.hash || "") !== "#leads" || !window.WholesaleLeads) return;
     var screen = document.getElementById("screen");
     if (!screen || screen.querySelector("#wl-root")) return;
-    window.WholesaleLeads.mount(screen);
+    window.WholesaleLeads.mount(screen, {demo: true});
   }
   window.addEventListener("hashchange", function () { setTimeout(openLeads, 0); });
   setTimeout(openLeads, 0);
