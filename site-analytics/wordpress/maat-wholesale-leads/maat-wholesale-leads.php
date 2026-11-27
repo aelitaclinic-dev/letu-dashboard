@@ -14,10 +14,12 @@ if (!defined('ABSPATH')) {
 
 if (!function_exists('maat_wl_clip')) {
 
-const MAAT_WL_LEADS = 'maat_wholesale_leads';
-const MAAT_WL_SEQ = 'maat_wholesale_leads_seq';
-const MAAT_WL_TOKEN = 'maat_max_bot_token';
-const MAAT_WL_USER = 'maat_max_notify_user_id';
+if (!defined('MAAT_WL_LEADS')) {
+    define('MAAT_WL_LEADS', 'maat_wholesale_leads');
+    define('MAAT_WL_SEQ', 'maat_wholesale_leads_seq');
+    define('MAAT_WL_TOKEN', 'maat_max_bot_token');
+    define('MAAT_WL_USER', 'maat_max_notify_user_id');
+}
 
 function maat_wl_clip($value, $max) {
     $value = trim(sanitize_text_field((string) $value));
