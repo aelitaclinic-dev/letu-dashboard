@@ -107,7 +107,13 @@
 .wl-page{max-width:1040px}
 .wl-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;margin:18px 0 8px}
 .wl-head h2{margin:4px 0 0;font-size:28px;letter-spacing:-.6px}
-.wl-demo,.wl-work-note{background:#f4efe8;border-radius:12px;padding:10px 14px;color:#5c4638}
+.wl-demo,.wl-work-note,.wl-report{background:#f4efe8;border-radius:12px;padding:10px 14px;color:#5c4638}
+.wl-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.wl-tabs button{border:1px solid #e5d5c4;background:#fff;border-radius:999px;padding:8px 14px;font:inherit;cursor:pointer;color:#2d2830}
+.wl-tabs button.on{background:#2d2830;color:#fff;border-color:#2d2830}
+.wl-tabs b{font-weight:750}
+.wl-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.wl-actions button{font:inherit;border:1px solid #e5d5c4;background:#fff;border-radius:10px;padding:7px 10px;cursor:pointer}
 .wl-filters{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end;margin:12px 0}
 .wl-filters label,.wl-form label{display:grid;gap:4px;font-size:12px;color:#6d5c66}
 .wl-filters select,.wl-form input,.wl-form select,.wl-form textarea{font:inherit;padding:8px 10px;border:1px solid #e5dfe2;border-radius:10px;background:#fff}

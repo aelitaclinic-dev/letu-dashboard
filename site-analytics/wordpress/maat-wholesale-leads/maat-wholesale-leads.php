@@ -54,6 +54,177 @@ function maat_wl_can() {
     return current_user_can('manage_options');
 }
 
+function maat_wl_has_link($value) {
+    return (bool) preg_match('/https?:\\/\\/|www\\.|\\b[a-z0-9-]{3,}\\.(com|ru|net|org|info|xyz|top|shop|online)\\b/i', (string) $value);
+}
+
+function maat_wl_gibberish($value) {
+    $raw = trim((string) $value);
+    preg_match_all('/[A-Za-zА-Яа-яЁё]/u', $raw, $chars);
+    $count = count($chars[0]);
+    if (strlen($raw) < 5 || $count < 5) {
+        return false;
+    }
+    if (preg_match('/[А-Яа-яЁё]/u', $raw) && !maat_wl_has_link($raw)) {
+        return false;
+    }
+    preg_match_all('/[aeiouy]/i', $raw, $vowels);
+    $ratio = count($vowels[0]) / $count;
+    $cluster = preg_match('/[bcdfghjklmnpqrstvwxz]{4,}/i', $raw);
+    return $ratio < 0.28 || ($cluster && $ratio < 0.4);
+}
+
+function maat_wl_company($lead) {
+    $request = (string) ($lead['request'] ?? '');
+    $prefix = 'Прайс для ';
+    if (strpos($request, $prefix) === 0) {
+        return trim(substr($request, strlen($prefix)));
+    }
+    return '';
+}
+
+function maat_wl_topical($lead) {
+    $request = (string) ($lead['request'] ?? '');
+    $company = maat_wl_company($lead);
+    $topic = '/прайс|цен[аыуе]|сколько\\s+стоит|опт|заказ|сотруднич|салон|кератин|fm\\s*free|набор|условия|дилер|дистриб|закуп|товар|мастер/iu';
+    if (strpos($request, 'Прайс для ') === 0) {
+        return $company === '' || (!maat_wl_has_link($company) && !maat_wl_gibberish($company));
+    }
+    return (bool) preg_match($topic, $request);
+}
+
+function maat_wl_is_test($lead) {
+    $blob = strtolower(implode(' ', array($lead['name'] ?? '', $lead['email'] ?? '', $lead['phone'] ?? '', $lead['request'] ?? '')));
+    $phone = preg_replace('/\D/', '', (string) ($lead['phone'] ?? ''));
+    return strpos($blob, 'example.com') !== false || strpos($blob, 'тест') !== false || strpos($blob, 'проверк') !== false || strpos($phone, '0000000') !== false;
+}
+
+function maat_wl_mass_mail($lead) {
+    $blob = implode(' ', array($lead['name'] ?? '', $lead['request'] ?? '', maat_wl_company($lead)));
+    return (bool) preg_match('/seo|backlink|крипт|casino|казино|viagra|займ|unsubscribe|накрут|продвижен|forex|порно|розыгрыш/iu', $blob);
+}
+
+function maat_wl_classify_list($leads) {
+    $burst = array();
+    $duplicate = array();
+    $buckets = array();
+    foreach ($leads as $index => $lead) {
+        if (!is_array($lead)) {
+            continue;
+        }
+        $email = strtolower(trim((string) ($lead['email'] ?? '')));
+        $phone = preg_replace('/\D/', '', (string) ($lead['phone'] ?? ''));
+        $keys = array();
+        if ($email !== '' && substr($email, -11) !== 'example.com') {
+            $keys[] = 'e:' . $email;
+        }
+        if (strlen($phone) >= 10 && strpos($phone, '0000000') === false) {
+            $keys[] = 'p:' . substr($phone, -10);
+        }
+        foreach ($keys as $key) {
+            $buckets[$key][] = $index;
+        }
+    }
+    foreach ($buckets as $indexes) {
+        usort($indexes, function ($left, $right) use ($leads) {
+            return strcmp((string) ($leads[$left]['receivedAt'] ?? ''), (string) ($leads[$right]['receivedAt'] ?? ''));
+        });
+        $clusters = array();
+        $cluster = array($indexes[0]);
+        $total = count($indexes);
+        for ($cursor = 1; $cursor < $total; $cursor++) {
+            $delta = strtotime((string) ($leads[$indexes[$cursor]]['receivedAt'] ?? '')) - strtotime((string) ($leads[$cluster[0]]['receivedAt'] ?? ''));
+            if ($delta !== false && $delta >= 0 && $delta <= 600) {
+                $cluster[] = $indexes[$cursor];
+            } else {
+                $clusters[] = $cluster;
+                $cluster = array($indexes[$cursor]);
+            }
+        }
+        $clusters[] = $cluster;
+        foreach ($clusters as $group) {
+            if (count($group) < 2) {
+                continue;
+            }
+            $names = array();
+            $texts = array();
+            foreach ($group as $item) {
+                $names[strtolower(trim((string) ($leads[$item]['name'] ?? '')))] = true;
+                $company = maat_wl_company($leads[$item]);
+                $text = $company !== '' ? $company : (string) ($leads[$item]['request'] ?? '');
+                $texts[strtolower(trim($text))] = true;
+            }
+            if (count($names) === 1 && count($texts) <= 1) {
+                foreach (array_slice($group, 1) as $item) {
+                    $duplicate[$item] = true;
+                }
+            } else {
+                foreach ($group as $item) {
+                    $burst[$item] = true;
+                }
+            }
+        }
+    }
+    foreach ($leads as $index => $lead) {
+        if (!is_array($lead)) {
+            continue;
+        }
+        if (($lead['reviewSource'] ?? '') === 'manual' && in_array($lead['review'] ?? '', array('inbox', 'review', 'spam'), true)) {
+            continue;
+        }
+        $signs = array();
+        $blob = implode(' ', array($lead['name'] ?? '', $lead['request'] ?? '', maat_wl_company($lead)));
+        if (maat_wl_has_link($blob)) {
+            $signs[] = 'незапрошенная ссылка';
+        }
+        if (maat_wl_gibberish($lead['name'] ?? '') || maat_wl_gibberish(maat_wl_company($lead))) {
+            $signs[] = 'бессвязный текст';
+        }
+        if (maat_wl_mass_mail($lead) && !maat_wl_topical($lead)) {
+            $signs[] = 'массовая рассылка';
+        }
+        if (!empty($lead['automated'])) {
+            $signs[] = 'автоматическая отправка';
+        }
+        if (isset($burst[$index])) {
+            $signs[] = 'серия похожих отправок';
+        }
+        $other = array_values(array_filter($signs, function ($sign) {
+            return $sign !== 'серия похожих отправок';
+        }));
+        $review = 'review';
+        $reason = 'Запрос трудно понять';
+        $test = maat_wl_is_test($lead);
+        if ($test) {
+            $review = maat_wl_topical($lead) ? 'inbox' : 'review';
+            $reason = 'Тестовая запись';
+        } elseif (in_array('массовая рассылка', $signs, true) && !maat_wl_topical($lead)) {
+            $review = 'spam';
+            $reason = 'Массовая рассылка без запроса по продукции';
+        } elseif (in_array('автоматическая отправка', $signs, true) && !maat_wl_topical($lead)) {
+            $review = 'spam';
+            $reason = 'Подтверждённая автоматическая отправка';
+        } elseif (isset($burst[$index]) && (count($other) >= 1 || !maat_wl_topical($lead))) {
+            $review = 'spam';
+            $reason = 'Серия заявок с несколькими признаками спама';
+        } elseif (isset($duplicate[$index])) {
+            $review = maat_wl_topical($lead) ? 'inbox' : 'review';
+            $reason = 'Повтор той же отправки';
+        } elseif (maat_wl_topical($lead) && count($signs) === 0) {
+            $review = 'inbox';
+            $reason = 'Понятный запрос по продукции, цене, опту или сотрудничеству';
+        } elseif (maat_wl_topical($lead)) {
+            $review = 'review';
+            $reason = 'Запрос по делу, есть подозрительный признак: ' . $signs[0];
+        }
+        $leads[$index]['review'] = $review;
+        $leads[$index]['reviewReason'] = $reason;
+        $leads[$index]['reviewSource'] = 'auto';
+        $leads[$index]['reportExclude'] = $test ? 'test' : (isset($duplicate[$index]) ? 'duplicate' : '');
+    }
+    return $leads;
+}
+
 function maat_wl_read() {
     $stored = get_option(MAAT_WL_LEADS, array());
     $leads = is_array($stored) ? $stored : array();
@@ -81,8 +252,26 @@ function maat_wl_read() {
         if (($lead['channel'] ?? '') === 'form' && ($lead['source'] ?? '') === 'site') {
             $leads[$index]['channel'] = 'form';
         }
+        if (empty($lead['review'])) {
+            $changed = true;
+        }
     }
     if ($changed) {
+        $needs_review = false;
+        foreach ($leads as $lead) {
+            if (is_array($lead) && empty($lead['review'])) {
+                $needs_review = true;
+            }
+        }
+        if ($needs_review) {
+            $leads = maat_wl_classify_list($leads);
+            foreach ($leads as $index => $lead) {
+                if (!is_array($lead) || ($lead['notify']['status'] ?? '') === 'sent') {
+                    continue;
+                }
+                $leads[$index]['notify'] = array('status' => 'skipped', 'reason' => 'archive');
+            }
+        }
         update_option(MAAT_WL_LEADS, array_values($leads), false);
         update_option(MAAT_WL_SEQ, $max, false);
     }
@@ -164,7 +353,11 @@ function maat_wl_bind_user() {
 }
 
 function maat_wl_notify_lead(&$lead, $event) {
-    if (empty($event['created']) || !empty($event['imported']) || !empty($event['demo']) || !empty($event['duplicate']) || !empty($event['edited'])) {
+    $entering = !empty($event['confirmed']) || (!empty($event['created']) && ($lead['review'] ?? '') === 'inbox');
+    if (!$entering || !empty($event['imported']) || !empty($event['demo']) || !empty($event['duplicate']) || !empty($event['edited']) || !empty($event['archive'])) {
+        return;
+    }
+    if (($lead['review'] ?? '') !== 'inbox' || in_array($lead['reportExclude'] ?? '', array('test', 'duplicate'), true)) {
         return;
     }
     if (!empty($lead['notify']['status']) && $lead['notify']['status'] === 'sent') {
@@ -210,10 +403,22 @@ function maat_wl_store_new($lead, $event) {
             }
         }
     }
+    $drafts = $leads;
+    $drafts[] = $lead;
+    $classified = maat_wl_classify_list($drafts);
+    $fresh = $classified[count($classified) - 1];
+    $lead['review'] = $fresh['review'];
+    $lead['reviewReason'] = $fresh['reviewReason'];
+    $lead['reviewSource'] = 'auto';
+    $lead['reportExclude'] = $fresh['reportExclude'];
     $lead['number'] = maat_wl_next_number();
     $lead['history'] = array(array('at' => $lead['receivedAt'], 'kind' => 'message', 'text' => $lead['request']));
-    $lead['notify'] = array('status' => 'pending');
-    maat_wl_notify_lead($lead, $event);
+    if ($lead['review'] !== 'inbox' || in_array($lead['reportExclude'], array('test', 'duplicate'), true)) {
+        $lead['notify'] = array('status' => 'skipped', 'reason' => $lead['reportExclude'] !== '' ? $lead['reportExclude'] : $lead['review']);
+    } else {
+        $lead['notify'] = array('status' => 'pending');
+        maat_wl_notify_lead($lead, $event);
+    }
     $leads[] = $lead;
     maat_wl_write($leads);
     return array('created' => true, 'lead' => $lead);
@@ -355,6 +560,60 @@ add_action('rest_api_init', function () {
         },
     ));
 
+    register_rest_route('maat/v1', '/wholesale-leads/(?P<id>[A-Za-z0-9_-]+)/review', array(
+        'methods' => 'POST',
+        'permission_callback' => 'maat_wl_can',
+        'callback' => function (WP_REST_Request $request) {
+            $body = $request->get_json_params();
+            $target = sanitize_key($body['review'] ?? '');
+            if (!in_array($target, array('inbox', 'review', 'spam'), true)) {
+                return new WP_Error('maat_wl_review', 'Укажите входящие, проверку или спам.', array('status' => 400));
+            }
+            $leads = maat_wl_read();
+            $index = maat_wl_find($leads, $request['id']);
+            if ($index < 0) {
+                return new WP_Error('maat_wl_missing', 'Заявка не найдена.', array('status' => 404));
+            }
+            $before = $leads[$index]['review'] ?? '';
+            $leads[$index]['review'] = $target;
+            $leads[$index]['reviewSource'] = 'manual';
+            if ($target === 'inbox' && $before === 'spam') {
+                $leads[$index]['reviewReason'] = 'Возвращено во входящие вручную';
+            } elseif ($target === 'inbox') {
+                $leads[$index]['reviewReason'] = 'Подтверждено вручную';
+            } elseif ($target === 'spam') {
+                $leads[$index]['reviewReason'] = 'Отмечено как спам вручную';
+            } else {
+                $leads[$index]['reviewReason'] = 'Оставлено на проверке вручную';
+            }
+            if ($target === 'inbox' && $before !== 'inbox') {
+                maat_wl_notify_lead($leads[$index], array('confirmed' => true));
+            }
+            maat_wl_write($leads);
+            return array('lead' => maat_wl_public_lead($leads[$index]));
+        },
+    ));
+
+    register_rest_route('maat/v1', '/wholesale-leads/(?P<id>[A-Za-z0-9_-]+)/stage', array(
+        'methods' => 'POST',
+        'permission_callback' => 'maat_wl_can',
+        'callback' => function (WP_REST_Request $request) {
+            $body = $request->get_json_params();
+            $stage = sanitize_key($body['stage'] ?? '');
+            if (!in_array($stage, array('new', 'progress', 'qualified'), true)) {
+                return new WP_Error('maat_wl_stage', 'Укажите стадию воронки.', array('status' => 400));
+            }
+            $leads = maat_wl_read();
+            $index = maat_wl_find($leads, $request['id']);
+            if ($index < 0) {
+                return new WP_Error('maat_wl_missing', 'Заявка не найдена.', array('status' => 404));
+            }
+            $leads[$index]['stage'] = $stage;
+            maat_wl_write($leads);
+            return array('lead' => maat_wl_public_lead($leads[$index]));
+        },
+    ));
+
     register_rest_route('maat/v1', '/wholesale-leads/chat', array(
         'methods' => 'POST',
         'permission_callback' => '__return_true',
@@ -424,14 +683,14 @@ add_shortcode('maat_wholesale_leads', function () {
     return '<div id="wl-work"></div><script>window.MAAT_LEADS=' . wp_json_encode(array(
         'api' => esc_url_raw(rest_url('maat/v1/wholesale-leads')),
         'nonce' => $nonce,
-    )) . ';</script><script src="https://aelitaclinic-dev.github.io/letu-dashboard/wholesale-leads.js?v=20261128-leads-desk"></script>';
+    )) . ';</script><script src="https://aelitaclinic-dev.github.io/letu-dashboard/wholesale-leads.js?v=20261128-leads-review"></script>';
 });
 
 add_action('wp_enqueue_scripts', function () {
     if (!is_page('wholesale-leads')) {
         return;
     }
-    wp_enqueue_style('maat-wholesale-leads', 'https://aelitaclinic-dev.github.io/letu-dashboard/purchases.css?v=20261128-leads-desk', array(), null);
+    wp_enqueue_style('maat-wholesale-leads', 'https://aelitaclinic-dev.github.io/letu-dashboard/purchases.css?v=20261128-leads-review', array(), null);
 });
 
 add_action('wp_footer', function () {
