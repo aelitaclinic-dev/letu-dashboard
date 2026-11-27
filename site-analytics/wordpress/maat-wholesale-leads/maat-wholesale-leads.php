@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MAAT Wholesale Leads
  * Description: Рабочие оптовые заявки после входа, приём формы № 3 и уведомление в MAX. На сайте этот файл подключён сниппетом, второй раз плагин включать не нужно.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: MA Distribution
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -849,5 +849,176 @@ function maat_wl_admin_page() {
     echo '<p><button class="button button-primary" name="maat_wl_save" value="1">Сохранить и проверить</button></p></form>';
     echo '<p>Откройте своего бота в MAX и нажмите «Начать», затем снова сохраните токен.</p></div>';
 }
+
+function maat_wl_master_chat() {
+    if (!is_front_page()) {
+        return;
+    }
+    $settings = wp_json_encode(array(
+        'greeting' => 'Здравствуйте! Подскажите, какие продукты SINKO STYLING вам нужны и в каком количестве. Рассчитаем стоимость вашего заказа.',
+        'reply' => 'Сообщение получили. Рассчитаем стоимость по этим позициям.',
+        'endpoint' => rest_url('maat/v1/wholesale-leads/chat'),
+        'nonce' => wp_create_nonce('wp_rest'),
+    ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo '<style>
+.maat-master-terms-wrap{flex:1 0 100%;width:100%;display:flex;justify-content:center;margin:18px 0 4px}
+.maat-master-terms{appearance:none;border:0;background:#c99722;color:#1c1c1c;font:inherit;font-weight:600;line-height:1.3;border-radius:999px;padding:14px 22px;cursor:pointer}
+.maat-master-terms:hover,.maat-master-terms:focus{background:#d8a31a}
+html.maat-master-chat-lock,html.maat-master-chat-lock body{overflow:hidden}
+.maat-master-chat{position:fixed;inset:0;z-index:10000000;display:flex;background:rgba(20,16,8,.45)}
+.maat-master-chat[hidden]{display:none}
+.maat-master-chat-panel{display:flex;flex-direction:column;width:min(440px,calc(100% - 32px));max-height:min(560px,calc(100svh - 32px));max-height:min(560px,calc(100dvh - 32px));margin:auto;background:#fff;color:#1c1c1c;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.2);overflow:hidden}
+.maat-master-chat-bar{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px 12px 18px;border-bottom:1px solid #efe6d4}
+.maat-master-chat-bar p{margin:0;font-weight:700}
+.maat-master-chat-close{width:44px;height:44px;border:0;border-radius:12px;background:#f6f1e6;color:#1c1c1c;font-size:28px;line-height:1;cursor:pointer}
+.maat-master-chat-log{flex:1 1 auto;overflow:auto;padding:16px 18px 8px}
+.maat-master-chat-line{margin:0 0 10px;padding:12px 14px;border-radius:14px;line-height:1.45}
+.maat-master-chat-line.is-greet{background:#f8f3e8}
+.maat-master-chat-line.is-mine{margin-left:28px;background:#1c1c1c;color:#fff}
+.maat-master-chat-form{flex:0 0 auto;display:flex;flex-direction:column;gap:8px;padding:8px 18px 18px}
+.maat-master-chat-label{font-size:14px}
+.maat-master-chat-form textarea{width:100%;box-sizing:border-box;min-height:76px;padding:12px;border:1px solid #e4d7b8;border-radius:12px;font:inherit;font-size:16px;resize:vertical}
+.maat-master-chat-form button[type="submit"]{align-self:flex-start;border:0;border-radius:999px;background:#c99722;color:#1c1c1c;font:inherit;font-weight:600;padding:12px 18px;cursor:pointer}
+.maat-master-chat-form button[disabled]{opacity:.6}
+.maat-master-chat-note{margin:0;color:#8a2a2a}
+@media (max-width:782px){
+.maat-master-chat{background:#fff}
+.maat-master-chat-panel{width:100%;height:100svh;height:100dvh;max-height:none;margin:0;border-radius:0}
+}
+</style>';
+    echo '<script>window.MAAT_MASTER_CHAT=' . $settings . ';</script>';
+    echo <<<'JS'
+<script>
+(function () {
+  var settings = window.MAAT_MASTER_CHAT || {};
+  var root, log, field, note, send;
+
+  function conversationId() {
+    var key = "maat-master-chat";
+    try {
+      var saved = sessionStorage.getItem(key);
+      if (saved) return saved;
+      var id = "master-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      sessionStorage.setItem(key, id);
+      return id;
+    } catch (error) {
+      return "master-" + Date.now().toString(36);
+    }
+  }
+
+  function addLine(text, kind) {
+    var line = document.createElement("p");
+    line.className = "maat-master-chat-line is-" + kind;
+    line.textContent = text;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function openChat() {
+    root.hidden = false;
+    document.documentElement.classList.add("maat-master-chat-lock");
+    var panel = root.querySelector(".maat-master-chat-panel");
+    if (panel) panel.focus();
+  }
+
+  function closeChat() {
+    root.hidden = true;
+    document.documentElement.classList.remove("maat-master-chat-lock");
+  }
+
+  function postMessage(payload, done) {
+    var body = JSON.stringify(payload);
+    var headers = {"Content-Type": "application/json"};
+    if (settings.nonce) headers["X-WP-Nonce"] = settings.nonce;
+    if (window.fetch) {
+      window.fetch(settings.endpoint, {method: "POST", headers: headers, credentials: "same-origin", body: body})
+        .then(function (response) { done(response.ok ? null : new Error("fail")); })
+        .catch(function () { done(new Error("fail")); });
+      return;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", settings.endpoint);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    if (settings.nonce) xhr.setRequestHeader("X-WP-Nonce", settings.nonce);
+    xhr.onload = function () { done(xhr.status >= 200 && xhr.status < 300 ? null : new Error("fail")); };
+    xhr.onerror = function () { done(new Error("fail")); };
+    xhr.send(body);
+  }
+
+  function mount() {
+    if (document.getElementById("maat-master-terms") || !settings.greeting) return;
+    var heading = null;
+    var nodes = document.querySelectorAll("h2");
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].textContent.replace(/\s+/g, " ").trim() === "Приглашаем к сотрудничеству") {
+        heading = nodes[i];
+        break;
+      }
+    }
+    if (!heading) return;
+    var box = heading.closest ? heading.closest(".e-con-inner") : null;
+    if (!box) box = heading.parentNode;
+    var wrap = document.createElement("div");
+    wrap.className = "maat-master-terms-wrap";
+    var button = document.createElement("button");
+    button.type = "button";
+    button.id = "maat-master-terms";
+    button.className = "maat-master-terms";
+    button.setAttribute("aria-haspopup", "dialog");
+    button.textContent = "Узнать условия для мастеров";
+    wrap.appendChild(button);
+    box.appendChild(wrap);
+    function showButton() {
+      if (window.location.hash !== "#maat-master-terms") return;
+      try { button.scrollIntoView({block: "center"}); }
+      catch (error) { button.scrollIntoView(); }
+    }
+    showButton();
+    window.addEventListener("load", showButton);
+    setTimeout(showButton, 600);
+
+    root = document.createElement("div");
+    root.className = "maat-master-chat";
+    root.hidden = true;
+    root.innerHTML = '<div class="maat-master-chat-panel" role="dialog" aria-modal="true" aria-labelledby="maat-master-chat-title" tabindex="-1"><div class="maat-master-chat-bar"><p id="maat-master-chat-title">Условия для мастеров</p><button type="button" class="maat-master-chat-close" aria-label="Закрыть">&times;</button></div><div class="maat-master-chat-log"></div><form class="maat-master-chat-form"><label class="maat-master-chat-label" for="maat-master-chat-text">Сообщение</label><textarea id="maat-master-chat-text" name="message" rows="3" maxlength="2000" placeholder="Какие продукты и в каком количестве" required></textarea><p class="maat-master-chat-note" hidden></p><button type="submit">Отправить</button></form></div>';
+    document.body.appendChild(root);
+    log = root.querySelector(".maat-master-chat-log");
+    field = root.querySelector("textarea");
+    note = root.querySelector(".maat-master-chat-note");
+    send = root.querySelector('button[type="submit"]');
+    addLine(settings.greeting, "greet");
+    button.addEventListener("click", openChat);
+    root.querySelector(".maat-master-chat-close").addEventListener("click", closeChat);
+    root.addEventListener("click", function (event) {
+      if (event.target === root) closeChat();
+    });
+    root.querySelector("form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      var message = field.value.replace(/\s+/g, " ").trim();
+      if (!message || !settings.endpoint) return;
+      send.disabled = true;
+      note.hidden = true;
+      postMessage({conversationId: conversationId(), message: message, name: "Мастер с сайта"}, function (error) {
+        send.disabled = false;
+        if (error) {
+          note.hidden = false;
+          note.textContent = "Не удалось отправить. Напишите ещё раз.";
+          return;
+        }
+        addLine(message, "mine");
+        addLine(settings.reply, "greet");
+        field.value = "";
+      });
+    });
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mount);
+  else mount();
+})();
+</script>
+JS;
+}
+
+add_action('wp_footer', 'maat_wl_master_chat');
 
 }
