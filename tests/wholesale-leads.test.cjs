@@ -121,7 +121,9 @@ assert.match(html, /data-source="referral"/);
 
 const index = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 assert.match(index, /href="#leads"/);
-assert.match(index, /wholesale-leads\.js/);
+assert.match(index, /wholesale-leads\.js\?v=20261128-leads-open/);
+assert.match(index, /app\.js\?v=20261128-leads-open/);
+assert.match(index, /function openLeads/);
 const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
 assert.match(app, /hash === "leads"/);
 
