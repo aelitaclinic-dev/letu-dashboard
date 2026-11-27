@@ -654,6 +654,15 @@ add_action('rest_api_init', function () {
         },
     ));
 
+    register_rest_route('maat/v1', '/wholesale-leads/menu-cause', array(
+        'methods' => 'GET',
+        'permission_callback' => 'maat_wl_can',
+        'callback' => function () {
+            $cause = get_option('maat_wl_menu_cause');
+            return is_array($cause) ? $cause : array();
+        },
+    ));
+
     register_rest_route('maat/v1', '/wholesale-leads/notify-retry', array(
         'methods' => 'POST',
         'permission_callback' => 'maat_wl_can',
@@ -700,15 +709,80 @@ add_action('wp_footer', function () {
     echo '<script>if(window.WholesaleLeads&&window.MAAT_LEADS){window.WholesaleLeads.mount(document.getElementById("wl-work"),{demo:false,api:window.MAAT_LEADS.api,nonce:window.MAAT_LEADS.nonce});}</script>';
 });
 
+function maat_wl_service_page_id() {
+    $page = get_page_by_path('wholesale-leads');
+    return $page ? (int) $page->ID : 0;
+}
+
+function maat_wl_leads_menu_items($page_id) {
+    $posts = get_posts(array(
+        'post_type' => 'nav_menu_item',
+        'post_status' => 'any',
+        'numberposts' => 20,
+        'meta_key' => '_menu_item_object_id',
+        'meta_value' => (string) $page_id,
+    ));
+    $items = array();
+    foreach ($posts as $item) {
+        if (get_post_meta($item->ID, '_menu_item_object', true) !== 'page') {
+            continue;
+        }
+        $menus = wp_get_post_terms($item->ID, 'nav_menu', array('fields' => 'ids'));
+        $items[] = array(
+            'id' => (int) $item->ID,
+            'date' => $item->post_date,
+            'menus' => array_map('intval', is_array($menus) ? $menus : array()),
+            'post' => $item,
+        );
+    }
+    return $items;
+}
+
+function maat_wl_remember_menu_cause($page_id) {
+    if (get_option('maat_wl_menu_cause')) {
+        return;
+    }
+    $options = get_option('nav_menu_options');
+    $auto = array();
+    if (is_array($options) && !empty($options['auto_add']) && is_array($options['auto_add'])) {
+        $auto = array_map('intval', $options['auto_add']);
+    }
+    $page = get_post($page_id);
+    $found = array();
+    foreach (maat_wl_leads_menu_items($page_id) as $item) {
+        $found[] = array('id' => $item['id'], 'date' => $item['date'], 'menus' => $item['menus']);
+    }
+    update_option('maat_wl_menu_cause', array(
+        'page_id' => $page_id,
+        'page_date' => $page ? $page->post_date : '',
+        'auto_add_menus' => $auto,
+        'items' => $found,
+    ), false);
+}
+
+function maat_wl_strip_leads_menu($page_id) {
+    if (!$page_id) {
+        return;
+    }
+    foreach (maat_wl_leads_menu_items($page_id) as $item) {
+        wp_delete_post($item['id'], true);
+    }
+}
+
 add_action('init', function () {
+    $page_id = maat_wl_service_page_id();
+    if ($page_id) {
+        maat_wl_remember_menu_cause($page_id);
+        maat_wl_strip_leads_menu($page_id);
+    }
     if (get_option('maat_wl_page_ready')) {
         return;
     }
-    $existing = get_page_by_path('wholesale-leads');
-    if ($existing) {
-        update_option('maat_wl_page_ready', (int) $existing->ID, false);
+    if ($page_id) {
+        update_option('maat_wl_page_ready', $page_id, false);
         return;
     }
+    remove_action('transition_post_status', '_wp_auto_add_pages_to_menu', 10);
     $id = wp_insert_post(array(
         'post_title' => 'Входящие оптовые заявки',
         'post_name' => 'wholesale-leads',
@@ -716,10 +790,21 @@ add_action('init', function () {
         'post_type' => 'page',
         'post_content' => '[maat_wholesale_leads]',
     ));
+    add_action('transition_post_status', '_wp_auto_add_pages_to_menu', 10, 3);
     if ($id && !is_wp_error($id)) {
         update_option('maat_wl_page_ready', (int) $id, false);
+        maat_wl_strip_leads_menu((int) $id);
     }
-});
+}, 20);
+
+add_action('wp_update_nav_menu_item', function ($menu_id, $item_id, $args) {
+    $page_id = maat_wl_service_page_id();
+    $object_id = isset($args['menu-item-object-id']) ? (int) $args['menu-item-object-id'] : 0;
+    $object = isset($args['menu-item-object']) ? (string) $args['menu-item-object'] : '';
+    if ($page_id && $object === 'page' && $object_id === $page_id) {
+        wp_delete_post((int) $item_id, true);
+    }
+}, 20, 3);
 
 add_action('admin_menu', function () {
     add_menu_page('Оптовые заявки', 'Оптовые заявки', 'manage_options', 'maat-wholesale-leads', 'maat_wl_admin_page', 'dashicons-email', 58);

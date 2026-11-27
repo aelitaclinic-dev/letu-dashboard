@@ -160,6 +160,8 @@ assert.match(source, /Вернуть во входящие/);
 const php = fs.readFileSync(path.join(__dirname, '..', 'site-analytics/wordpress/maat-wholesale-leads/maat-wholesale-leads.php'), 'utf8');
 assert.match(php, /permission_callback' => 'maat_wl_can'/);
 assert.match(php, /Новая оптовая заявка/);
+assert.match(php, /maat_wl_strip_leads_menu/);
+assert.match(php, /_wp_auto_add_pages_to_menu/);
 assert.doesNotMatch(php, /Access-Control-Allow-Origin/);
 
 console.log('Wholesale leads: privacy, channels, paging, chat continuation, and notify rules passed');
