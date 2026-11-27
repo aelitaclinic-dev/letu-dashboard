@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MA Distribution — обзор бизнеса</title>
 <link rel="stylesheet" href="app.css?v=20261119-site">
-<link rel="stylesheet" href="purchases.css?v=20261112-order-numbers">
+<link rel="stylesheet" href="purchases.css?v=20261128-leads">
 <link rel="stylesheet" href="ozon.css?v=20261116-ozon-ooo">
 </head>
 <body>
@@ -42,13 +42,25 @@
 </main>
 <script src="data.js?v=20261127-skuk502-2080"></script>
 <script src="letu-finance.js?v=20261121-letu-reports"></script>
-<script src="purchases.js?v=20261119-pricing-1355"></script>
+<script src="purchases.js?v=20261128-leads"></script>
 <script src="direct-orders.js?v=20261127-skuk502-2080"></script>
-<script src="wholesale-leads.js?v=20261127-leads"></script>
+<script src="wholesale-leads.js?v=20261128-leads-open"></script>
 <script src="bank.js?v=20261116-duty"></script>
 <script src="ozon.js?v=20261127-october"></script>
 <script src="site.js?v=20261119-site"></script>
-<script src="app.js?v=20261127-skuk502-wholesale"></script>
+<script src="app.js?v=20261128-leads-open"></script>
+<script>
+(function () {
+  function openLeads() {
+    if ((location.hash || "") !== "#leads" || !window.WholesaleLeads) return;
+    var screen = document.getElementById("screen");
+    if (!screen || screen.querySelector("#wl-root")) return;
+    window.WholesaleLeads.mount(screen);
+  }
+  window.addEventListener("hashchange", function () { setTimeout(openLeads, 0); });
+  setTimeout(openLeads, 0);
+})();
+</script>
 </body>
 </html>
 
