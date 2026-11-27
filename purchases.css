@@ -94,3 +94,13 @@
   .do-detail dl{grid-template-columns:1fr}
   .do-page .pb-heading{align-items:flex-start}
 }
+.wl-card{border:1px solid var(--pb-line);border-radius:16px;padding:18px 20px;margin:0 0 12px;background:#fff}
+.wl-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.wl-top h3{margin:4px 0 0;font-size:22px;letter-spacing:-.4px}
+.wl-stage{border:1px solid #e5d5c4;border-radius:999px;padding:6px 10px;color:#68445d;font-size:12px;font-weight:700}
+.wl-meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:#6d5c66;font-size:14px;margin:10px 0}
+.wl-meta b{color:#2d2830}
+.wl-request{margin:0;font-size:15px}
+.wl-reply{display:flex;gap:12px;align-items:center;margin-top:12px}
+.wl-unanswered{color:#8a4b3a;font-weight:650}
+.wl-answered{color:#2f6b45;font-weight:650}
