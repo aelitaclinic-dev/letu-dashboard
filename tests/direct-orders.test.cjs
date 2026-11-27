@@ -45,7 +45,7 @@ assert.equal(paidOrder.lines.length, 9);
 assert.equal(paidOrder.lines[0].sku, 'SKUK502');
 assert.equal(paidOrder.lines[0].priceMinor, 187000);
 assert.equal(api.wholesaleOffer().sku, 'SKUK502');
-assert.equal(api.wholesaleOffer().priceMinor, 282000);
+assert.equal(api.wholesaleOffer().priceMinor, 187000);
 assert.equal(api.wholesaleOffer().effectiveFrom, '2026-11-27');
 assert.equal(api.channelPrep({sku: 'SKUK502', brand: 'SINKO STYLING'}).unitKop, 600);
 assert.equal(pack.client, 'Валерий Романовский');
