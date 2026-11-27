@@ -24,7 +24,7 @@
     }
     return {
       sku: 'SKUK502', name: 'Brazilian Keratin Treatment FM Free, 500 мл',
-      brand: 'SINKO STYLING', priceMinor: 187000, effectiveFrom: '2026-11-27'
+      brand: 'SINKO STYLING', priceMinor: 208000, effectiveFrom: '2026-11-27'
     };
   }
   const payments = {unknown: 'Не указано', unpaid: 'Не оплачен', partial: 'Частично оплачен', paid: 'Оплачен'};
