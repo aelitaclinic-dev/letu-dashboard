@@ -2,6 +2,16 @@
 (function () {
   'use strict';
   var snapshot = null;
+  // October quantities from the sellers' order exports and monthly realization reports.
+  var october = {
+    from: '2026-10-01',
+    to: '2026-10-31',
+    shops: [
+      {store: 'ooo', label: 'ООО «КЛМ»', ordered: 3, cancelled: 1, sold: 4, returned: 0},
+      {store: 'ip', label: 'ИП · кабинет 1', ordered: 2, cancelled: 1, sold: 3, returned: 0},
+      {store: 'ip', label: 'ИП · кабинет 2', ordered: 26, cancelled: 6, sold: 24, returned: 0}
+    ]
+  };
   var months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function money(v) { return Number.isSafeInteger(v) ? (v/100).toLocaleString('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ₽' : 'Нет данных'; }
@@ -57,7 +67,7 @@
       +card('Перечислено по данным Ozon',money(t.paid.value),coverage(t.paid,t.rows))
       +bank.html+'</div>';
     html+='<div class="market-empty-metrics">'+card('Продано / возвращено',t.salesQty.value==null?'Нет данных':t.salesQty.value+' / '+(t.returnsQty.value==null?'Нет данных':t.returnsQty.value)+' шт.','Выкуп по реализации')
-      +card('Заказы / отмены / выкупы', [qty(t.ordered.value), qty(t.cancelled.value), qty(t.delivered.value)].join(' / '),'Оперативные отправления; не подтверждённые продажи')
+      +card('Заказы / отмены / выкупы по API', [qty(t.ordered.value), qty(t.cancelled.value), qty(t.delivered.value)].join(' / '),'Оперативные отправления; не подтверждённые продажи')
       +card('Доступно к продаже сейчас',stock==null?'Нет данных':stock+' шт.','Снимок остатков; не зависит от периода')
       +(ready(debt)?card('Баланс у Ozon',money(debt.closingKop),'На '+day(debt.asOf)+(debt.ozonOwesSellerKop?' · задолженность Ozon перед продавцом '+money(debt.ozonOwesSellerKop):'')):'')+'</div>';
     html+='<h3>Продажи и выплаты по месяцам · '+snapshot.year+'</h3><p class="ozon-caption">Продажи — цена продавца × количество из отчёта реализации. Заказы и отмены в эту сумму не входят. Начисления уже после комиссий, логистики, хранения, штрафов и услуг площадки.</p>';
@@ -66,7 +76,7 @@
       var a=m.sales,b=m.balance, ok=ready(a), bk=ready(b);
       return [label(m)+(m.partial?' · по '+day(m.toDate)+', месяц не закрыт':''),ok?a.salesQty:'—',ok?money(a.salesKop):'Нет данных',ok?a.returnsQty:'—',ok?money(a.returnsKop):'Нет данных',ok?money(a.salesKop-a.returnsKop):'Нет данных',bk?money(b.accruedKop):'Нет данных',bk?money(b.paidKop):'Нет данных',m.partial?'Предварительные данные':ok&&bk&&b.paymentReconciled?'Отчёты получены':'Есть пробелы'];
     }));
-    html+='<h3>Оперативные заказы, отмены и выкупы</h3><p class="ozon-caption">Это статусы отправлений FBS/FBO. Они не заменяют отчёт реализации и не считаются подтверждённой продажей.</p>';
+    html+='<h3>Оперативные заказы, отмены и выкупы по API</h3><p class="ozon-caption">Это статусы отправлений FBS/FBO. Они не заменяют отчёт реализации и не считаются подтверждённой продажей.</p>';
     html+=table(['Месяц','Заказано, шт.','Отменено, шт.','Выкуплено, шт.','Возвраты отправлений, шт.','В работе, шт.','Характер'],snapshot.months.map(function(m){
       if(m.state==='future') return [label(m),'—','—','—','—','—','Период не наступил'];
       var o=m.operations;
@@ -149,14 +159,32 @@
   function sources() {
     return '<details class="fold ozon-sources"><summary>Источники и точность цифр</summary><p>Продажи и возвраты: месячные отчёты реализации Ozon, цена продавца × количество. Отмены и невыкупы в продажи не добавляются. Начисления и перечисления: отчёт баланса Ozon. Комиссии, логистика, хранение, штрафы и услуги: ежедневные начисления Ozon; они уже внутри итогового начисления и повторно не вычитаются.</p><p>Оперативные заказы — статусы отправлений FBS/FBO. Для незакрытого месяца это предварительные данные. Остатки: текущий снимок API. Исторические остатки не восстанавливаются. Пустой или недоступный отчёт показывается как «Нет данных», а не как ноль.</p><p>Фактические поступления — только банковская выписка ООО. Проверка равенства баланса: начало + начисления − выплаты = конец.</p></details>';
   }
+  function octoberSummary(state, store) {
+    if (state.from > october.from || state.to < october.to) return '';
+    var shops = october.shops.filter(function (shop) { return store === 'all' || shop.store === store; });
+    var fields = ['ordered', 'cancelled', 'sold', 'returned'];
+    var rows = shops.map(function (shop) {
+      return [shop.label].concat(fields.map(function (field) { return shop[field]; }));
+    });
+    if (shops.length > 1) rows.push(['Итого'].concat(fields.map(function (field) {
+      return shops.reduce(function (sum, shop) { return sum + shop[field]; }, 0);
+    })));
+    return '<section aria-label="Ozon за октябрь 2026"><h3>Октябрь 2026 · заказы и реализация</h3>'
+      + table(['Кабинет', 'Заказано, шт.', 'Из них отменено, шт.', 'Продано, шт.', 'Возвращено, шт.'], rows)
+      + '<p class="ozon-caption">Заказы — по дате принятия в обработку в выгрузках. Продажи и возвраты — из месячных отчётов о реализации. Продажи могут относиться к заказам прошлых месяцев.</p></section>';
+  }
   function render(section, state, store) {
     var allowed=['summary','unit','profit','payouts','stock','expenses','fines'];
     var active=allowed.indexOf(section)>=0?section:'summary';
     var tabs=[['summary','Сводка'],['unit','Товары'],['payouts','Выплаты'],['expenses','Расходы Ozon'],['fines','Штрафы'],['stock','Остатки'],['profit','Прибыль']];
-    var html='<div class="market-heading"><p class="market-eyebrow">OZON / ООО «КЛМ»</p><h2>Продажи, склад и деньги</h2><p>Раздельный учёт реализации, начислений, перечислений и банка.</p></div><div class="market-store-bar"><nav class="store-switch" aria-label="Магазины Ozon">'+[['all','Все магазины'],['ip','ИП'],['ooo','ООО «КЛМ»']].map(function(r){return '<a href="#ozon/'+r[0]+'/'+active+'"'+(store===r[0]?' class="selected" aria-current="page"':'')+'>'+r[1]+'</a>';}).join('')+'</nav><span class="market-status '+(snapshot?'connected':'pending')+'">'+(snapshot?'ООО: отчёты получены':'ООО: данные ещё не опубликованы')+'</span></div>';
+    var html='<div class="market-heading"><p class="market-eyebrow">OZON</p><h2>Продажи, склад и деньги</h2><p>Раздельный учёт реализации, начислений, перечислений и банка.</p></div><div class="market-store-bar"><nav class="store-switch" aria-label="Магазины Ozon">'+[['all','Все магазины'],['ip','ИП'],['ooo','ООО «КЛМ»']].map(function(r){return '<a href="#ozon/'+r[0]+'/'+active+'"'+(store===r[0]?' class="selected" aria-current="page"':'')+'>'+r[1]+'</a>';}).join('')+'</nav><span class="market-status '+(snapshot?'connected':'pending')+'">'+(snapshot?'ООО: отчёты получены':'ООО: данные ещё не опубликованы')+'</span></div>';
     html+=periodForm(state)+'<nav class="market-sections" aria-label="Разделы Ozon">'+tabs.map(function(r){return '<a href="#ozon/'+store+'/'+r[0]+'"'+(active===r[0]?' class="selected" aria-current="page"':'')+'>'+r[1]+'</a>';}).join('')+'</nav>';
-    if(store==='ip') return html+'<section class="market-empty-state"><h3>Ozon ИП ещё не подключён</h3><p>Данные ООО «КЛМ» доступны отдельно.</p></section>';
-    if(store==='all') html+='<p class="ozon-caption">Показаны только данные ООО «КЛМ». Кабинет ИП пока не включён в общий итог.</p>';
+    var octoberHtml = active === 'summary' ? octoberSummary(state, store) : '';
+    html += octoberHtml;
+    if (store === 'ip') {
+      return octoberHtml ? html : html + '<section class="market-empty-state"><h3>Ozon ИП ещё не подключён</h3><p>В сводке доступны загруженные отчёты ИП за октябрь 2026.</p></section>';
+    }
+    if(store==='all') html+='<p class="ozon-caption">Финансовые и складские показатели ниже относятся к ООО «КЛМ».</p>';
     if(!snapshot) return html+'<section class="market-empty-state"><div><h3>Загрузка отчётов подготовлена</h3><p>Сводные цифры пока не опубликованы. Отсутствующие значения не считаются нулевыми продажами или выплатами.</p></div></section>';
     html+='<p class="ozon-caption">Обновлено '+esc(snapshot.generatedAt.replace('T',' ').slice(0,19))+' МСК · '+day(snapshot.fromDate)+'–'+day(snapshot.toDate)+'</p>';
     if(active==='summary') html+=summary(state);
@@ -170,7 +198,7 @@
   }
   function tile(state) {
     var t=totals(state);
-    return '<a class="market-tile market-ozon" href="#ozon/ooo/summary"><div class="market-tile-top"><span class="market-symbol">O</span><span class="market-status '+(snapshot?'connected':'pending')+'">'+(snapshot?'ООО: отчёты получены':'Подготовлено подключение')+'</span></div><h3>Ozon</h3><p class="market-store-caption">ООО «КЛМ» · ИП пока не подключён</p><div class="market-sales"><span>Продажи после возвратов</span><strong>'+esc(money(t.net))+'</strong><small>'+esc(snapshot?coverage(t.sold,t.rows):'Сводные цифры ещё не опубликованы')+'</small></div><dl class="market-tile-details"><div><dt>Начислено после удержаний</dt><dd>'+esc(money(t.accrued.value))+'</dd></div><div><dt>Перечислено Ozon</dt><dd>'+esc(money(t.paid.value))+'</dd></div><div><dt>Чистая прибыль</dt><dd>Не рассчитана</dd></div></dl><p class="market-data-note">Реализация, баланс, штрафы и текущие остатки — в отдельных разделах.</p><span class="market-open">Открыть ООО «КЛМ» ↗</span></a>';
+    return '<a class="market-tile market-ozon" href="#ozon/all/summary"><div class="market-tile-top"><span class="market-symbol">O</span><span class="market-status '+(snapshot?'connected':'pending')+'">'+(snapshot?'ООО: отчёты получены':'Подготовлено подключение')+'</span></div><h3>Ozon</h3><p class="market-store-caption">ООО «КЛМ» · отчёты ИП за октябрь</p><div class="market-sales"><span>Продажи после возвратов</span><strong>'+esc(money(t.net))+'</strong><small>'+esc(snapshot?coverage(t.sold,t.rows):'Сводные цифры ещё не опубликованы')+'</small></div><dl class="market-tile-details"><div><dt>Начислено после удержаний</dt><dd>'+esc(money(t.accrued.value))+'</dd></div><div><dt>Перечислено Ozon</dt><dd>'+esc(money(t.paid.value))+'</dd></div><div><dt>Чистая прибыль</dt><dd>Не рассчитана</dd></div></dl><p class="market-data-note">Реализация, баланс, штрафы и текущие остатки — в отдельных разделах.</p><span class="market-open">Открыть Ozon ↗</span></a>';
   }
   function validate(data) {
     if(!data || data.schemaVersion!==1 || data.owner!=='ooo' || !Number.isInteger(data.year) || !Array.isArray(data.months) || data.months.length!==12 || typeof data.generatedAt!=='string') return false;
