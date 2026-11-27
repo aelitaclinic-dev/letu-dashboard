@@ -5,10 +5,28 @@
   const CLARIFY = 'Состав заказа требует уточнения';
   const PROFIT_GAP = 'Расчёт прибыли требует уточнения';
   const MAX = Number.MAX_SAFE_INTEGER;
-  const wholesaleItem = {
-    sku: 'SKUK502', name: 'Brazilian Keratin Treatment FM Free, 500 мл',
-    brand: 'SINKO STYLING', priceMinor: 429000, effectiveFrom: '2026-11-27'
-  };
+  function wholesaleOffer() {
+    const groups = ((window.DASHBOARD || {}).unitEconomics && window.DASHBOARD.unitEconomics.groups) || [];
+    for (const group of groups) {
+      for (const item of group.items || []) {
+        if (!item.wholesaleChannel || norm(item.article) !== 'skuk502') continue;
+        const priceMinor = Math.round(Number(item.salePriceRub) * 100);
+        if (!Number.isSafeInteger(priceMinor) || priceMinor < 0) continue;
+        const from = typeof item.priceAsOf === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.priceAsOf) ? item.priceAsOf : '2026-11-27';
+        return {
+          sku: item.article,
+          name: (item.name || 'Brazilian Keratin Treatment FM Free') + (group.volume ? ', ' + group.volume : ''),
+          brand: group.brand || 'SINKO STYLING',
+          priceMinor,
+          effectiveFrom: from
+        };
+      }
+    }
+    return {
+      sku: 'SKUK502', name: 'Brazilian Keratin Treatment FM Free, 500 мл',
+      brand: 'SINKO STYLING', priceMinor: 208000, effectiveFrom: '2026-11-27'
+    };
+  }
   const payments = {unknown: 'Не указано', unpaid: 'Не оплачен', partial: 'Частично оплачен', paid: 'Оплачен'};
   const fulfillment = {unknown: 'Не указано', new: 'Не начато', progress: 'В работе', done: 'Выполнен', cancelled: 'Отменён'};
   const state = {
@@ -66,7 +84,8 @@
     const items = ((window.DASHBOARD || {}).unitEconomics && window.DASHBOARD.unitEconomics.groups || []).flatMap(g => (g.items || []).map(item => ({
       sku: item.article, name: item.name + (g.volume ? ' · ' + g.volume : ''), brand: g.brand || ''
     })));
-    return [wholesaleItem, ...items.filter(item => norm(item.sku) !== norm(wholesaleItem.sku))];
+    const offer = wholesaleOffer();
+    return [offer, ...items.filter(item => norm(item.sku) !== norm(offer.sku))];
   }
   function monthOf(date) {
     return date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date.slice(0, 7) : '';
@@ -517,8 +536,9 @@
     const saved = state.db.updatedAt ? 'сохранено ' + new Date(state.db.updatedAt).toLocaleString('ru-RU') : 'общий файл подключится при открытии';
     const paidNote = !summary ? 'Считаем известные оплаты' : summary.paidKop == null ? 'Сумма оплаты не подтверждена' : (summary.paidCount < summary.count ? 'По ' + summary.paidCount + ' из ' + summary.count + ' заказов' : 'По заказам с известной оплатой');
     const debtNote = !summary ? 'Только известный статус оплаты' : summary.debtKop == null ? 'Нет заказов с известным статусом оплаты' : (summary.debtCount < summary.count ? 'По ' + summary.debtCount + ' из ' + summary.count + ' заказов' : 'Статус оплаты известен');
-    const wholesaleNotice = '<p class="pb-help"><strong>Действующая оптовая цена с ' + day(wholesaleItem.effectiveFrom) + '</strong> · '
-      + esc(wholesaleItem.name) + ' (' + esc(wholesaleItem.sku) + ') · <strong>' + money(wholesaleItem.priceMinor) + '</strong> за шт.</p>';
+    const offer = wholesaleOffer();
+    const wholesaleNotice = '<p class="pb-help"><strong>Действующая оптовая цена с ' + day(offer.effectiveFrom) + '</strong> · '
+      + esc(offer.name) + ' (' + esc(offer.sku) + ') · <strong>' + money(offer.priceMinor) + '</strong> за шт.</p>';
     container.innerHTML = '<div class="pb-page do-page" id="do-root"><div class="pb-heading"><div><a class="do-back" href="#purchases">← К закупкам</a><p class="market-eyebrow">MA DISTRIBUTION / ПРЯМЫЕ ЗАКАЗЫ</p><h2>Прямые заказы клиентов</h2><p>Заказы сторонних клиентов, оформленные лично или через переписку.</p></div><button class="pb-primary" type="button" data-action="new-order">＋ Новый заказ</button></div>' + wholesaleNotice + '<div class="pb-storage"><span>Общий файл сайта доступен с другого устройства. Правки этой страницы сохраняются в браузере и остаются после обновления · ' + esc(saved) + '</span><div><button type="button" data-action="backup">Сохранить копию</button></div></div>' + (state.storageError ? '<p class="pb-error" role="alert">' + esc(state.storageError) + '</p>' : '') + '<p class="pb-message" role="status">' + esc(state.message) + '</p>' + (state.error ? '<p class="pb-error" role="alert">' + esc(state.error) + '</p>' : '') + '<div class="pb-kpis">' + kpi('Заказов', pending ? '<strong>…</strong>' : '<strong>' + summary.count + '</strong>', 'В выбранных фильтрах') + kpi('Сумма заказов', amount(summary && summary.sumKop, pending), 'Сумма заказов, не оплата') + kpi('Фактически оплачено', amount(summary && summary.paidKop, pending), esc(paidNote)) + kpi('Задолженность', amount(summary && summary.debtKop, pending), esc(debtNote)) + '</div><form class="do-filters" id="do-filters"><label>Период с<input type="date" name="from" value="' + esc(state.filters.from) + '"></label><label>Период по<input type="date" name="to" value="' + esc(state.filters.to) + '"></label><label>Клиент<select name="client">' + options([['', 'Все клиенты'], ...clients.map(client => [client, client])], state.filters.client) + '</select></label><label>Статус оплаты<select name="payment">' + options([['all', 'Все статусы'], ...Object.entries(payments)], state.filters.payment) + '</select></label><label>Статус выполнения<select name="fulfillment">' + options([['all', 'Все статусы'], ...Object.entries(fulfillment)], state.filters.fulfillment) + '</select></label></form>' + (filtered.undated ? '<p class="pb-help">Заказов без даты, они не входят в выбранный период: ' + filtered.undated + '.</p>' : '') + editor() + '<div class="do-list">' + (filtered.orders.length ? filtered.orders.map(orderCard).join('') : '<div class="pb-empty"><span class="pb-empty-icon" aria-hidden="true">✎</span><h3>' + (state.db.orders.length ? 'В этих фильтрах заказов нет' : 'Прямых заказов пока нет') + '</h3><p>' + (state.db.orders.length ? 'Сбросьте период, клиента или статус.' : 'Добавьте заказ клиента, оформленный лично или в переписке.') + '</p></div>') + '</div><details class="pb-calculation"><summary>Как считаем сумму, оплату, задолженность и прибыль</summary><p>Сумма заказов — это сумма поля «Общая сумма». Она не подтверждает получение денег.</p><p>Фактически оплаченная сумма складывается только из заказов, где оплата указана. Пустое значение в сумму нулём не входит. Если таких заказов нет, показатель — «Не указано».</p><p>Задолженность считается только при известном статусе оплаты и согласованной сумме: не оплачен, частично оплачен или оплачен. Заказ со статусом «Не указано» в задолженность не входит.</p><p>Прибыль прямого заказа: цена продажи минус средняя закупка и доставка партии из журнала закупок, минус этикетка на флакон. Коробочка не входит, если товар ушёл в одной коробке. Налог не вычитается, если оплата на личную карту. Доставка клиенту не вычитается, если её оплатил клиент. Комиссия площадки не применяется. Если доставка до Москвы по позиции ещё не стоит в принятой партии, прибыль по ней — верхняя оценка.</p></details><datalist id="do-catalog">' + catalog().map(item => '<option value="' + esc(item.sku) + '">' + esc(item.name) + '</option>').join('') + '</datalist><datalist id="do-clients">' + clients.map(client => '<option value="' + esc(client) + '"></option>').join('') + '</datalist></div>';
     bind(container);
     preview();
@@ -708,7 +728,7 @@
   window.DirectOrders = {
     mount, homeCard,
     refreshCost: function () { if (document.getElementById('do-root') && !state.editor) show(); else paintCard(); },
-    core: {validate, validateOrder, empty, totals, knownPaid, paymentFacts, orderProfit, lineEconomy, mergeShared, appendOrders, identity, normalOrder, applyFilters, moneyInput, channelPrep, nextOrderNumber, monthOf}
+    core: {validate, validateOrder, empty, totals, knownPaid, paymentFacts, orderProfit, lineEconomy, mergeShared, appendOrders, identity, normalOrder, applyFilters, moneyInput, channelPrep, nextOrderNumber, monthOf, wholesaleOffer}
   };
   state.db = read();
   fetch('direct-orders.json', {cache: 'no-store'}).then(response => response.ok ? response.json() : null).then(data => {

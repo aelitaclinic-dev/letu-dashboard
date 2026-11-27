@@ -1056,6 +1056,8 @@
           cardNote: item.cardNote || group.cardNote || "",
           listPriceRub: item.listPriceRub == null || item.listPriceRub === "" ? null : item.listPriceRub,
           salePriceRub: item.salePriceRub == null || item.salePriceRub === "" ? null : item.salePriceRub,
+          wholesaleChannel: item.wholesaleChannel === true || group.wholesaleChannel === true,
+          taxExcluded: item.taxExcluded === true || group.taxExcluded === true,
           commissionRate: item.commissionRate == null || item.commissionRate === "" ? null : item.commissionRate,
           commissionRateSource: item.commissionRateSource || "",
           commissionRateNote: item.commissionRateNote || "",
@@ -1170,7 +1172,7 @@
     var history = unitReportHistory(row), actual = history.length ? history[history.length-1] : null;
     if (actual) { sale = actual.sale; list = null; rate = actual.rate; }
     var commission = actual ? actual.commission : sale != null && rate != null ? roundMoney(sale * rate) : null;
-    var tax = sale != null && taxRate != null ? roundMoney(sale * taxRate) : null;
+    var tax = row.taxExcluded ? 0 : (sale != null && taxRate != null ? roundMoney(sale * taxRate) : null);
     var profit = null;
     if (sale != null && cost != null && commission != null && tax != null) {
       profit = sale - cost - commission - tax;
@@ -1306,11 +1308,11 @@
       + "<span class='unit-badge " + audit.key + "'>" + esc(unitStatus(audit)) + "</span></header>"
       + "<h3>" + esc(row.name) + "</h3><p class='unit-article'>Артикул: <b>" + esc(articleShown) + "</b> · " + esc(row.productType) + "</p>"
       + linkLine
-      + "<div class='unit-metrics'><div><span>Цена продажи</span><strong>" + esc(rub(econ.sale)) + "</strong><small>" + (econ.reportMonth ? "по отчёту за "+esc(econ.reportMonth) : "после скидки, по выгрузке") + (row.priceAsOf ? " " + esc(dayText(row.priceAsOf)) : "") + "</small></div>"
+      + "<div class='unit-metrics'><div><span>Цена продажи</span><strong>" + esc(rub(econ.sale)) + "</strong><small>" + (row.wholesaleChannel ? "оптовый прайс" : econ.reportMonth ? "по отчёту за "+esc(econ.reportMonth) : "после скидки, по выгрузке") + (row.priceAsOf ? " " + (row.wholesaleChannel ? "с " : "") + esc(dayText(row.priceAsOf)) : "") + "</small></div>"
       + "<div><span>Товар и подготовка</span><strong>" + esc(rub(row.accountedRub)) + "</strong><small>" + (row.freightExcluded ? "закупка без доставки до Москвы, этикетка на товар, упаковщик" : "закупка, доставка, упаковка") + (row.filmExcluded ? "" : ", плёнка") + "</small></div>"
       + "<div class='unit-result'><span>Остаток с продажи · оценка</span><strong>" + esc(rub(econ.profit)) + "</strong><small>" + (econ.margin == null ? "нужны исходные данные" : esc(percentText(econ.margin)) + " от цены · до неучтённых расходов") + "</small></div></div>"
       + (econ.reportMonth ? "<p class='unit-notice'>Расчёт по фактическому отчёту за "+esc(econ.reportMonth)+": средние суммы на одну штуку, с закупкой из карточки. Ставка комиссии показана до скидки исполнителя; сумма комиссии — фактическое удержание после неё.</p>" : "")
-      + "<p class='unit-deductions'>Комиссия: " + esc(percentText(econ.rate)) + (row.commissionObservedFrom ? " с " + esc(dayText(row.commissionObservedFrom)) : "") + " / " + esc(rub(econ.commission)) + " · Налог: " + esc(percentText(econ.taxRate)) + " / " + esc(rub(econ.tax)) + "</p>"
+      + "<p class='unit-deductions'>Комиссия: " + esc(percentText(econ.rate)) + (row.commissionObservedFrom ? " с " + esc(dayText(row.commissionObservedFrom)) : "") + " / " + esc(rub(econ.commission)) + " · Налог: " + (row.taxExcluded ? "не применяется к прямому опту" : esc(percentText(econ.taxRate)) + " / " + esc(rub(econ.tax))) + "</p>"
       + "<p class='unit-deductions'>Плёнка для упаковки: " + esc(filmFact(row)) + "</p>"
       + (row.freightExcluded ? "<p class='unit-notice'>Доставка до Москвы не входит в закупку и не считается. Индивидуальная коробочка и этикетка на коробку не применяются.</p>" : "")
       + (row.allocatedFreightRub != null ? "<p class='unit-notice'>Доля расходов поставки уже разнесена по количеству и входит в себестоимость один раз. Тариф 400 ₽/кг для этой поставки повторно не добавляется.</p>" : "")
